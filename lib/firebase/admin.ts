@@ -2,7 +2,7 @@ import "server-only";
 
 import { cert, getApp, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, initializeFirestore, type Firestore } from "firebase-admin/firestore";
 import { firebaseConfig } from "./config";
 
 /** Kunci service account di server belum diisi atau tidak bisa dibaca. */
@@ -38,4 +38,17 @@ function adminApp(): App {
 }
 
 export const adminAuth = () => getAuth(adminApp());
-export const db = () => getFirestore(adminApp());
+
+let firestore: Firestore | null = null;
+export function db(): Firestore {
+  if (firestore) return firestore;
+  const app = adminApp();
+  try {
+    // REST, bukan gRPC: koneksi gRPC sering menggantung di fungsi serverless (Vercel).
+    // Emulator tidak mendukung mode REST tanpa kredensial, jadi di sana pakai bawaan.
+    firestore = initializeFirestore(app, { preferRest: !process.env.FIRESTORE_EMULATOR_HOST });
+  } catch {
+    firestore = getFirestore(app); // sudah diinisialisasi oleh modul lain (hot reload)
+  }
+  return firestore;
+}

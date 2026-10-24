@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   try {
-    await db().collection("families").limit(1).get();
+    const lambat = new Promise<never>((_, reject) => setTimeout(() => reject(new Error("lambat")), 10_000));
+    await Promise.race([db().collection("families").limit(1).get(), lambat]);
     return json({ ok: true, pesan: "Server tersambung ke Firebase." });
   } catch (e) {
     if (e instanceof ServerConfigError) {
@@ -20,6 +21,11 @@ export async function GET() {
       return json({ ok: false, masalah: e.reason, pesan }, { status: 503 });
     }
     console.error("Pemeriksaan Firestore gagal:", e);
+    if (e instanceof Error && e.message === "lambat")
+      return json(
+        { ok: false, masalah: "lambat", pesan: "Firestore tidak menjawab dalam 10 detik. Cek apakah database Firestore sudah dibuat." },
+        { status: 503 },
+      );
     return json(
       { ok: false, masalah: "firestore", pesan: "Kunci terbaca, tapi Firestore menolak atau belum dibuat. Cek database Firestore di Firebase." },
       { status: 503 },
