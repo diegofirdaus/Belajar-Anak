@@ -7,12 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "emulators": "firebase emulators:start --only auth,firestore",
+    "dev:emu": "NEXT_PUBLIC_USE_FIREBASE_EMULATOR=1 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 next dev"
   },
   "dependencies": {
+    "firebase": "^13.1.0",
+    "firebase-admin": "^14.5.0",
     "next": "^16.4.3",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
@@ -20,6 +26,7 @@
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.3",
+    "firebase-tools": "^15.34.1",
     "typescript": "^6.0.3"
   }
 }

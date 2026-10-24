@@ -19,8 +19,28 @@ Web app latihan soal pilihan ganda untuk anak SD–SMA. Spesifikasi lengkap ada 
 
 ```bash
 npm install
-cp .env.example .env.local   # isi nilainya (tahap 3 ke atas)
-npm run dev
+npm run dev            # butuh FIREBASE_SERVICE_ACCOUNT di .env.local
+```
+
+Tanpa kredensial, pakai Firebase Emulator (butuh Java):
+
+```bash
+npm run emulators      # terminal 1
+npm run dev:emu        # terminal 2
 ```
 
 Katalog komponen: `/katalog`.
+
+## Firebase
+
+- Konfigurasi web ada di `lib/firebase/config.ts` (publik).
+- `FIREBASE_SERVICE_ACCOUNT` (JSON service account, satu baris) wajib di server: `.env.local` dan Vercel → Settings → Environment Variables.
+- Aturan Firestore di `firestore.rules`: semua akses langsung dari browser ditolak. Data hanya lewat route `app/api/*` yang memeriksa token login orang tua.
+- Setiap domain tempat app dibuka harus ada di Firebase → Authentication → Settings → Authorized domains.
+
+## Struktur data (Firestore)
+
+```
+families/{uid}                     createdAt, adminPinHash
+families/{uid}/players/{id}        name, kelas, theme, academicYear, rewards, createdAt
+```

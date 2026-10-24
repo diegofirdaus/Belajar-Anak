@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { AuthProvider } from "@/components/AuthProvider";
+import { ToastProvider } from "@/components/Toast";
 import { fontVariables } from "./fonts";
 import "./globals.css";
 
@@ -20,7 +22,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" className={fontVariables}>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </AuthProvider>
+      </body>
     </html>
   );
 }
