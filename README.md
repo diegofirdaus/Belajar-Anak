@@ -6,8 +6,8 @@ Web app latihan soal pilihan ganda untuk anak SD–SMA. Spesifikasi lengkap ada 
 
 | Topik | Keputusan |
 |---|---|
-| Model akun | Satu akun orang tua (magic link / Google) dengan profil anak. HP mengingat profil terakhir. "Ganti pemain" tanpa kunci tambahan |
-| Auth + database | Supabase (Auth + Postgres + RLS) |
+| Model akun | Satu akun orang tua (login Google) dengan profil anak. HP mengingat profil terakhir. "Ganti pemain" tanpa kunci tambahan |
+| Auth + database | Firebase (project baru `markas-latihan`): Auth dengan Google, Firestore. Semua baca/tulis data lewat server Next.js (Admin SDK). Security Rules menolak akses langsung dari browser |
 | Kunci jawaban | Diperiksa di server. Browser hanya menerima soal tanpa kunci |
 | Batas AI harian | 20 paket per anak, 60 per akun. Merapikan soal admin 30 per akun. Bisa diatur lewat env |
 | Model AI | `claude-sonnet-5-5` untuk membuat soal, `claude-haiku-5-5` untuk merapikan. Bisa diatur lewat env |
