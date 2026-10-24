@@ -443,3 +443,81 @@ textarea { min-height: 200px; resize: vertical; line-height: 1.45; }
 .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
 .swatch { display: flex; flex-direction: column; gap: 4px; font-size: .75rem; }
 .swatch i { height: 40px; border-radius: var(--radius-s); border: 1px solid color-mix(in srgb, var(--fg) 20%, transparent); }
+
+/* ---------- Halaman pembuka ---------- */
+.splash {
+  position: relative; overflow: hidden; isolation: isolate;
+  max-width: 560px; margin: 0 auto;
+  border-radius: 24px; border: 3px solid #2a2017;
+  min-height: min(660px, calc(100svh - 56px));
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 28px 18px 120px;
+  background:
+    radial-gradient(55% 35% at 90% 100%, rgba(226, 71, 90, .55), transparent 70%),
+    radial-gradient(40% 30% at 80% 15%, rgba(122, 92, 220, .45), transparent 70%),
+    linear-gradient(118deg, #bfe2f3 0 50%, #141a33 50% 100%);
+}
+.sp-ground { position: absolute; left: 0; bottom: 0; width: 42%; height: 52px; background: repeating-linear-gradient(90deg, #7a5636 0 16px, #8a6240 16px 32px); box-shadow: inset 0 10px 0 #4f9a3a; }
+.sp-floor { position: absolute; right: 0; bottom: 0; width: 42%; height: 52px; background: linear-gradient(180deg, #2b335c, #161b33); border-top: 2px solid #f2b53a; box-shadow: 0 -8px 30px rgba(242, 181, 58, .25); }
+.sp-sun { position: absolute; left: 30%; top: 7%; width: 30px; height: 30px; background: #ffd34a; box-shadow: 0 0 0 5px #ffe58f; }
+.sp-blk { position: absolute; width: 30px; height: 30px; border: 3px solid rgba(0, 0, 0, .28); animation: bob 3.2s ease-in-out infinite; }
+.sp-blk.kayu { background: #9a6a3f; left: 7%; top: 12%; }
+.sp-blk.batu { background: #8d949b; left: 20%; top: 27%; animation-delay: -1s; }
+.sp-blk.permata { background: #3fc3c9; left: 6%; top: 43%; animation-delay: -2s; box-shadow: 0 0 12px rgba(63, 195, 201, .7); }
+.sp-star { position: absolute; width: 4px; height: 4px; background: #fff; animation: twinkle 2.4s ease-in-out infinite; }
+.sp-planet { position: absolute; right: 9%; top: 9%; width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe3a3, #d9a066); animation: bob 4s ease-in-out infinite; }
+.sp-planet::after { content: ""; position: absolute; left: -16px; top: 16px; width: 78px; height: 14px; border: 3px solid #f2d9a0; border-radius: 50%; transform: rotate(-14deg); }
+.sp-crest { position: absolute; right: 30%; top: 30%; width: 34px; height: 34px; transform: rotate(45deg); border: 3px solid #f2b53a; animation: glow 2.6s ease-in-out infinite; }
+.sp-hero { position: absolute; left: 12%; bottom: 52px; width: 34px; z-index: 1; display: flex; flex-direction: column; align-items: center; animation: bob 2.4s ease-in-out infinite; }
+.sp-hero .h { width: 34px; height: 34px; background: #e9b98a; border: 3px solid #2a2017; position: relative; }
+.sp-hero .h::before, .sp-hero .h::after { content: ""; position: absolute; top: 11px; width: 6px; height: 6px; background: #2a2017; }
+.sp-hero .h::before { left: 6px; }
+.sp-hero .h::after { right: 6px; }
+.sp-hero .bd { width: 34px; height: 30px; background: #2fa3a9; border: 3px solid #2a2017; border-top: 0; }
+.sp-hero .lg { width: 34px; height: 16px; background: repeating-linear-gradient(90deg, #3a4a9a 0 14px, transparent 14px 20px); }
+.sp-shield {
+  position: absolute; right: 13%; bottom: 58px; width: 52px; height: 62px; z-index: 1;
+  clip-path: polygon(50% 0, 100% 14%, 100% 55%, 50% 100%, 0 55%, 0 14%);
+  background: linear-gradient(180deg, #ffd06a, #c9840f); animation: bob 2.8s ease-in-out infinite -1.2s;
+}
+.sp-shield::after { content: ""; position: absolute; inset: 9px; clip-path: inherit; background: #1d2446; }
+.sp-shield::before { content: ""; position: absolute; left: 50%; top: 18px; width: 14px; height: 14px; transform: translateX(-50%) rotate(45deg); background: #e2475a; z-index: 1; }
+.sp-panel {
+  position: relative; z-index: 2; width: 100%; max-width: 360px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
+  background: #fff7e8; color: #2a2017; border: 3px solid #2a2017; box-shadow: 6px 6px 0 #2a2017;
+  padding: 22px 18px 20px; animation: rise .6s ease-out;
+}
+.sp-eyebrow { font-family: var(--font-blok); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; color: #6a5846; }
+.sp-title { display: flex; flex-direction: column; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; }
+.sp-title .a { font-family: var(--font-blok); font-weight: 700; font-size: clamp(2.5rem, 12vw, 3.3rem); line-height: 1; color: #2a2017; text-shadow: 3px 3px 0 #e7a823; }
+.sp-title .b {
+  font-family: var(--font-pahlawan); font-weight: 700; font-size: clamp(1.5rem, 7.5vw, 2rem);
+  letter-spacing: .16em; text-transform: uppercase; color: #f2b53a; background: #141a33;
+  padding: 4px 16px 4px 20px; clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.sp-tag { color: #4b3b2b; font-size: 1rem; max-width: 30ch; }
+.sp-start {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none;
+  font-family: var(--font-blok); font-weight: 700; font-size: 1.4rem; padding: 14px 30px; min-height: 58px;
+  background: #e7a823; color: #2a2017; border: 3px solid #2a2017; box-shadow: 4px 4px 0 #2a2017;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.sp-start:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 #2a2017; animation: none; }
+.sp-start:focus-visible { outline: 3px solid #141a33; outline-offset: 3px; }
+.sp-worlds { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; font-size: .78rem; font-weight: 800; list-style: none; margin: 0; padding: 0; }
+.sp-worlds li { padding: 3px 9px; }
+/* Hijau digelapkan dari #3c8f35 dan teks dino dibuat gelap supaya lolos kontras AA */
+.sp-worlds .w-blok { background: #2f7a29; color: #fff; font-family: var(--font-blok); font-weight: 500; }
+.sp-worlds .w-pahlawan { background: #141a33; color: #f2b53a; font-family: var(--font-pahlawan); text-transform: uppercase; letter-spacing: .05em; }
+.sp-worlds .w-antariksa { background: #1c2560; color: #5ee0ff; font-family: var(--font-antariksa); font-weight: 600; font-size: .7rem; display: flex; align-items: center; }
+.sp-worlds .w-dino { background: #e8832a; color: #2a1606; font-family: var(--font-dino); font-weight: 400; letter-spacing: .02em; }
+/* Layar pendek (mis. 360×640): rapatkan supaya panel tidak menutupi karakter */
+@media (max-height: 700px) {
+  .splash { padding: 14px 14px 96px; }
+  .sp-panel { gap: 10px; padding: 14px 14px 16px; }
+  .sp-title .a { font-size: clamp(2.2rem, 10vw, 2.8rem); }
+  .sp-title .b { font-size: clamp(1.3rem, 6.5vw, 1.7rem); }
+  .sp-tag { font-size: .95rem; line-height: 1.4; }
+  .sp-start { min-height: 52px; padding: 10px 24px; font-size: 1.25rem; }
+}
