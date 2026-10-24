@@ -5,6 +5,13 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { firebaseConfig } from "./config";
 
+/** Kunci service account di server belum diisi atau tidak bisa dibaca. */
+export class ServerConfigError extends Error {
+  constructor(public reason: "kunci_kosong" | "kunci_rusak") {
+    super(reason);
+  }
+}
+
 function adminApp(): App {
   if (getApps().length) return getApp();
   // Emulator: tidak butuh kredensial.
@@ -12,8 +19,14 @@ function adminApp(): App {
     return initializeApp({ projectId: firebaseConfig.projectId });
   }
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT belum diisi");
-  const sa = JSON.parse(raw) as { project_id: string; client_email: string; private_key: string };
+  if (!raw?.trim()) throw new ServerConfigError("kunci_kosong");
+  let sa: { project_id?: string; client_email?: string; private_key?: string };
+  try {
+    sa = JSON.parse(raw);
+  } catch {
+    throw new ServerConfigError("kunci_rusak");
+  }
+  if (!sa.project_id || !sa.client_email || !sa.private_key) throw new ServerConfigError("kunci_rusak");
   return initializeApp({
     credential: cert({
       projectId: sa.project_id,

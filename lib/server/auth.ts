@@ -12,9 +12,11 @@ export async function requireFamily(req: Request): Promise<{ familyId: string }>
   const header = req.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
   if (!token) throw new ApiError("sesi_habis");
+  // Di luar try: kunci server yang belum siap harus terlihat sebagai masalah server, bukan sesi habis.
+  const auth = adminAuth();
   let uid: string;
   try {
-    uid = (await adminAuth().verifyIdToken(token)).uid;
+    uid = (await auth.verifyIdToken(token)).uid;
   } catch {
     throw new ApiError("sesi_habis");
   }

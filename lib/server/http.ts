@@ -1,15 +1,17 @@
 import "server-only";
 
 import { NextResponse } from "next/server";
+import { ServerConfigError } from "@/lib/firebase/admin";
 
 /** Kode error yang dipetakan ke pesan ramah anak di browser. */
-export type ApiErrorCode = "sesi_habis" | "tidak_ditemukan" | "tidak_valid" | "batas" | "gangguan";
+export type ApiErrorCode = "sesi_habis" | "tidak_ditemukan" | "tidak_valid" | "batas" | "server_belum_siap" | "gangguan";
 
 const STATUS: Record<ApiErrorCode, number> = {
   sesi_habis: 401,
   tidak_ditemukan: 404,
   tidak_valid: 400,
   batas: 429,
+  server_belum_siap: 503,
   gangguan: 500,
 };
 
@@ -26,6 +28,10 @@ export function json<T>(data: T, init?: ResponseInit) {
 export function handle(fn: () => Promise<Response>): Promise<Response> {
   return fn().catch((e: unknown) => {
     if (e instanceof ApiError) return json({ error: e.code, message: e.message }, { status: STATUS[e.code] });
+    if (e instanceof ServerConfigError) {
+      console.error("Firebase Admin belum siap:", e.reason);
+      return json({ error: "server_belum_siap" }, { status: 503 });
+    }
     console.error(e);
     return json({ error: "gangguan" }, { status: 500 });
   });

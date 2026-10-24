@@ -13,6 +13,7 @@ export class ApiFailure extends Error {
 export function apiMessage(e: unknown): string {
   const code = e instanceof ApiFailure ? e.code : "jaringan";
   if (code === "sesi_habis") return "Sesi login sudah habis. Minta orang tua masuk lagi, lalu coba lagi.";
+  if (code === "server_belum_siap") return "Server belum tersambung ke database. Minta orang tua mengecek pengaturan, lalu coba lagi.";
   if (code === "batas" && e instanceof ApiFailure && e.message !== code) return e.message;
   if (code === "tidak_valid" && e instanceof ApiFailure && e.message !== code) return e.message;
   return "Koneksi terputus. Coba lagi.";
