@@ -5,7 +5,10 @@ export const dynamic = "force-dynamic";
 type Masalah = "impor" | "kunci_kosong" | "kunci_rusak" | "firestore" | "lambat";
 
 function balas(ok: boolean, data: { masalah?: Masalah; pesan: string; detail?: string }) {
-  return NextResponse.json({ ok, ...data }, { status: ok ? 200 : 503, headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json(
+    { ok, ...data, node: process.version },
+    { status: ok ? 200 : 503, headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 /** Pesan error teknis yang aman ditampilkan: dipotong, dan tanpa isi kunci. */

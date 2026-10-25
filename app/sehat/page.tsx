@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Pipo } from "@/components/Pipo";
 
-type Hasil = { ok: boolean; masalah?: string; pesan: string; detail?: string };
+type Hasil = { ok: boolean; masalah?: string; pesan: string; detail?: string; node?: string };
 
 /** Pemeriksaan sambungan server ↔ Firebase yang tampil sebagai halaman biasa (bukan unduhan JSON di Safari). */
 export default function Sehat() {
@@ -46,6 +46,7 @@ export default function Sehat() {
             <h3>{hasil.ok ? "Beres!" : "Ada masalah"}</h3>
             <p>{hasil.pesan}</p>
             {hasil.masalah && <p className="muted small">Kode: {hasil.masalah}</p>}
+            {hasil.node && <p className="muted small">Node.js di server: {hasil.node}</p>}
             {hasil.detail && (
               <pre className="note" style={{ whiteSpace: "pre-wrap", margin: 0, fontSize: ".8rem" }}>
                 {hasil.detail}
