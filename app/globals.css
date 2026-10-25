@@ -209,7 +209,7 @@ button { cursor: pointer; }
 /* ---------- Tombol ---------- */
 .btn {
   border: var(--btn-border); border-radius: var(--btn-radius); box-shadow: var(--btn-shadow);
-  background: var(--btn-bg); color: var(--btn-fg);
+  background: var(--btn-bg); color: var(--btn-fg); text-decoration: none;
   padding: 13px 18px; min-height: 50px;
   font-family: var(--display); font-weight: 800; font-size: 1rem;
   text-transform: var(--upper); letter-spacing: var(--track);
@@ -531,3 +531,15 @@ textarea { min-height: 200px; resize: vertical; line-height: 1.45; }
 .links-col { display: flex; flex-direction: column; gap: 0; }
 .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .who { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+
+/* ---------- Perkenalan dengan Pipo ---------- */
+.steps { display: flex; gap: 6px; }
+.steps i { height: 6px; flex: 1; max-width: 44px; border-radius: 3px; background: var(--soft); }
+.steps i.on { background: var(--accent); }
+.ob-log { display: flex; flex-direction: column; gap: 10px; min-height: 120px; }
+.ob-input { display: flex; flex-direction: column; gap: 10px; scroll-margin-bottom: 24px; }
+.ob-form { display: flex; gap: 8px; }
+.ob-form .input { flex: 1; min-width: 0; }
+.ob-form .btn { flex: none; }
+.choice-list { display: flex; flex-direction: column; gap: 8px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
