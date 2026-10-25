@@ -1,7 +1,7 @@
 "use client";
 
 import { clientAuth } from "@/lib/firebase/client";
-import type { NewPlayer, Player } from "@/lib/player";
+import type { NewPlayer, Player, PlayerUpdate } from "@/lib/player";
 
 export class ApiFailure extends Error {
   constructor(public code: string, message?: string) {
@@ -42,4 +42,9 @@ export const api = {
   getPlayer: (id: string) => call<{ player: Player }>(`/api/pemain/${encodeURIComponent(id)}`).then((r) => r.player),
   createPlayer: (p: NewPlayer) =>
     call<{ player: Player }>("/api/pemain", { method: "POST", body: JSON.stringify(p) }).then((r) => r.player),
+  updatePlayer: (id: string, u: PlayerUpdate) =>
+    call<{ player: Player }>(`/api/pemain/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(u) }).then(
+      (r) => r.player,
+    ),
+  deletePlayer: (id: string) => call<{ ok: true }>(`/api/pemain/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };

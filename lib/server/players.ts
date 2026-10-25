@@ -3,7 +3,7 @@ import "server-only";
 import { FieldValue, Timestamp, type DocumentSnapshot } from "firebase-admin/firestore";
 import { db } from "@/lib/firebase/admin";
 import { academicYear } from "@/lib/kelas";
-import { MAX_PLAYERS, type NewPlayer, type Player } from "@/lib/player";
+import { MAX_PLAYERS, type NewPlayer, type Player, type PlayerUpdate } from "@/lib/player";
 import { emptyRewards, type Rewards } from "@/lib/rewards";
 import type { WorldId } from "@/lib/worlds";
 import { ApiError } from "./http";
@@ -48,4 +48,24 @@ export async function createPlayer(familyId: string, p: NewPlayer): Promise<Play
     createdAt: FieldValue.serverTimestamp(),
   });
   return toPlayer(await ref.get());
+}
+
+export async function updatePlayer(familyId: string, playerId: string, u: PlayerUpdate): Promise<Player> {
+  const ref = players(familyId).doc(playerId);
+  if (!(await ref.get()).exists) throw new ApiError("tidak_ditemukan");
+  const data: Record<string, unknown> = {};
+  if (u.name !== undefined) data.name = u.name;
+  if (u.theme !== undefined) data.theme = u.theme; // hadiah tiap dunia disimpan terpisah, jadi tidak ada yang hilang
+  if (u.kelas !== undefined) data.kelas = u.kelas;
+  // Mengubah kelas atau menjawab kartu naik kelas berarti kelas tahun ajaran ini sudah dikonfirmasi.
+  if (u.kelas !== undefined || u.konfirmasiTahunAjaran) data.academicYear = academicYear();
+  await ref.update(data);
+  return toPlayer(await ref.get());
+}
+
+/** Menghapus pemain beserta semua hadiah dan riwayatnya (termasuk subkoleksi). */
+export async function deletePlayer(familyId: string, playerId: string): Promise<void> {
+  const ref = players(familyId).doc(playerId);
+  if (!(await ref.get()).exists) throw new ApiError("tidak_ditemukan");
+  await db().recursiveDelete(ref);
 }

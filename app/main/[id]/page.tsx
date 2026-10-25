@@ -2,6 +2,10 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { KartuHadiah } from "@/components/KartuHadiah";
+import { FormSoal } from "@/components/markas/FormSoal";
+import { KartuNaikKelas } from "@/components/markas/KartuNaikKelas";
+import { Pengaturan } from "@/components/markas/Pengaturan";
 import { LoadingCard, RequireLogin } from "@/components/RequireLogin";
 import { ThemeBody } from "@/components/ThemeBody";
 import { api, apiMessage, ApiFailure } from "@/lib/api";
@@ -10,31 +14,31 @@ import { fase, kelasShort } from "@/lib/kelas";
 import type { Player } from "@/lib/player";
 import { WORLDS } from "@/lib/worlds";
 
-// Sementara (tahap 3): kepala markas saja. Isi markas dibangun di tahap 5.
 export default function Markas() {
-  return <RequireLogin>{() => <MarkasSementara />}</RequireLogin>;
+  return <RequireLogin>{() => <IsiMarkas />}</RequireLogin>;
 }
 
-function MarkasSementara() {
+/** Markas pemain (brief 7.4). */
+function IsiMarkas() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [player, setPlayer] = useState<Player | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [pemain, setPemain] = useState<Player | null>(null);
+  const [galat, setGalat] = useState<string | null>(null);
 
   useEffect(() => {
-    let alive = true;
+    let hidup = true;
     api
       .getPlayer(id)
-      .then((p) => alive && setPlayer(p))
+      .then((p) => hidup && setPemain(p))
       .catch((e) => {
-        if (!alive) return;
+        if (!hidup) return;
         if (e instanceof ApiFailure && e.code === "tidak_ditemukan") {
           setDevicePlayer(null);
           router.replace("/pemain");
-        } else setErr(apiMessage(e));
+        } else setGalat(apiMessage(e));
       });
     return () => {
-      alive = false;
+      hidup = false;
     };
   }, [id, router]);
 
@@ -43,36 +47,48 @@ function MarkasSementara() {
     router.push("/pemain");
   }
 
-  if (err)
+  function sesudahHapus() {
+    setDevicePlayer(null);
+    router.replace("/mulai");
+  }
+
+  if (galat)
     return (
       <main className="wrap">
         <p className="form-msg" role="alert">
-          {err}
+          {galat}
         </p>
       </main>
     );
-  if (!player) return <LoadingCard />;
+  if (!pemain) return <LoadingCard />;
 
   return (
     <>
-      <ThemeBody world={player.theme} />
+      <ThemeBody world={pemain.theme} />
       <main className="wrap">
         <header className="topbar">
           <div className="who">
-            <p className="eyebrow">{WORLDS[player.theme].name}</p>
-            <h1>{player.name}</h1>
+            <p className="eyebrow">{WORLDS[pemain.theme].name}</p>
+            <h1>{pemain.name}</h1>
             <p className="muted small">
-              {kelasShort(player.kelas)} · Fase {fase(player.kelas)} Kurikulum Merdeka
+              {kelasShort(pemain.kelas)} · Fase {fase(pemain.kelas)} Kurikulum Merdeka
             </p>
           </div>
           <button type="button" className="btn ghost small" onClick={gantiPemain}>
             Ganti pemain
           </button>
         </header>
-        <div className="card">
-          <h2>Markasmu sedang dibangun</h2>
-          <p className="muted">Kartu hadiah, form membuat soal, dan riwayat latihan hadir di tahap 5.</p>
-        </div>
+
+        <KartuNaikKelas pemain={pemain} onUbah={setPemain} />
+        <KartuHadiah dunia={pemain.theme} hadiah={pemain.rewards} />
+        <FormSoal key={pemain.kelas} pemain={pemain} />
+
+        <section className="card" aria-labelledby="riwayat-judul">
+          <h2 id="riwayat-judul">Riwayat latihan</h2>
+          <p className="muted">Belum ada latihan. Hasil latihan pertamamu akan muncul di sini.</p>
+        </section>
+
+        <Pengaturan pemain={pemain} onUbah={setPemain} onHapus={sesudahHapus} />
       </main>
     </>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BoneIcon } from "@/components/BoneIcon";
+import { KartuHadiah } from "@/components/KartuHadiah";
 import { Pipo } from "@/components/Pipo";
 import { Segment } from "@/components/Segment";
 import { ThemeBody } from "@/components/ThemeBody";
@@ -9,6 +10,7 @@ import { ToastProvider, useToast } from "@/components/Toast";
 import { WorldArt } from "@/components/WorldArt";
 import { WorldCard } from "@/components/WorldCard";
 import { JENJANG_INFO, MAPEL, kelasShort, type Level } from "@/lib/kelas";
+import { emptyRewards, type Rewards } from "@/lib/rewards";
 import { WORLDS, WORLD_IDS, type WorldId } from "@/lib/worlds";
 
 type Theme = "auto" | "light" | "dark" | WorldId;
@@ -21,6 +23,29 @@ const THEMES: { id: Theme; label: string }[] = [
 ];
 
 const SWATCHES = ["--bg", "--fg", "--muted", "--card", "--line", "--soft", "--accent", "--accent-fg", "--good", "--bad", "--field-bg", "--opt-bg"];
+
+/** Contoh data hadiah: kosong, di tengah perjalanan, dan hampir/sudah maksimal. */
+const CONTOH_HADIAH: { judul: string; r: Rewards }[] = [
+  { judul: "Baru mulai", r: emptyRewards() },
+  {
+    judul: "Di tengah perjalanan",
+    r: {
+      blok: { kayu: 18, batu: 9, permata: 4 },
+      pahlawan: { xp: 230, bosses: 4 },
+      antariksa: { fuel: 300 },
+      dino: { bones: 5, done: ["T-Rex", "Triceratops"] },
+    },
+  },
+  {
+    judul: "Sudah jauh",
+    r: {
+      blok: { kayu: 60, batu: 50, permata: 45 },
+      pahlawan: { xp: 1240, bosses: 31 },
+      antariksa: { fuel: 1050 },
+      dino: { bones: 2, done: ["T-Rex", "Triceratops", "Stegosaurus", "Brachiosaurus", "Velociraptor", "Ankylosaurus", "T-Rex"] },
+    },
+  },
+];
 
 export function Katalog() {
   return (
@@ -331,6 +356,19 @@ function KatalogInner() {
           <div style={{ width: 48, color: "#8a6a3a" }} aria-hidden="true">
             <BoneIcon className="bone-ico" />
           </div>
+        </section>
+        <section className="stack-12" aria-labelledby="kat-hadiah">
+          <h2 id="kat-hadiah">Kartu hadiah (contoh data)</h2>
+          {world ? (
+            CONTOH_HADIAH.map((c) => (
+              <div key={c.judul} className="stack-6">
+                <p className="eyebrow">{c.judul}</p>
+                <KartuHadiah dunia={world} hadiah={c.r} />
+              </div>
+            ))
+          ) : (
+            <p className="muted">Pilih salah satu dunia di atas untuk melihat kartu hadiahnya.</p>
+          )}
         </section>
       </main>
     </>
