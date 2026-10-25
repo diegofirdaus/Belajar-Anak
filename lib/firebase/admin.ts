@@ -18,7 +18,9 @@ function adminApp(): App {
   if (process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_AUTH_EMULATOR_HOST) {
     return initializeApp({ projectId: firebaseConfig.projectId });
   }
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  // FIREBASE_SERVICE_ACOUNT: nama salah ketik yang sempat tersimpan di Vercel (Preview).
+  // Hapus cadangan ini setelah variabelnya diganti nama.
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACOUNT;
   if (!raw?.trim()) throw new ServerConfigError("kunci_kosong");
   let sa: { project_id?: string; client_email?: string; private_key?: string };
   try {
