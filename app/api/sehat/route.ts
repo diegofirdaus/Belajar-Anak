@@ -11,6 +11,14 @@ function balas(ok: boolean, data: { masalah?: Masalah; pesan: string; detail?: s
   );
 }
 
+/** Nama variabel yang mirip FIREBASE_SERVICE_ACCOUNT beserta panjang isinya (isinya tidak pernah ditampilkan). */
+function variabelMirip(): string {
+  const mirip = Object.keys(process.env)
+    .filter((k) => /fire/i.test(k) && !k.startsWith("NEXT_PUBLIC_"))
+    .map((k) => `${JSON.stringify(k)} (${(process.env[k] ?? "").length} karakter)`);
+  return mirip.length ? `Variabel yang mirip di deploy ini: ${mirip.join(", ")}` : "Tidak ada variabel bernama mirip di deploy ini.";
+}
+
 /** Pesan error teknis yang aman ditampilkan: dipotong, dan tanpa isi kunci. */
 function ringkas(e: unknown): string {
   const m = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
@@ -42,7 +50,7 @@ export async function GET() {
         e.reason === "kunci_kosong"
           ? "FIREBASE_SERVICE_ACCOUNT belum ada di environment deploy ini. Cek centang Preview/Production, lalu Redeploy."
           : "FIREBASE_SERVICE_ACCOUNT ada, tapi isinya bukan JSON service account yang lengkap. Tempel ulang seluruh isi file .json.";
-      return balas(false, { masalah: e.reason, pesan });
+      return balas(false, { masalah: e.reason, pesan, detail: variabelMirip() });
     }
     if (e instanceof Error && e.message === "lambat")
       return balas(false, {
