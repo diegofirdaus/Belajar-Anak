@@ -11,7 +11,16 @@ function balas(ok: boolean, data: { masalah?: Masalah; pesan: string; detail?: s
       ...data,
       node: process.version,
       // Hanya ada/tidaknya kunci, tanpa memanggil AI (tidak ada biaya) dan tanpa isi kunci.
-      claude: { kunci: Boolean(process.env.ANTHROPIC_API_KEY), model: process.env.AI_MODEL_SOAL || "claude-sonnet-5-5" },
+      claude: {
+        kunci: Boolean(process.env.ANTHROPIC_API_KEY),
+        model: process.env.AI_MODEL_SOAL || "claude-sonnet-5-5",
+        // Kalau kunci belum terbaca: nama variabel yang mirip dan panjang isinya, untuk menemukan salah ketik.
+        mirip: process.env.ANTHROPIC_API_KEY
+          ? undefined
+          : Object.keys(process.env)
+              .filter((k) => /ant(h)?ro?p|api[_-]?key/i.test(k) && !/^(CLAUDE_CODE|NEXT_PUBLIC)_/.test(k))
+              .map((k) => `${JSON.stringify(k)} (${(process.env[k] ?? "").length} karakter)`),
+      },
     },
     { status: ok ? 200 : 503, headers: { "Cache-Control": "no-store" } },
   );

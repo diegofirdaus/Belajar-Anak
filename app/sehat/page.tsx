@@ -9,7 +9,7 @@ type Hasil = {
   pesan: string;
   detail?: string;
   node?: string;
-  claude?: { kunci: boolean; model: string };
+  claude?: { kunci: boolean; model: string; mirip?: string[] };
 };
 
 /** Pemeriksaan sambungan server ↔ Firebase yang tampil sebagai halaman biasa (bukan unduhan JSON di Safari). */
@@ -58,6 +58,13 @@ export default function Sehat() {
               <p className="small">
                 Kunci Claude API:{" "}
                 <b>{hasil.claude.kunci ? `terpasang (model ${hasil.claude.model})` : "belum ada (ANTHROPIC_API_KEY)"}</b>
+              </p>
+            )}
+            {hasil.claude && !hasil.claude.kunci && (
+              <p className="muted small">
+                {hasil.claude.mirip?.length
+                  ? `Variabel yang mirip di deploy ini: ${hasil.claude.mirip.join(", ")}`
+                  : "Tidak ada variabel bernama mirip ANTHROPIC di deploy ini."}
               </p>
             )}
             {hasil.detail && (
