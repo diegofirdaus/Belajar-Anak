@@ -3,6 +3,7 @@
 import { useId, useState, type FormEvent } from "react";
 import { Segment } from "@/components/Segment";
 import { useToast } from "@/components/Toast";
+import { api, apiMessage } from "@/lib/api";
 import { MAPEL, TOPIC_PLACEHOLDER, jenjangOf, type Level } from "@/lib/kelas";
 import type { Player } from "@/lib/player";
 import { WORLDS } from "@/lib/worlds";
@@ -13,7 +14,7 @@ const LEVEL_OPSI: { value: Level; label: string }[] = [
   { value: "sulit", label: "Sulit" },
 ];
 
-/** Form membuat soal di markas (brief 7.4 no. 4). Pembuatan soal oleh AI disambung di tahap 6. */
+/** Form membuat soal di markas (brief 7.4 no. 4). */
 export function FormSoal({ pemain }: { pemain: Player }) {
   const id = useId();
   const toast = useToast();
@@ -24,18 +25,28 @@ export function FormSoal({ pemain }: { pemain: Player }) {
   const [level, setLevel] = useState<Level>("mudah");
   const [jumlah, setJumlah] = useState<"5" | "10">("5");
   const [galat, setGalat] = useState<string | null>(null);
+  const [menyiapkan, setMenyiapkan] = useState(false);
   // Kelas bisa berubah lewat Pengaturan; kalau mapel lama tidak ada di jenjang baru, pakai yang pertama.
   const mapelAktif = daftarMapel.includes(mapel) ? mapel : daftarMapel[0];
   const w = WORLDS[pemain.theme];
 
-  function kirim(e: FormEvent) {
+  async function kirim(e: FormEvent) {
     e.preventDefault();
     if (!topik.trim()) {
       setGalat('Tulis dulu materi yang mau dilatih, misalnya "pecahan" atau "gaya dan gerak".');
       return;
     }
     setGalat(null);
-    toast("Membuat soal dengan AI hadir di tahap 6.");
+    setMenyiapkan(true);
+    try {
+      const sesi = await api.buatSoal({ pemainId: pemain.id, mapel: mapelAktif, topik, level, n: Number(jumlah) as 5 | 10 });
+      // Layar memuat dan mengerjakan soal dibangun di tahap 7.
+      toast(`${sesi.soal.length} soal siap! Layar mengerjakan soal hadir di tahap 7.`);
+    } catch (err) {
+      setGalat(apiMessage(err));
+    } finally {
+      setMenyiapkan(false);
+    }
   }
 
   return (
@@ -79,8 +90,8 @@ export function FormSoal({ pemain }: { pemain: Player }) {
             {galat}
           </p>
         )}
-        <button type="submit" className="btn">
-          {w.startLabel}
+        <button type="submit" className="btn" disabled={menyiapkan}>
+          {menyiapkan ? w.loadingTexts[0] : w.startLabel}
         </button>
       </form>
     </section>

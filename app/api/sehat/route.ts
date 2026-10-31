@@ -6,7 +6,13 @@ type Masalah = "impor" | "kunci_kosong" | "kunci_rusak" | "firestore" | "lambat"
 
 function balas(ok: boolean, data: { masalah?: Masalah; pesan: string; detail?: string }) {
   return NextResponse.json(
-    { ok, ...data, node: process.version },
+    {
+      ok,
+      ...data,
+      node: process.version,
+      // Hanya ada/tidaknya kunci, tanpa memanggil AI (tidak ada biaya) dan tanpa isi kunci.
+      claude: { kunci: Boolean(process.env.ANTHROPIC_API_KEY), model: process.env.AI_MODEL_SOAL || "claude-sonnet-5-5" },
+    },
     { status: ok ? 200 : 503, headers: { "Cache-Control": "no-store" } },
   );
 }
