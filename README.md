@@ -31,6 +31,17 @@ npm run dev:emu        # terminal 2
 
 Katalog komponen: `/katalog`.
 
+## Variabel wajib di Vercel
+
+Semua bertipe **Secret**, dicentang untuk **Production** dan **Preview**. Variabel baru hanya terbaca oleh deploy berikutnya.
+
+| Nama | Isi |
+|---|---|
+| `FIREBASE_SERVICE_ACCOUNT` | Seluruh isi file JSON service account Firebase |
+| `ANTHROPIC_API_KEY` | Kunci Claude API (`sk-ant-…`) dari Claude Console |
+
+Cek dengan membuka `/sehat` di alamat deploy: harus tampil "Beres!" dan "Kunci Claude API: terpasang".
+
 ## Firebase
 
 - Konfigurasi web ada di `lib/firebase/config.ts` (publik).
