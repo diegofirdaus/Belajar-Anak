@@ -121,6 +121,7 @@ Isi (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`, semua tangg
 - Perbaikan (opsi 3 dokumentasi Firebase "redirect best practices"): `authDomain` = host app sendiri (`lib/firebase/client.ts`, kecuali localhost/emulator) dan `next.config.ts` meneruskan `/__/auth/*` ke `markas-latihan.firebaseapp.com`.
 - **Wajib di Google Cloud Console** (proyek markas-latihan → APIs & Services → Credentials → OAuth client "Web client (auto created by Google Service)") → Authorized redirect URIs: `https://markas-latihan.vercel.app/__/auth/handler` dan `https://markas-latihan-git-pengembangan-minions-3f7b.vercel.app/__/auth/handler`. Tanpa ini login Google gagal (redirect_uri_mismatch). Domain baru (mis. markaslatihan.com) juga perlu ditambahkan di sini.
 - Container Claude tidak bisa menjangkau firebaseapp.com, jadi penerusan hanya bisa diuji di preview.
+- Status: pemilik sudah menambahkan kedua redirect URI, login berhasil di preview dari iPhone yang sebelumnya gagal, lalu dirilis ke produksi lewat PR #2.
 
 ## Keputusan teknis penting
 
