@@ -13,7 +13,7 @@ export function POST(req: Request, ctx: Ctx) {
     const { familyId } = await requireFamily(req);
     const { id } = await ctx.params;
     const parsed = jawabSchema.safeParse(await req.json().catch(() => null));
-    if (!parsed.success) throw new ApiError("tidak_valid");
+    if (!parsed.success) throw new ApiError("tidak_valid", "Jawaban ini tidak bisa diperiksa. Kembali ke markas, lalu coba lagi.");
     const { pemainId, nomor, pilihan } = parsed.data;
     return json(await jawabSoal(familyId, pemainId, id, nomor, pilihan));
   });

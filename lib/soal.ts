@@ -2,6 +2,7 @@ import { z } from "zod";
 import { LEVELS } from "./kelas";
 import type { HadiahSatu, SumberSoal } from "./latihan";
 import type { Rewards } from "./rewards";
+import { SOAL_PER_PAKET_MAKS } from "./soalPilihan";
 
 /** Satu soal pilihan ganda (brief 6). `answer` = indeks dari 0. */
 export type Soal = { q: string; options: string[]; answer: number; explain: string };
@@ -45,7 +46,8 @@ export type PaketSesi = {
 export const jawabSchema = z
   .object({
     pemainId: z.string().min(1).max(128),
-    nomor: z.number().int().min(0).max(19),
+    // Paket terbesar adalah soal pilihan orang tua (maks SOAL_PER_PAKET_MAKS), bukan paket AI (maks 10).
+    nomor: z.number().int().min(0).max(SOAL_PER_PAKET_MAKS - 1),
     pilihan: z.number().int().min(0).max(3),
   })
   .strict();
