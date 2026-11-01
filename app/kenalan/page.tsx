@@ -195,7 +195,7 @@ function Percakapan() {
         <Pipo />
         <div className="grow">
           <p className="eyebrow">Kenalan dulu, yuk</p>
-          <div className="steps" aria-label={`Langkah ${Math.min(langkah, 4)} dari 4`}>
+          <div className="steps" role="img" aria-label={`Langkah ${Math.min(langkah, 4)} dari 4`}>
             {[1, 2, 3, 4].map((i) => (
               <i key={i} className={i <= langkah ? "on" : undefined} />
             ))}

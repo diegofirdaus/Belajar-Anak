@@ -6,8 +6,8 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 
 - Branch kerja: **`pengembangan`** (semua tahap baru di-push ke sini). `main` masih commit awal; digabung di Tahap 11 (atau lebih awal kalau pemilik minta).
 - Preview: https://markas-latihan-git-pengembangan-minions-3f7b.vercel.app (cek server di `/sehat`).
-- Selesai dan sudah dicoba pemilik di preview: **Tahap 1–8** (urutan di brief bagian 14), termasuk Lupa PIN lewat login ulang Google di Safari iPad.
-- Selesai dibangun dan lulus uji di container, **belum dicoba pemilik**: **Tahap 9**.
+- Selesai dan sudah dicoba pemilik di preview: **Tahap 1–9** (urutan di brief bagian 14), termasuk Lupa PIN lewat login ulang Google dan soal mirip AI.
+- Selesai dibangun dan lulus uji di container, **belum dicoba pemilik**: **Tahap 10**.
 
 | Tahap | Isi | Lokasi utama |
 |---|---|---|
@@ -20,6 +20,7 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 | 7 | Memuat, mengerjakan + HUD, hasil, hadiah per jawaban, riwayat, saran, soal contoh | `components/latihan/*`, `app/api/sesi/[id]/jawab`, `app/api/soal/contoh`, `app/api/pemain/[id]/ringkasan`, `lib/latihan.ts`, `lib/server/sesi.ts`, `lib/server/soalContoh.ts` |
 | 8 | Mode admin: PIN di server, daftar & editor soal pilihan, rapikan (AI/manual) | `app/admin`, `components/admin/*`, `app/api/admin/*`, `lib/server/admin.ts`, `lib/server/soalPilihan.ts`, `lib/soalPilihan.ts` |
 | 9 | Soal pilihan di sisi anak: ★ Soal pilihan, Kerjakan, Buat soal mirip (AI), tombol hasil | `components/markas/FormSoal.tsx`, `app/api/soal/pilihan`, `app/api/soal/mirip`, `lib/server/soalPilihan.ts`, `lib/server/ai/prompt.ts` |
+| 10 | Aksesibilitas: token kontras AA, audit axe-core semua layar, target sentuh, fokus, reduced motion | `app/globals.css`, `scripts/uji/kontras-test.mjs`, `scripts/uji/a11y-test.js` |
 
 ## Tahap 7 (selesai)
 
@@ -51,11 +52,23 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 - Hadiah soal pilihan = setara sedang; tidak masuk statistik topik/saran; masuk riwayat dengan `setId`.
 - Halaman hasil soal pilihan: "Buat soal mirip (AI)" (kalau AI ada), "Ulangi soal pilihan ini" (paket asli), "Kembali ke markas".
 
-## Berikutnya: Tahap 10 (aksesibilitas)
+## Tahap 10 (selesai)
 
-Brief 12 dan 15: kontras AA di kelima tema (cek token, terutama teks `--muted` dan tombol di Blok/Dino), fokus keyboard di semua kontrol, `aria-live` dan label, reduced motion, cek tampilan 360–430px terang/gelap untuk semua layar. Pertimbangkan uji otomatis (mis. axe-core lewat Playwright).
+- **Kontras AA** dicek dari token di `globals.css` (`scripts/uji/kontras-test.mjs`, 6 tema × ±22 pasangan). Warna merek dari brief tidak diubah; ditambah token turunan:
+  - `--good-text` (hijau lebih gelap untuk teks "benar" dan kotak huruf jawaban benar di tema terang),
+  - `--on-good` / `--on-bad` (huruf di kotak benar/salah dan tombol "Ya, hapus": putih di tema terang, gelap di tema gelap),
+  - `--field-line` (garis kolom isian ≥ 3:1, WCAG 1.4.11),
+  - `--reward-fg` / `--banner-win` tema dasar terang jadi `#8a5a00`, banner menang Blok `#2f7429`.
+- **Penyimpangan dari brief** (disetujui implisit lewat aturan "kontras AA" di brief 12): Lembah Dino `--accent-fg`/`--btn-fg` jadi gelap `#23301c` (teks putih di oranye `#e8832a` hanya 2,7:1), `--muted` Dino `#56644a`.
+- Indikator langkah perkenalan diberi `role="img"`.
+- `scripts/uji/a11y-test.js`: axe-core (WCAG 2.1 A/AA) di pembuka, login, daftar pemain, perkenalan, admin (PIN, daftar, editor), /sehat (terang & gelap) dan markas, memuat, mengerjakan, umpan balik, hasil untuk 4 dunia; target sentuh ≥ 44px; tanpa gulir samping di 360 & 430px; fokus keyboard outline 3px; tanpa animasi saat reduced motion. Semua lulus.
 
-Setelah itu: Tahap 11 (uji sesuai kriteria brief 15, gabung ke `main`, domain `markaslatihan.com` + Authorized domains di Firebase).
+## Berikutnya: Tahap 11 (uji akhir + rilis)
+
+1. Cocokkan kriteria penerimaan brief 15 satu per satu (sebagian besar sudah tercakup skrip uji); catat yang hanya bisa dicek pemilik (login Google asli, Safari iPad, kualitas soal AI asli).
+2. Gabung `pengembangan` ke `main` (lewat PR), pastikan Vercel Production memakai variabel lingkungan yang sama dengan Preview, dan ganti nama `FIREBASE_SERVICE_ACOUNT` → `FIREBASE_SERVICE_ACCOUNT` lalu hapus cadangan di `lib/firebase/admin.ts`.
+3. Domain `markaslatihan.com` (beli di Vercel) + tambahkan ke Firebase → Authentication → Authorized domains.
+4. Brief 11: cek kebijakan Anthropic untuk aplikasi yang dipakai anak; fitur ekspor/hapus data keluarga belum ada (hapus pemain sudah ada) — tanyakan pemilik apakah masuk rilis pertama.
 
 ## Keputusan teknis penting
 
@@ -85,6 +98,8 @@ node scripts/uji/markas-test.js /tmp/shots          # Playwright, layar 390px
 node scripts/uji/latihan-ui-test.js /tmp/shots      # Playwright: memuat, HUD 4 dunia, hasil, saran
 node scripts/uji/admin-ui-test.js /tmp/shots        # Playwright: mode admin
 node scripts/uji/pilihan-ui-test.js /tmp/shots      # Playwright: soal pilihan di markas
+node scripts/uji/a11y-test.js /tmp/shots           # Playwright + axe-core: aksesibilitas semua layar
+node scripts/uji/kontras-test.mjs                   # kontras token 6 tema (tanpa server)
 npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/admin-test.ts
 ```
 
