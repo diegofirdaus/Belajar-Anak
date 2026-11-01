@@ -80,6 +80,10 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 - Tampilan (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`): pilih anak (bawaan = anak di HP ini), ringkasan (latihan 7 hari terakhir, soal dijawab, % benar, terakhir latihan, hadiah, AI hari ini), bar per mapel (hijau ≥ 80, oranye 60–79, merah < 60), topik "Perlu dibantu" dan "Siap naik level" (logika sama dengan chip saran, tanpa batas 6), riwayat 10 + "Tampilkan lebih banyak", ketuk untuk melihat jawaban per soal.
 - Uji: `progres-test.ts`, `api11-test.mjs`, `progres-ui-test.js`; `a11y-test.js` ikut mengaudit layar progres dan pengaturan.
 
+## Menunggu dari pemilik
+
+- **Masukan untuk dashboard progres**: pemilik sudah mencoba (berjalan), punya masukan yang akan disampaikan nanti. Kerjakan masukan itu sebelum Tahap 11 kalau sudah ada.
+
 ## Berikutnya: Tahap 11 (uji akhir + rilis)
 
 1. Cocokkan kriteria penerimaan brief 15 satu per satu (sebagian besar sudah tercakup skrip uji); catat yang hanya bisa dicek pemilik (login Google asli, Safari iPad, kualitas soal AI asli).
