@@ -15,6 +15,8 @@ export type SoalPilihan = {
   explain: string;
   keyGuessed: boolean;
   optionsAdded: boolean;
+  /** Dari foto: soal bergantung pada gambar/diagram yang tidak bisa ditampilkan. */
+  perluGambar?: boolean;
 };
 
 export type PaketPilihan = {
@@ -38,6 +40,7 @@ export const soalPilihanSchema = z
     explain: z.string().max(2000).transform((s) => s.trim()),
     keyGuessed: z.boolean(),
     optionsAdded: z.boolean(),
+    perluGambar: z.boolean().optional(),
   })
   .refine((s) => s.answer < s.options.length, "Kunci jawaban di luar pilihan.");
 
@@ -124,3 +127,28 @@ export type PaketRingkas = { id: string; title: string; subject: string; n: numb
 
 /** "Buat soal mirip" membuat min(10, max(5, jumlah soal paket)) soal (brief 9.4). */
 export const jumlahSoalMirip = (n: number) => Math.min(10, Math.max(5, n));
+
+/** Foto soal (brief roadmap 1, dimajukan): maks 5 foto, sudah diperkecil di browser. Foto tidak disimpan. */
+export const FOTO_MAKS = 5;
+/** Batas panjang base64 per foto dan total (batas kiriman Vercel ±4,5 MB). */
+export const FOTO_BASE64_MAKS = 1_600_000;
+export const FOTO_TOTAL_MAKS = 4_200_000;
+
+export const bacaFotoSchema = z
+  .object({
+    kelas: z.number().int().min(1).max(12),
+    mapel: z.string().min(1).max(40),
+    gambar: z
+      .array(
+        z
+          .object({
+            media_type: z.enum(["image/jpeg", "image/png", "image/webp"]),
+            data: z.string().min(100).max(FOTO_BASE64_MAKS).regex(/^[A-Za-z0-9+/]+={0,2}$/),
+          })
+          .strict(),
+      )
+      .min(1, "Pilih foto soalnya dulu, ya.")
+      .max(FOTO_MAKS, `Maksimal ${FOTO_MAKS} foto sekali unggah.`)
+      .refine((g) => g.reduce((a, x) => a + x.data.length, 0) <= FOTO_TOTAL_MAKS, "Foto terlalu besar. Coba kirim lebih sedikit foto sekaligus."),
+  })
+  .strict();

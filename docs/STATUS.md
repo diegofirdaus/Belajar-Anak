@@ -96,6 +96,17 @@ Isi (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`, semua tangg
 - Server kini mengirim seluruh riwayat (tanpa isi soal, maks 2.000 per anak) untuk perbandingan bulanan.
 - Uji: `progres-test.ts` (status, aktivitas, tren, bulan, bantuan), `progres-ui-test.js` (riwayat lampau ditulis langsung ke emulator).
 
+## Foto / upload soal pilihan (permintaan pemilik, dimajukan dari roadmap no. 1)
+
+- Di editor soal pilihan (mode admin): tombol **Foto / upload soal** (`<input type=file accept="image/*" multiple>`; iPad/HP menawarkan kamera atau galeri). Maks **5 foto** sekali unggah (lebihnya diabaikan dengan pemberitahuan).
+- Di browser foto diperkecil ke JPEG (sisi terpanjang 1568 px, turun bertahap kalau total masih besar; `lib/foto.ts`) supaya muat batas kiriman Vercel (±4,5 MB).
+- `POST /api/admin/baca-foto {kelas, mapel, gambar[]}` (sesi admin): satu panggilan **Claude Sonnet 5.5** (`AI_MODEL_BACA_FOTO`, + fallback) dengan foto sebelum teks perintah; balasan `{teks, soal}`: `teks` (transkripsi, masuk ke kolom Soal dan bisa diedit) dan soal terstruktur (langsung ke kartu "Cek dulu"). Batas waktu 100 dtk. Memakai jatah "rapikan" keluarga, dicatat di `logAi` jenis `baca_foto`.
+- **Foto tidak disimpan** (keputusan pemilik): hanya diteruskan ke Claude lalu dibuang; tidak masuk Firestore maupun log. Prompt melarang menyalin identitas siswa di lembar. Layar mengingatkan agar tidak memotret nama/sekolah/wajah anak.
+- Soal yang butuh gambar/diagram ditandai `perluGambar` ("Soal ini butuh gambar yang tidak bisa ditampilkan…") supaya dihapus atau diubah.
+- Teks yang sudah diketik tapi belum dirapikan + foto: teks foto ditambahkan di belakang, orang tua diminta menekan "Rapikan soal" lagi.
+- Uji: `api12-test.mjs` (validasi, isi permintaan, jatah, foto tidak tersimpan), `foto-ui-test.js` (foto besar diperkecil & jadi JPEG, maks 5, soal bergambar). Server Claude tiruan kini menerima foto.
+- **Belum teruji dengan foto asli**: kualitas baca tulisan tangan/notasi matematika perlu dicoba pemilik.
+
 ## Berikutnya: Tahap 11 (uji akhir + rilis)
 
 1. Cocokkan kriteria penerimaan brief 15 satu per satu (sebagian besar sudah tercakup skrip uji); catat yang hanya bisa dicek pemilik (login Google asli, Safari iPad, kualitas soal AI asli).
@@ -128,6 +139,7 @@ node scripts/uji/api8-test.mjs                      # PIN admin, sesi admin, soa
 node scripts/uji/api9-test.mjs /tmp/mock.log        # soal pilihan di sisi anak, soal mirip
 node scripts/uji/api10-test.mjs                     # ekspor & hapus data keluarga (mode login-lama: ADMIN_LOGIN_ULANG_DETIK=1)
 node scripts/uji/api11-test.mjs                     # dashboard progres orang tua
+node scripts/uji/api12-test.mjs /tmp/mock.log       # baca foto soal
 # (api8-test.mjs reset-lama: jalankan server dengan ADMIN_LOGIN_ULANG_DETIK=1)
 node scripts/uji/markas-test.js /tmp/shots          # Playwright, layar 390px
 node scripts/uji/latihan-ui-test.js /tmp/shots      # Playwright: memuat, HUD 4 dunia, hasil, saran
@@ -135,6 +147,7 @@ node scripts/uji/admin-ui-test.js /tmp/shots        # Playwright: mode admin
 node scripts/uji/pilihan-ui-test.js /tmp/shots      # Playwright: soal pilihan di markas
 node scripts/uji/data-keluarga-ui-test.js /tmp/shots # Playwright: unduh & hapus data keluarga
 node scripts/uji/progres-ui-test.js /tmp/shots      # Playwright: dashboard progres
+node scripts/uji/foto-ui-test.js /tmp/shots /tmp/mock.log # Playwright: foto / upload soal
 node scripts/uji/a11y-test.js /tmp/shots           # Playwright + axe-core: aksesibilitas semua layar
 node scripts/uji/kontras-test.mjs                   # kontras token 6 tema (tanpa server)
 npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/admin-test.ts; npx tsx scripts/uji/progres-test.ts

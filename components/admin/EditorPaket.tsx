@@ -3,8 +3,10 @@
 import { useId, useRef, useState } from "react";
 import { useToast } from "@/components/Toast";
 import { api, apiMessage, ApiFailure } from "@/lib/api";
+import { siapkanFoto } from "@/lib/foto";
 import { JENJANG_INFO, MAPEL, jenjangOf, kelasInJenjang, kelasShort, type Jenjang } from "@/lib/kelas";
 import {
+  FOTO_MAKS,
   JUDUL_MAKS,
   TEKS_ADMIN_MAKS,
   bacaManual,
@@ -58,6 +60,7 @@ export function EditorPaket({
   const [menyimpan, setMenyimpan] = useState(false);
   const [pakaiAi, setPakaiAi] = useState(aiTersedia);
   const kartuCek = useRef<HTMLDivElement>(null);
+  const [membacaFoto, setMembacaFoto] = useState<number | null>(null);
 
   const jenjang = jenjangOf(kelas);
   const daftarMapel = MAPEL[jenjang];
@@ -79,6 +82,48 @@ export function EditorPaket({
     if (!r.soal.length && !r.galat.length) setGalat('Belum ada soal yang terbaca. Mulai setiap soal dengan nomor, misalnya "1. ...".');
     else setGalat((awalan + pesan).trim() || null);
     if (r.soal.length) tampilkanCek();
+  }
+
+  /** Foto/upload soal: dibaca AI, hasilnya ditambahkan ke teks dan ke kartu cek. Foto tidak disimpan. */
+  async function bacaFoto(daftar: FileList | null) {
+    if (!daftar?.length) return;
+    const semua = [...daftar].filter((f) => f.type.startsWith("image/") || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name));
+    if (!semua.length) return setGalat("File itu bukan foto. Pilih foto soal, ya.");
+    const files = semua.slice(0, FOTO_MAKS);
+    setGalat(null);
+    setMembacaFoto(files.length);
+    try {
+      const gambar = await siapkanFoto(files);
+      const hasil = await api.bacaFoto(sesi, { kelas, mapel: mapelAktif, gambar });
+      const kosong = !teks.trim();
+      setTeks((t) => (kosong ? hasil.teks : `${t.trimEnd()}\n\n${hasil.teks}`));
+      if (kosong || !teksBerubah) {
+        // Soal yang sudah dirapikan tetap; soal dari foto ditambahkan di belakang.
+        setSoal((lama) => [...(kosong ? [] : lama), ...hasil.soal]);
+        setTeksBerubah(false);
+      } else {
+        setTeksBerubah(true);
+      }
+      const catatan: string[] = [];
+      if (semua.length > FOTO_MAKS) catatan.push(`Maksimal ${FOTO_MAKS} foto sekali unggah; ${semua.length - FOTO_MAKS} foto lainnya tidak dibaca.`);
+      if (!kosong && teksBerubah) catatan.push('Teks dari foto sudah ditambahkan. Tekan "Rapikan soal" supaya soal yang Anda ketik ikut dirapikan.');
+      setGalat(catatan.join(" ") || null);
+      toast(`${hasil.soal.length} soal terbaca dari ${files.length} foto.`);
+      if (kosong || !teksBerubah) tampilkanCek();
+    } catch (e) {
+      const code = e instanceof ApiFailure ? e.code : "";
+      if (code === "admin_perlu") return onSesiHabis();
+      if (code === "ai_belum_siap") {
+        setPakaiAi(false);
+        setGalat("Membaca foto butuh AI, dan AI sedang tidak tersedia. Ketik soalnya saja, ya.");
+      } else if (code === "kurang_lengkap") setGalat("Tidak ada soal yang terbaca dari foto. Coba foto lebih dekat dan terang, satu halaman per foto.");
+      else if (code === "ditolak") setGalat("Foto itu tidak bisa diproses. Coba foto halaman soal yang lain.");
+      else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid") setGalat(apiMessage(e));
+      else if (!(e instanceof ApiFailure)) setGalat(e instanceof Error ? e.message : "Foto tidak bisa dibuka.");
+      else setGalat("Foto belum berhasil dibaca. Coba sekali lagi.");
+    } finally {
+      setMembacaFoto(null);
+    }
   }
 
   async function rapikan() {
@@ -195,12 +240,41 @@ export function EditorPaket({
               : 'Tulis setiap soal dengan nomor, pilihan A sampai D, dan baris "Kunci: ..." supaya bisa dibaca.'}
           </span>
         </div>
+        {pakaiAi && (
+          <div className="foto-soal">
+            <input
+              id={`${id}-foto`}
+              className="sr-only"
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={membacaFoto !== null || merapikan}
+              onChange={(e) => {
+                const f = e.target.files;
+                void bacaFoto(f).finally(() => {
+                  e.target.value = "";
+                });
+              }}
+            />
+            <label htmlFor={`${id}-foto`} className={membacaFoto !== null ? "btn ghost foto-btn sibuk" : "btn ghost foto-btn"} aria-disabled={membacaFoto !== null || undefined}>
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+                <circle cx="12" cy="13" r="3.5" />
+              </svg>
+              {membacaFoto !== null ? `Membaca ${membacaFoto} foto…` : "Foto / upload soal"}
+            </label>
+            <span className="pv-note">
+              Maksimal {FOTO_MAKS} foto sekali unggah. Foto hanya dibaca untuk mengambil soal, lalu dibuang (tidak disimpan). Hindari memotret nama,
+              nama sekolah, atau wajah anak.
+            </span>
+          </div>
+        )}
         {galat && (
           <p className="form-msg" role="alert">
             {galat}
           </p>
         )}
-        <button className="btn" type="button" onClick={rapikan} disabled={merapikan}>
+        <button className="btn" type="button" onClick={rapikan} disabled={merapikan || membacaFoto !== null}>
           {merapikan ? "Merapikan soal…" : "Rapikan soal"}
         </button>
       </div>
@@ -214,11 +288,14 @@ export function EditorPaket({
           <p className="pv-note">Ketuk pilihan untuk menjadikannya kunci jawaban.</p>
           <ol className="pv">
             {soal.map((q, i) => (
-              <li key={`${i}-${q.q}`} className={q.keyGuessed ? "pv-q warn" : "pv-q"}>
+              <li key={`${i}-${q.q}`} className={q.keyGuessed || q.perluGambar ? "pv-q warn" : "pv-q"}>
                 <p>
                   {i + 1}. {q.q}
                 </p>
                 {q.keyGuessed && <span className="pv-note warn">Kunci dipilih AI. Mohon dicek.</span>}
+                {q.perluGambar && (
+                  <span className="pv-note warn">Soal ini butuh gambar yang tidak bisa ditampilkan. Hapus, atau ubah teksnya supaya tanpa gambar.</span>
+                )}
                 {q.optionsAdded && <span className="pv-note">Sebagian pilihan jawaban ditambahkan AI.</span>}
                 {q.options.map((o, k) => (
                   <button

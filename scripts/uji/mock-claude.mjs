@@ -10,8 +10,12 @@ http.createServer((req, res) => {
   req.on('data', (c) => (body += c));
   req.on('end', () => {
     const b = JSON.parse(body || '{}');
-    const prompt = b.messages?.[0]?.content ?? '';
-    fs.appendFileSync(LOG, JSON.stringify({ path: req.url, headers: { beta: req.headers['anthropic-beta'] ?? null, key: req.headers['x-api-key'] ? 'ada' : null }, body: b }) + '\n');
+    const isi = b.messages?.[0]?.content ?? '';
+    // Konten bisa berupa teks atau daftar blok (foto + teks). Foto tidak dicatat utuh di log.
+    const prompt = typeof isi === 'string' ? isi : isi.filter((x) => x.type === 'text').map((x) => x.text).join('\n');
+    const foto = typeof isi === 'string' ? [] : isi.filter((x) => x.type === 'image');
+    const dicatat = typeof isi === 'string' ? b : { ...b, messages: [{ ...b.messages[0], content: isi.map((x) => (x.type === 'image' ? { type: 'image', media_type: x.source.media_type, panjang: x.source.data.length } : x)) }] };
+    fs.appendFileSync(LOG, JSON.stringify({ path: req.url, headers: { beta: req.headers['anthropic-beta'] ?? null, key: req.headers['x-api-key'] ? 'ada' : null }, body: dicatat }) + '\n');
     const n = Number(/Buat (\d+) soal/.exec(prompt)?.[1] ?? 5);
     const kirim = (status, data) => { res.writeHead(status, { 'content-type': 'application/json', 'request-id': 'req_tiruan' }); res.end(JSON.stringify(data)); };
     const pesan = (teks, stop = 'end_turn') => kirim(200, {
@@ -33,6 +37,17 @@ http.createServer((req, res) => {
       { q: 'Kunci di luar rentang?', options: ['a', 'b', 'c', 'd'], answer: 7, explain: 'x' }, soal(2),
       { q: 'Pilihan kembar?', options: ['a', 'A', 'c', 'd'], answer: 0, explain: 'x' }, soal(3),
     ] }));
+    if (prompt.includes('difoto orang tua')) {
+      if (prompt.includes('mata pelajaran') === false) return pesan(JSON.stringify({ teks: '', soal: [] }));
+      return pesan(JSON.stringify({
+        teks: `1. Hasil dari 1/2 + 1/4 adalah...\nA. 3/4\nB. 2/6\nC. 1/6\nD. 2/4\nKunci: A\n\n2. Perhatikan gambar. Berapa banyak segitiga?\n\n3. Ada ${foto.length} foto soal.`,
+        soal: [
+          { q: 'Hasil dari 1/2 + 1/4 adalah...', options: ['3/4', '2/6', '1/6', '2/4'], answer: 0, explain: '1/2 = 2/4, lalu 2/4 + 1/4 = 3/4.', keyGuessed: false, optionsAdded: false, perluGambar: false },
+          { q: 'Perhatikan gambar. Berapa banyak segitiga?', options: ['3', '4', '5', '6'], answer: 1, explain: 'Hitung semua segitiga.', keyGuessed: true, optionsAdded: true, perluGambar: true },
+          { q: `Ada ${foto.length} foto soal.`, options: ['Benar', 'Salah'], answer: 0, explain: '', keyGuessed: false, optionsAdded: false, perluGambar: false },
+        ],
+      }));
+    }
     if (prompt.includes('Berikut teks soal yang diketik orang tua')) return pesan(JSON.stringify({ soal: [
       { q: 'Hasil dari 3/4 + 1/4 adalah...', options: ['1/2', '1', '4/8', '2'], answer: 1, explain: 'Penyebut sama, jumlahkan pembilang: 3 + 1 = 4, jadi 4/4 = 1.', keyGuessed: false, optionsAdded: false },
       { q: 'Ibu punya 12 kue, dibagi rata ke 4 anak. Tiap anak dapat berapa kue?', options: ['2', '3', '4', '6'], answer: 1, explain: '12 : 4 = 3.', keyGuessed: true, optionsAdded: true },

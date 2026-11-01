@@ -104,6 +104,8 @@ export const api = {
     }).then((r) => r.paket),
   hapusPaket: (sesi: string, id: string) =>
     call<{ ok: true }>(`/api/admin/soal-pilihan/${encodeURIComponent(id)}`, { method: "DELETE", headers: adminHeader(sesi) }),
+  bacaFoto: (sesi: string, b: { kelas: number; mapel: string; gambar: { media_type: "image/jpeg"; data: string }[] }) =>
+    call<{ teks: string; soal: SoalPilihan[] }>("/api/admin/baca-foto", { method: "POST", body: JSON.stringify(b), headers: adminHeader(sesi) }),
   rapikan: (sesi: string, b: { kelas: number; mapel: string; teks: string }) =>
     call<{ soal: SoalPilihan[] }>("/api/admin/rapikan", { method: "POST", body: JSON.stringify(b), headers: adminHeader(sesi) }).then(
       (r) => r.soal,

@@ -32,7 +32,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
     const r = await p.evaluate(async () => (await window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } })).violations.map((v) => `${v.id} [${v.impact}] ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' ; ')}${v.nodes.length > 3 ? ` (+${v.nodes.length - 3})` : ''}`));
     ok(r.length === 0, `axe: ${nama}`, r.join(' | '));
     const kecil = await p.evaluate(() => [...document.querySelectorAll('button, a[href], input:not([type=radio]), select, textarea, .seg label')]
-      .filter((e) => { const s = getComputedStyle(e); const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && !e.closest('[aria-hidden=true]'); })
+      .filter((e) => { const s = getComputedStyle(e); const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && !e.closest('[aria-hidden=true]') && !e.classList.contains('sr-only'); })
       .filter((e) => e.getBoundingClientRect().height < 43.5)
       .map((e) => `${e.tagName.toLowerCase()}.${e.className}:"${(e.innerText || e.getAttribute('aria-label') || '').slice(0, 20)}" ${Math.round(e.getBoundingClientRect().height)}px`));
     ok(kecil.length === 0, `target sentuh ≥ 44px: ${nama}`, kecil.join(' | '));

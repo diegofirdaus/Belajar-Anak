@@ -14,6 +14,8 @@ function claude(): Anthropic {
 
 export const aiTersedia = () => Boolean(process.env.ANTHROPIC_API_KEY);
 export const MODEL_SOAL = () => process.env.AI_MODEL_SOAL || "claude-sonnet-5-5";
+/** Membaca foto soal (buku/LKS/tulisan tangan): butuh ketelitian baca, jadi Sonnet. */
+export const MODEL_BACA_FOTO = () => process.env.AI_MODEL_BACA_FOTO || "claude-sonnet-5-5";
 /** Merapikan soal admin: tugas menyalin dan merapikan, cukup Haiku (brief 5). */
 export const MODEL_RAPIKAN = () => process.env.AI_MODEL_RAPIKAN || "claude-haiku-5-5";
 type Effort = "low" | "medium" | "high" | "xhigh" | "max";
@@ -32,18 +34,38 @@ export type HasilJson = {
  * Satu permintaan ke Claude yang wajib membalas JSON sesuai skema (structured outputs).
  * Error dipetakan ke kode yang punya pesan ramah anak (brief 10.5).
  */
-export async function mintaJson(p: { model: string; effort?: Effort; prompt: string; skema: Record<string, unknown> }): Promise<HasilJson> {
+export type GambarMasuk = { media_type: "image/jpeg" | "image/png" | "image/webp"; data: string };
+
+export async function mintaJson(p: {
+  model: string;
+  effort?: Effort;
+  prompt: string;
+  skema: Record<string, unknown>;
+  /** Foto yang ikut dibaca (base64). Diletakkan sebelum teks perintah. */
+  gambar?: GambarMasuk[];
+  /** Batas waktu khusus (ms), mis. untuk membaca beberapa foto. */
+  waktuMaks?: number;
+}): Promise<HasilJson> {
   const c = claude();
   let res: Anthropic.Beta.BetaMessage;
+  const content: Anthropic.Beta.BetaContentBlockParam[] | string = p.gambar?.length
+    ? [
+        ...p.gambar.map((g) => ({ type: "image" as const, source: { type: "base64" as const, media_type: g.media_type, data: g.data } })),
+        { type: "text" as const, text: p.prompt },
+      ]
+    : p.prompt;
   try {
-    res = await c.beta.messages.create({
-      model: p.model,
-      max_tokens: 16000,
-      output_config: { effort: p.effort ?? EFFORT_SOAL(), format: { type: "json_schema", schema: p.skema } },
-      messages: [{ role: "user", content: p.prompt }],
-      // Penolakan kategori cyber/frontier_llm dicoba ulang di model lain oleh server Anthropic.
-      ...(bisaFallback(p.model) ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
-    });
+    res = await c.beta.messages.create(
+      {
+        model: p.model,
+        max_tokens: 16000,
+        output_config: { effort: p.effort ?? EFFORT_SOAL(), format: { type: "json_schema", schema: p.skema } },
+        messages: [{ role: "user", content }],
+        // Penolakan kategori cyber/frontier_llm dicoba ulang di model lain oleh server Anthropic.
+        ...(bisaFallback(p.model) ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
+      },
+      p.waktuMaks ? { timeout: p.waktuMaks, maxRetries: 0 } : undefined,
+    );
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) throw new ApiError("terlalu_cepat");
     if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {

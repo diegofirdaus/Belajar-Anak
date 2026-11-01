@@ -65,7 +65,7 @@ export async function kembalikanJatah(familyId: string, pemainId: string, tangga
 export async function catatAi(
   familyId: string,
   log: {
-    jenis: "soal_baru" | "soal_mirip" | "rapikan";
+    jenis: "soal_baru" | "soal_mirip" | "rapikan" | "baca_foto";
     pemainId?: string;
     model: string;
     hasil: string;

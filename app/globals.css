@@ -731,3 +731,7 @@ span.chip { min-height: 0; padding: 5px 10px; display: inline-block; }
 .lipat-btn[aria-expanded="true"]::after { content: "▴"; }
 .lipat-isi { display: flex; flex-direction: column; gap: 10px; padding-bottom: 14px; }
 .hist-detail, .hist-detail .pv-q, .lipat-isi { text-align: left; }
+.foto-soal { display: flex; flex-direction: column; gap: 6px; }
+.foto-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+.foto-btn.sibuk { opacity: .55; cursor: default; }
+.foto-soal input:focus-visible + .foto-btn { outline: 3px solid var(--accent); outline-offset: 2px; }
