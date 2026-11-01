@@ -2,7 +2,8 @@
 
 import { clientAuth } from "@/lib/firebase/client";
 import type { NewPlayer, Player, PlayerUpdate } from "@/lib/player";
-import type { PermintaanSoal, SoalTanpaKunci } from "@/lib/soal";
+import type { Riwayat, StatTopik } from "@/lib/latihan";
+import type { HasilJawab, PaketSesi, PermintaanJawab, PermintaanSoal } from "@/lib/soal";
 
 export class ApiFailure extends Error {
   constructor(public code: string, message?: string) {
@@ -10,8 +11,8 @@ export class ApiFailure extends Error {
   }
 }
 
-/** Pesan untuk anak/orang tua per kode error dari server (brief 10.5). */
-export function apiMessage(e: unknown): string {
+/** Pesan untuk anak/orang tua per kode error dari server (brief 10.5). `konteks: "soal"` untuk form membuat soal. */
+export function apiMessage(e: unknown, konteks?: "soal"): string {
   const code = e instanceof ApiFailure ? e.code : "jaringan";
   if (code === "sesi_habis") return "Sesi login sudah habis. Minta orang tua masuk lagi, lalu coba lagi.";
   if (code === "server_belum_siap") return "Server belum tersambung ke database. Minta orang tua mengecek pengaturan, lalu coba lagi.";
@@ -25,8 +26,11 @@ export function apiMessage(e: unknown): string {
   if (code === "ai_belum_siap") return "Pembuat soal belum siap. Minta orang tua mengecek kunci Claude API, atau coba soal contoh.";
   if (code === "batas" && e instanceof ApiFailure && e.message !== code) return e.message;
   if (code === "tidak_valid" && e instanceof ApiFailure && e.message !== code) return e.message;
-  return "Koneksi terputus. Coba lagi.";
+  return konteks === "soal" ? "Koneksi terputus saat membuat soal. Coba lagi." : "Koneksi terputus. Coba lagi.";
 }
+
+/** Permintaan yang dibatalkan anak (tombol Batal di layar memuat). */
+export const dibatalkan = (e: unknown) => e instanceof ApiFailure && e.code === "batal";
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const user = clientAuth().currentUser;
@@ -38,10 +42,12 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
       ...init,
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init?.headers },
     });
-  } catch {
+  } catch (e) {
+    if (init?.signal?.aborted || (e instanceof DOMException && e.name === "AbortError")) throw new ApiFailure("batal");
     throw new ApiFailure("jaringan");
   }
   const body = await res.json().catch(() => ({}));
+  if (init?.signal?.aborted) throw new ApiFailure("batal");
   if (!res.ok) throw new ApiFailure(body.error ?? "gangguan", body.message);
   return body as T;
 }
@@ -56,6 +62,14 @@ export const api = {
       (r) => r.player,
     ),
   buatSoal: (p: PermintaanSoal, signal?: AbortSignal) =>
-    call<{ sesiId: string; soal: SoalTanpaKunci[] }>("/api/soal", { method: "POST", body: JSON.stringify(p), signal }),
+    call<PaketSesi>("/api/soal", { method: "POST", body: JSON.stringify(p), signal }),
+  soalContoh: (pemainId: string, signal?: AbortSignal) =>
+    call<PaketSesi>("/api/soal/contoh", { method: "POST", body: JSON.stringify({ pemainId }), signal }),
+  jawab: (sesiId: string, j: PermintaanJawab) =>
+    call<HasilJawab>(`/api/sesi/${encodeURIComponent(sesiId)}/jawab`, { method: "POST", body: JSON.stringify(j) }),
+  ringkasan: (pemainId: string) =>
+    call<{ riwayat: Riwayat[]; topik: StatTopik[]; aiTersedia: boolean }>(
+      `/api/pemain/${encodeURIComponent(pemainId)}/ringkasan`,
+    ),
   deletePlayer: (id: string) => call<{ ok: true }>(`/api/pemain/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };

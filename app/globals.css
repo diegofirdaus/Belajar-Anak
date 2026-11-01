@@ -301,6 +301,29 @@ textarea { min-height: 200px; resize: vertical; line-height: 1.45; }
 .fb h3 { color: var(--good); }
 .fb.bad h3 { color: var(--bad); }
 .fb .key { font-weight: 700; }
+.qtop { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.qtop .tag { overflow-wrap: anywhere; text-transform: none; }
+.qcount { font-weight: 700; }
+.qtext { overflow-wrap: anywhere; }
+.qtext:focus { outline: none; }
+.qtext:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.boss-row { display: flex; justify-content: space-between; gap: 8px; font-size: .82rem; font-weight: 700; font-family: var(--display); text-transform: uppercase; letter-spacing: .05em; }
+.hp { height: 14px; background: #2a1220; border: 1px solid #5a2333; border-radius: 3px; overflow: hidden; }
+.hp > i { display: block; height: 100%; background: linear-gradient(90deg, #ff5b6b, #e2475a); transition: width .4s; }
+.hearts { color: var(--bad); letter-spacing: 2px; font-size: 1rem; }
+.fb:focus { outline: none; }
+.fb:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.result { align-items: center; text-align: center; }
+.result .banner:focus { outline: none; }
+.result .extra { font-weight: 800; }
+.res-actions { display: flex; flex-direction: column; gap: 10px; }
+.loading h2 { min-height: 2.6em; display: grid; place-items: center; }
+.hist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.hist li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--soft); }
+.hist li:first-child { border-top: 0; padding-top: 0; }
+.hist-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hist-main b { overflow-wrap: anywhere; }
+.hist-score { font-family: var(--display); font-weight: 700; font-size: 1.15rem; flex: none; }
 .reward-pop { font-family: var(--display); font-weight: 700; color: var(--reward-fg); animation: pop .5s; }
 .banner { font-family: var(--display); font-weight: 700; font-size: 1.35rem; text-transform: uppercase; letter-spacing: .04em; }
 .banner.win { color: var(--banner-win); }

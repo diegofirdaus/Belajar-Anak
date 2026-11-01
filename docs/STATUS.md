@@ -4,9 +4,10 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 
 ## Posisi sekarang
 
-- Branch kerja: **`pengembangan`** (semua tahap baru di-push ke sini). `main` masih commit awal; digabung setelah Tahap 7 bisa dimainkan.
+- Branch kerja: **`pengembangan`** (semua tahap baru di-push ke sini). `main` masih commit awal; digabung setelah pemilik mencoba Tahap 7 di preview.
 - Preview: https://markas-latihan-git-pengembangan-minions-3f7b.vercel.app (cek server di `/sehat`).
 - Selesai dan sudah dicoba pemilik di preview: **Tahap 1–6** (urutan di brief bagian 14).
+- Selesai dibangun dan lulus uji di container, **belum dicoba pemilik**: **Tahap 7**.
 
 | Tahap | Isi | Lokasi utama |
 |---|---|---|
@@ -16,20 +17,25 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 | 4 | Perkenalan dengan Pipo | `app/kenalan/page.tsx` |
 | 5 | Markas: kartu hadiah 4 dunia, form soal, naik kelas, pengaturan | `app/main/[id]`, `components/KartuHadiah.tsx`, `components/markas/*`, `lib/hadiah.ts` |
 | 6 | Soal dibuat AI | `app/api/soal`, `lib/server/ai/*`, `lib/server/pemakaian.ts`, `lib/server/sesi.ts` |
+| 7 | Memuat, mengerjakan + HUD, hasil, hadiah per jawaban, riwayat, saran, soal contoh | `components/latihan/*`, `app/api/sesi/[id]/jawab`, `app/api/soal/contoh`, `app/api/pemain/[id]/ringkasan`, `lib/latihan.ts`, `lib/server/sesi.ts`, `lib/server/soalContoh.ts` |
 
-## Berikutnya: Tahap 7
+## Tahap 7 (selesai)
 
-Brief 7.5–7.7, 9.2, 9.4, 8.6 (HUD), lampiran A.
+- **Alur**: markas → memuat → mengerjakan → hasil → markas, semuanya di `app/main/[id]/page.tsx` (state `layar`). Isian form disimpan di halaman markas, jadi tetap ada setelah Batal/gagal dan bisa diisi chip saran.
+- **Memuat** (`LayarMemuat`): teks berganti 2,6 detik, tombol Batal memakai `AbortController`; balasan yang datang setelah batal diabaikan. Catatan: jatah harian tetap terpakai kalau dibatalkan (server tidak tahu).
+- **Cek jawaban**: `POST /api/sesi/[id]/jawab {pemainId, nomor, pilihan}` → `{benar, pilihan, answer, explain, hadiah, rewards, akhir}`. Dalam satu transaksi: jawaban disimpan di `sesi.jawaban.{nomor}`, hadiah langsung ditambahkan ke `rewards` pemain. Jawaban ulang untuk nomor yang sama mengembalikan hasil pertama (tidak dobel hadiah).
+- **Akhir sesi** (jawaban terakhir): boss Pahlawan (+15 XP, `bosses`+1), riwayat `players/{pid}/attempts/{sesiId}`, statistik `players/{pid}/topikStat/{sha1(topic_key)}` dengan `lv.{level} = {best, last, tries}` (hanya mudah/sedang/sulit, bukan soal contoh). Kerangka dino selesai langsung saat tulang mencapai 8.
+- **Sesi ditinggal**: hadiah yang sudah didapat tetap tersimpan; tidak masuk riwayat. Ada tautan "Berhenti dan kembali ke markas" di layar mengerjakan (tambahan di luar brief, supaya anak tidak terjebak).
+- **Markas**: `GET /api/pemain/[id]/ringkasan` → riwayat 8 terakhir, statistik topik, `aiTersedia`. Saran dihitung di browser (`hitungSaran`, maks 6 chip).
+- **Soal contoh**: `POST /api/soal/contoh {pemainId}` (lampiran A per jenjang, `lib/server/soalContoh.ts`, hanya di server). Tombol "Coba soal contoh" tampil kalau `ANTHROPIC_API_KEY` tidak ada atau kunci ditolak (`ai_belum_siap`). Soal contoh memberi hadiah level mudah.
+- Logika murni (hadiah per jawaban, banner/hadiah/teks hasil, pesan, saran) di `lib/latihan.ts`.
+- `/sehat` punya tautan "Kembali ke halaman utama".
 
-1. Layar memuat (7.5): teks berganti tiap 2,6 detik per dunia, "Biasanya butuh 10–40 detik.", tombol Batal yang membatalkan permintaan (`AbortController`; `lib/api.ts` `buatSoal` sudah menerima `signal`). Sekarang form hanya menampilkan toast "… hadir di tahap 7" (`components/markas/FormSoal.tsx`).
-2. Mengerjakan soal (7.6): `POST /api/soal` sudah mengembalikan `{ sesiId, soal: [{q, options}] }` tanpa kunci. Perlu endpoint cek jawaban, mis. `POST /api/sesi/[id]/jawab {nomor, pilihan}` → `{benar, answer, explain, hadiah}`; kunci dan penjelasan dibaca dari dokumen sesi `families/{uid}/players/{pid}/sesi/{sesiId}`. Jawaban satu soal hanya boleh sekali.
-3. Hadiah: keputusan pemilik = **hadiah dihitung per jawaban benar** (sesi ditinggal tetap dihitung). Simpan langsung saat jawaban benar dicek (transaksi pada `rewards` pemain). Aturan ada di `lib/hadiah.ts` (`hadiahJawaban`, `syaratBoss`, `TULANG_PER_KERANGKA`, dll.). Boss Pahlawan dan kerangka Dino diselesaikan saat sesi berakhir / saat tulang mencapai 8.
-4. HUD per dunia (8.6) dan halaman hasil (7.7) dengan pesan per skor.
-5. Riwayat (`attempts`) dan `topic_stats` (brief 6, 9.2) → isi bagian "Riwayat latihan" dan "Saran latihan" di markas (`app/main/[id]/page.tsx`).
-6. Soal contoh offline (lampiran A) + tombol "Coba soal contoh" bila AI tidak tersedia (`aiTersedia()` di `lib/server/ai/claude.ts`).
-7. Tambahkan tautan kembali ke halaman utama di `/sehat`.
+## Berikutnya: Tahap 8 (mode admin)
 
-Setelah itu: Tahap 8 (mode admin), 9 (soal pilihan + soal mirip), 10 (aksesibilitas), 11 (uji + deploy ke `main`, domain).
+Brief 7.8, 10.3, 11. PIN 4 angka di-hash dengan salt di server (`families/{uid}.adminPinHash` sudah ada, nilai `null`), batas 5 percobaan lalu jeda 5 menit, reset lewat login orang tua. Daftar soal pilihan, editor, endpoint merapikan (Haiku 5.5, tanpa `fallbacks`), parser manual. Halaman `app/admin/page.tsx` dan tombol "Mode admin" di Pengaturan sudah ada sebagai tempat.
+
+Setelah itu: Tahap 9 (soal pilihan + soal mirip: `simpanSesi` sudah menerima `sumber: "set" | "set_similar"` dan `setId`; level `pilihan` dihitung setara sedang; halaman hasil perlu tombol soal pilihan), 10 (aksesibilitas), 11 (uji + deploy ke `main`, domain).
 
 ## Keputusan teknis penting
 
@@ -51,8 +57,10 @@ NEXT_PUBLIC_USE_FIREBASE_EMULATOR=1 npm run build
 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 \
   ANTHROPIC_BASE_URL=http://127.0.0.1:4010 ANTHROPIC_API_KEY=sk-tiruan npx next start -p 3100
 node scripts/uji/api-test.mjs; node scripts/uji/api5-test.mjs; node scripts/uji/api6-test.mjs /tmp/mock.log
+node scripts/uji/api7-test.mjs                      # cek jawaban, hadiah, riwayat, statistik, soal contoh
 node scripts/uji/markas-test.js /tmp/shots          # Playwright, layar 390px
-npx tsx scripts/uji/hadiah-test.ts
+node scripts/uji/latihan-ui-test.js /tmp/shots      # Playwright: memuat, HUD 4 dunia, hasil, saran
+npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts
 ```
 
 Login Google asli (popup) tidak bisa diuji di container karena `apis.google.com` diblokir; build emulator menyediakan `window.__masukUji(email)`.

@@ -41,7 +41,7 @@ export function POST(req: Request) {
         pemakaian: hasil.pemakaian,
       });
       if (!soal) throw new ApiError("kurang_lengkap");
-      const sesi = await simpanSesi(familyId, pemain.id, { sumber: "ai", mapel: p.mapel, topik: p.topik, level: p.level, soal });
+      const sesi = await simpanSesi(familyId, pemain.id, { sumber: "ai", mapel: p.mapel, topik: p.topik, level: p.level, soal, dunia: pemain.theme });
       return json(sesi, { status: 201 });
     } catch (e) {
       await kembalikanJatah(familyId, pemain.id, tanggal);

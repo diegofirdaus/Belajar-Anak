@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { LEVELS } from "./kelas";
+import type { HadiahSatu, SumberSoal } from "./latihan";
+import type { Rewards } from "./rewards";
 
 /** Satu soal pilihan ganda (brief 6). `answer` = indeks dari 0. */
 export type Soal = { q: string; options: string[]; answer: number; explain: string };
@@ -27,3 +29,35 @@ export const permintaanSoalSchema = z
   })
   .strict();
 export type PermintaanSoal = z.infer<typeof permintaanSoalSchema>;
+
+/** Paket sesi yang dikirim ke browser setelah soal dibuat. */
+export type PaketSesi = {
+  sesiId: string;
+  sumber: SumberSoal;
+  mapel: string;
+  topik: string;
+  level: string;
+  soal: SoalTanpaKunci[];
+};
+
+export const jawabSchema = z
+  .object({
+    pemainId: z.string().min(1).max(128),
+    nomor: z.number().int().min(0).max(19),
+    pilihan: z.number().int().min(0).max(3),
+  })
+  .strict();
+export type PermintaanJawab = z.infer<typeof jawabSchema>;
+
+/** Hasil cek satu jawaban. Kunci dan penjelasan baru dikirim setelah anak menjawab. */
+export type HasilJawab = {
+  benar: boolean;
+  pilihan: number;
+  answer: number;
+  explain: string;
+  hadiah: HadiahSatu | null;
+  /** Hadiah pemain setelah jawaban ini (sudah tersimpan). */
+  rewards: Rewards;
+  /** Terisi kalau ini jawaban terakhir dan sesi sudah ditutup. */
+  akhir: { benar: number; n: number; bossKalah: boolean } | null;
+};

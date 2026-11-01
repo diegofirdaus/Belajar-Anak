@@ -12,10 +12,11 @@ let fail = 0; const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL
   await p.locator('.tcard', { hasText: 'Lembah Dino' }).click(); await p.getByRole('button', { name: 'Masuk ke markas' }).click();
   await p.waitForURL('**/main/**'); await p.getByRole('button', { name: 'Mulai menggali' }).waitFor();
   await p.getByLabel('Materi atau tema').fill('pecahan');
-  const klik = p.getByRole('button', { name: 'Mulai menggali' }).click();
-  await p.getByRole('button', { name: 'Menyiapkan sekop…' }).waitFor({ timeout: 5000 }).then(() => ok(true, 'tombol menampilkan teks memuat dunia Dino')).catch(() => ok(true, 'tombol memuat (terlalu cepat untuk terlihat)'));
-  await klik; await p.locator('.toast').waitFor();
-  ok((await p.locator('.toast').innerText()) === '5 soal siap! Layar mengerjakan soal hadir di tahap 7.', 'toast paket siap');
+  await p.getByRole('button', { name: 'Mulai menggali' }).click();
+  await p.locator('.qtext').waitFor();
+  ok(await p.getByText('Soal 1 dari 5').isVisible(), 'paket siap: layar mengerjakan soal tampil (tahap 7)');
+  await p.getByRole('button', { name: 'Berhenti dan kembali ke markas' }).click();
+  await p.getByRole('button', { name: 'Mulai menggali' }).waitFor();
   await p.getByLabel('Materi atau tema').fill('rusak'); await p.getByRole('button', { name: 'Mulai menggali' }).click();
   await p.getByText('Soalnya belum tersusun rapi. Tekan tombol buat soal sekali lagi.').waitFor();
   ok(true, 'pesan JSON rusak sesuai brief tampil di form');

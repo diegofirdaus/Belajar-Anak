@@ -1,5 +1,5 @@
 // Server Claude API tiruan untuk menguji /api/soal tanpa kunci asli.
-// Perilaku dipilih dari kata kunci di materi: tolak, rusak, sedikit, campur, sibuk, kunci; selain itu normal.
+// Perilaku dipilih dari kata kunci di materi: tolak, rusak, sedikit, campur, sibuk, kunci, lambat; selain itu normal.
 import http from 'node:http';
 import fs from 'node:fs';
 const LOG = process.argv[2];
@@ -22,6 +22,7 @@ http.createServer((req, res) => {
     });
     const soal = (i) => ({ q: `Soal nomor ${i + 1}?`, options: [`Benar ${i + 1}`, `Salah A${i}`, `Salah B${i}`, `Salah C${i}`], answer: 0, explain: `Karena benar ${i + 1}.` });
 
+    if (prompt.includes('lambat')) return setTimeout(() => pesan(JSON.stringify({ soal: Array.from({ length: n }, (_, i) => soal(i)) })), 4000);
     if (prompt.includes('sibuk')) return kirim(429, { type: 'error', error: { type: 'rate_limit_error', message: 'tiruan' } });
     if (prompt.includes('kuncisalah')) return kirim(401, { type: 'error', error: { type: 'authentication_error', message: 'tiruan' } });
     if (prompt.includes('tolak')) return pesan('', 'refusal');

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Pipo } from "@/components/Pipo";
 
@@ -75,6 +76,9 @@ export default function Sehat() {
           </>
         )}
       </div>
+      <Link className="linkbtn" href="/">
+        Kembali ke halaman utama
+      </Link>
     </main>
   );
 }
