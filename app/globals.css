@@ -631,3 +631,5 @@ textarea { min-height: 200px; resize: vertical; line-height: 1.45; }
 .pv-opt .k { flex: none; font-weight: 800; width: 22px; }
 .pv-note { font-size: .84rem; color: var(--muted); }
 .pv-note.warn { color: var(--fg); border: 1px solid var(--accent); padding: 4px 8px; border-radius: 8px; align-self: flex-start; font-weight: 700; }
+.danger-box { border-left: 6px solid var(--bad); padding-left: 12px; }
+.danger-box .row-btns { flex-direction: column; }

@@ -63,12 +63,21 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 - Indikator langkah perkenalan diberi `role="img"`.
 - `scripts/uji/a11y-test.js`: axe-core (WCAG 2.1 A/AA) di pembuka, login, daftar pemain, perkenalan, admin (PIN, daftar, editor), /sehat (terang & gelap) dan markas, memuat, mengerjakan, umpan balik, hasil untuk 4 dunia; target sentuh ≥ 44px; tanpa gulir samping di 360 & 430px; fokus keyboard outline 3px; tanpa animasi saat reduced motion. Semua lulus.
 
+## Data keluarga (brief 11, dikerjakan sebelum Tahap 11 atas permintaan pemilik)
+
+- Di mode admin (layar daftar soal pilihan), kartu **Data keluarga**: "Unduh semua data" dan "Hapus semua data keluarga".
+- Keduanya butuh: sesi admin (PIN) **dan** login ulang Google orang tua (`requireLoginBaru`, `auth_time` ≤ 5 menit; di browser `loginUlangGoogle` dengan `prompt=login`). Hapus juga wajib mengetik `HAPUS`.
+- `POST /api/keluarga/ekspor` → JSON seluruh `families/{uid}` beserta semua subkoleksi (pemain, sesi, riwayat, statistik topik, soal pilihan, pemakaian, log AI), tanpa `adminPinHash` dan `adminSesi`. Diunduh sebagai `markas-latihan-data-YYYY-MM-DD.json`.
+- `POST /api/keluarga/hapus {konfirmasi: "HAPUS"}` → `recursiveDelete(families/{uid})` + hapus akun Firebase Auth (akun Google tidak tersentuh), lalu browser keluar dan kembali ke halaman pembuka.
+- Catatan: HP lain yang masih login ke akun yang sama bisa memakai tokennya sampai ±1 jam (token tidak dicek pencabutan demi kecepatan); keluarga akan terlihat kosong lalu diminta login lagi.
+- Build emulator: `loginUlangGoogle` memakai kredensial tiruan (terbuang dari build asli). Uji: `api10-test.mjs` (+ mode `login-lama`), `data-keluarga-ui-test.js`.
+
 ## Berikutnya: Tahap 11 (uji akhir + rilis)
 
 1. Cocokkan kriteria penerimaan brief 15 satu per satu (sebagian besar sudah tercakup skrip uji); catat yang hanya bisa dicek pemilik (login Google asli, Safari iPad, kualitas soal AI asli).
 2. Gabung `pengembangan` ke `main` (lewat PR), pastikan Vercel Production memakai variabel lingkungan yang sama dengan Preview, dan ganti nama `FIREBASE_SERVICE_ACOUNT` → `FIREBASE_SERVICE_ACCOUNT` lalu hapus cadangan di `lib/firebase/admin.ts`.
 3. Domain `markaslatihan.com` (beli di Vercel) + tambahkan ke Firebase → Authentication → Authorized domains.
-4. Brief 11: cek kebijakan Anthropic untuk aplikasi yang dipakai anak; fitur ekspor/hapus data keluarga belum ada (hapus pemain sudah ada) — tanyakan pemilik apakah masuk rilis pertama.
+4. Brief 11: cek kebijakan Anthropic untuk aplikasi yang dipakai anak (sebelum dibuka untuk keluarga lain). Ekspor/hapus data keluarga sudah ada.
 
 ## Keputusan teknis penting
 
@@ -93,11 +102,13 @@ node scripts/uji/api-test.mjs; node scripts/uji/api5-test.mjs; node scripts/uji/
 node scripts/uji/api7-test.mjs                      # cek jawaban, hadiah, riwayat, statistik, soal contoh
 node scripts/uji/api8-test.mjs                      # PIN admin, sesi admin, soal pilihan, rapikan
 node scripts/uji/api9-test.mjs /tmp/mock.log        # soal pilihan di sisi anak, soal mirip
+node scripts/uji/api10-test.mjs                     # ekspor & hapus data keluarga (mode login-lama: ADMIN_LOGIN_ULANG_DETIK=1)
 # (api8-test.mjs reset-lama: jalankan server dengan ADMIN_LOGIN_ULANG_DETIK=1)
 node scripts/uji/markas-test.js /tmp/shots          # Playwright, layar 390px
 node scripts/uji/latihan-ui-test.js /tmp/shots      # Playwright: memuat, HUD 4 dunia, hasil, saran
 node scripts/uji/admin-ui-test.js /tmp/shots        # Playwright: mode admin
 node scripts/uji/pilihan-ui-test.js /tmp/shots      # Playwright: soal pilihan di markas
+node scripts/uji/data-keluarga-ui-test.js /tmp/shots # Playwright: unduh & hapus data keluarga
 node scripts/uji/a11y-test.js /tmp/shots           # Playwright + axe-core: aksesibilitas semua layar
 node scripts/uji/kontras-test.mjs                   # kontras token 6 tema (tanpa server)
 npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/admin-test.ts

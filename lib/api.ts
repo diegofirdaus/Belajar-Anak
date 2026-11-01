@@ -107,5 +107,8 @@ export const api = {
     call<{ soal: SoalPilihan[] }>("/api/admin/rapikan", { method: "POST", body: JSON.stringify(b), headers: adminHeader(sesi) }).then(
       (r) => r.soal,
     ),
+  eksporData: (sesi: string) => call<Record<string, unknown>>("/api/keluarga/ekspor", { method: "POST", headers: adminHeader(sesi) }),
+  hapusKeluarga: (sesi: string) =>
+    call<{ ok: true }>("/api/keluarga/hapus", { method: "POST", body: JSON.stringify({ konfirmasi: "HAPUS" }), headers: adminHeader(sesi) }),
   deletePlayer: (id: string) => call<{ ok: true }>(`/api/pemain/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };

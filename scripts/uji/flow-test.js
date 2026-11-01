@@ -1,5 +1,7 @@
 // Alur tahap 3 di browser, memakai login Google tiruan dari Firebase Emulator.
 const { chromium } = require('playwright');
+// Email unik per jalan: uji bisa diulang di emulator yang sama.
+const EMAIL = `orangtua${Date.now()}@contoh.id`;
 const out = process.argv[2];
 let fail = 0;
 const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x ? '  ' + x : ''}`); if (!c) fail++; };
@@ -18,7 +20,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x ? 
   await shot('1-login');
 
   // Popup Google asli butuh apis.google.com (diblokir di sandbox); pakai login tiruan emulator.
-  await p.evaluate(() => window.__masukUji('orangtua@contoh.id'));
+  await p.evaluate((e) => window.__masukUji(e), EMAIL);
 
   await p.waitForURL('**/kenalan', { timeout: 15000 });
   ok(true, 'akun baru tanpa pemain → perkenalan');
@@ -27,7 +29,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x ? 
   const idp = await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=fake', {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ requestUri: 'http://localhost', returnSecureToken: true,
-      postBody: 'providerId=google.com&id_token=' + encodeURIComponent(JSON.stringify({ sub: 'orangtua@contoh.id', email: 'orangtua@contoh.id', email_verified: true })) }),
+      postBody: 'providerId=google.com&id_token=' + encodeURIComponent(JSON.stringify({ sub: EMAIL, email: EMAIL, email_verified: true })) }),
   }).then((r) => r.json());
   const token = idp.idToken;
   const seed = (body) => p.evaluate(([t, b]) => fetch('/api/pemain', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${t}` }, body: JSON.stringify(b) }).then((r) => r.json()), [token, body]);
@@ -41,7 +43,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x ? 
   await p.getByText('Kelas 5 SD · Dunia Blok').waitFor();
   const names = await p.locator('.pl-card b').allTextContents();
   ok(names.join(',') === 'Raka,Nadia,Bima', 'akun punya pemain → daftar pemain, urut', names.join(','));
-  ok(await p.getByText('Tersimpan di akun orangtua@contoh.id.').isVisible(), 'status penyimpanan tampil');
+  ok(await p.getByText(`Tersimpan di akun ${EMAIL}.`).isVisible(), 'status penyimpanan tampil');
   await shot('2-pemain');
 
   await p.locator('.pl-card', { hasText: 'Raka' }).click();

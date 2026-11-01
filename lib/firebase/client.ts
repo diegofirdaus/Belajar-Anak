@@ -7,6 +7,7 @@ import {
   connectAuthEmulator,
   getAuth,
   setPersistence,
+  reauthenticateWithCredential,
   reauthenticateWithPopup,
   signInWithPopup,
   signInWithRedirect,
@@ -52,9 +53,18 @@ export async function signInWithGoogle(): Promise<void> {
 export async function loginUlangGoogle(): Promise<void> {
   const a = clientAuth();
   if (!a.currentUser) throw Object.assign(new Error("belum login"), { code: "auth/no-current-user" });
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "login" });
-  await reauthenticateWithPopup(a.currentUser, provider);
+  if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "1") {
+    // Hanya di build emulator (dihapus dari build asli): login ulang tiruan untuk uji otomatis.
+    const email = a.currentUser.email ?? "";
+    await reauthenticateWithCredential(
+      a.currentUser,
+      GoogleAuthProvider.credential(JSON.stringify({ sub: email, email, email_verified: true })),
+    );
+  } else {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "login" });
+    await reauthenticateWithPopup(a.currentUser, provider);
+  }
   await a.currentUser.getIdToken(true);
 }
 

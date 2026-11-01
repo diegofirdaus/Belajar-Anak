@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { DaftarPaket } from "@/components/admin/DaftarPaket";
+import { DataKeluarga } from "@/components/admin/DataKeluarga";
 import { EditorPaket } from "@/components/admin/EditorPaket";
 import { GerbangPin } from "@/components/admin/GerbangPin";
 import { Pipo } from "@/components/Pipo";
@@ -154,6 +155,7 @@ function ModeAdmin() {
           onGantiPin={() => setLayar({ jenis: "ganti-pin" })}
         />
       )}
+      {layar.jenis === "daftar" && sesi && <DataKeluarga sesi={sesi} onSesiHabis={sesiHabis} onDihapus={() => router.replace("/")} />}
       {layar.jenis === "editor" && sesi && (
         <EditorPaket
           key={layar.paket?.id ?? "baru"}

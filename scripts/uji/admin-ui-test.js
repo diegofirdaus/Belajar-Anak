@@ -127,7 +127,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   await pin('PIN baru').fill('5678'); await pin('Ulangi PIN').fill('5678');
   await p.getByRole('button', { name: 'Simpan PIN' }).click();
   ok(await toast('PIN admin sudah diganti.') === 'PIN admin sudah diganti.', 'ganti PIN');
-  await p.getByRole('button', { name: 'Keluar' }).click();
+  await p.getByRole('button', { name: 'Keluar', exact: true }).click();
   await p.waitForURL(`**/main/${raka.id}`);
   ok(true, 'Keluar: kembali ke markas pemain aktif');
   await p.getByRole('heading', { name: 'Raka', exact: true }).waitFor();

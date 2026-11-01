@@ -109,9 +109,14 @@ export async function masukAdmin(familyId: string, pin: string): Promise<string>
   return bukaSesi(familyId);
 }
 
+/** Aksi berisiko (reset PIN, ekspor, hapus data) hanya boleh tepat setelah orang tua login ulang dengan Google. */
+export function requireLoginBaru(authTime: number): void {
+  if (Date.now() / 1000 - authTime > LOGIN_BARU_DETIK()) throw new ApiError("login_ulang");
+}
+
 /** Lupa PIN: hapus PIN kalau orang tua baru saja login ulang dengan Google. */
 export async function resetPin(familyId: string, authTime: number): Promise<void> {
-  if (Date.now() / 1000 - authTime > LOGIN_BARU_DETIK()) throw new ApiError("login_ulang");
+  requireLoginBaru(authTime);
   await keluarga(familyId).set({ adminPinHash: null, pinGagal: 0, pinKunciSampai: null }, { merge: true });
   const semua = await sesiAdmin(familyId).get();
   await Promise.all(semua.docs.map((d) => d.ref.delete()));
