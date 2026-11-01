@@ -14,6 +14,8 @@ function claude(): Anthropic {
 
 export const aiTersedia = () => Boolean(process.env.ANTHROPIC_API_KEY);
 export const MODEL_SOAL = () => process.env.AI_MODEL_SOAL || "claude-sonnet-5-5";
+/** Merapikan soal admin: tugas menyalin dan merapikan, cukup Haiku (brief 5). */
+export const MODEL_RAPIKAN = () => process.env.AI_MODEL_RAPIKAN || "claude-haiku-5-5";
 type Effort = "low" | "medium" | "high" | "xhigh" | "max";
 const EFFORT_SOAL = (): Effort => (process.env.AI_EFFORT_SOAL as Effort) || "medium";
 

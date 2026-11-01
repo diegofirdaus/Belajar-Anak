@@ -3,6 +3,7 @@ import "server-only";
 import { randomInt } from "node:crypto";
 import { z } from "zod";
 import type { Soal } from "@/lib/soal";
+import { SOAL_PER_PAKET_MAKS, soalPilihanSchema, type SoalPilihan } from "@/lib/soalPilihan";
 
 const teks = z.string().transform((s) => s.trim()).pipe(z.string().min(1));
 
@@ -39,4 +40,15 @@ export function saringSoal(mentah: unknown, n: number): Soal[] | null {
     if (valid.length === n) break;
   }
   return valid.length >= Math.min(3, n) ? valid : null;
+}
+
+/** Hasil merapikan teks admin: buang item tidak valid, urutan pilihan dipertahankan (tidak diacak). */
+export function saringRapikan(mentah: unknown): SoalPilihan[] {
+  if (!Array.isArray(mentah)) return [];
+  const hasil: SoalPilihan[] = [];
+  for (const item of mentah.slice(0, SOAL_PER_PAKET_MAKS)) {
+    const h = soalPilihanSchema.safeParse(item);
+    if (h.success) hasil.push(h.data);
+  }
+  return hasil;
 }

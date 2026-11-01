@@ -4,10 +4,10 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 
 ## Posisi sekarang
 
-- Branch kerja: **`pengembangan`** (semua tahap baru di-push ke sini). `main` masih commit awal; digabung setelah pemilik mencoba Tahap 7 di preview.
+- Branch kerja: **`pengembangan`** (semua tahap baru di-push ke sini). `main` masih commit awal; bisa digabung kapan saja (Tahap 7 sudah dicoba pemilik).
 - Preview: https://markas-latihan-git-pengembangan-minions-3f7b.vercel.app (cek server di `/sehat`).
-- Selesai dan sudah dicoba pemilik di preview: **Tahap 1–6** (urutan di brief bagian 14).
-- Selesai dibangun dan lulus uji di container, **belum dicoba pemilik**: **Tahap 7**.
+- Selesai dan sudah dicoba pemilik di preview: **Tahap 1–7** (urutan di brief bagian 14).
+- Selesai dibangun dan lulus uji di container, **belum dicoba pemilik**: **Tahap 8**.
 
 | Tahap | Isi | Lokasi utama |
 |---|---|---|
@@ -18,6 +18,7 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 | 5 | Markas: kartu hadiah 4 dunia, form soal, naik kelas, pengaturan | `app/main/[id]`, `components/KartuHadiah.tsx`, `components/markas/*`, `lib/hadiah.ts` |
 | 6 | Soal dibuat AI | `app/api/soal`, `lib/server/ai/*`, `lib/server/pemakaian.ts`, `lib/server/sesi.ts` |
 | 7 | Memuat, mengerjakan + HUD, hasil, hadiah per jawaban, riwayat, saran, soal contoh | `components/latihan/*`, `app/api/sesi/[id]/jawab`, `app/api/soal/contoh`, `app/api/pemain/[id]/ringkasan`, `lib/latihan.ts`, `lib/server/sesi.ts`, `lib/server/soalContoh.ts` |
+| 8 | Mode admin: PIN di server, daftar & editor soal pilihan, rapikan (AI/manual) | `app/admin`, `components/admin/*`, `app/api/admin/*`, `lib/server/admin.ts`, `lib/server/soalPilihan.ts`, `lib/soalPilihan.ts` |
 
 ## Tahap 7 (selesai)
 
@@ -31,11 +32,24 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 - Logika murni (hadiah per jawaban, banner/hadiah/teks hasil, pesan, saran) di `lib/latihan.ts`.
 - `/sehat` punya tautan "Kembali ke halaman utama".
 
-## Berikutnya: Tahap 8 (mode admin)
+## Tahap 8 (selesai)
 
-Brief 7.8, 10.3, 11. PIN 4 angka di-hash dengan salt di server (`families/{uid}.adminPinHash` sudah ada, nilai `null`), batas 5 percobaan lalu jeda 5 menit, reset lewat login orang tua. Daftar soal pilihan, editor, endpoint merapikan (Haiku 5.5, tanpa `fallbacks`), parser manual. Halaman `app/admin/page.tsx` dan tombol "Mode admin" di Pengaturan sudah ada sebagai tempat.
+- **PIN admin**: di-hash scrypt + salt acak di server (`families/{uid}.adminPinHash` = `scrypt$salt$hash`). Masuk: `POST /api/admin/masuk`; 5 PIN salah → jeda 5 menit (`pinGagal`, `pinKunciSampai`, dalam transaksi). Buat/ganti: `POST /api/admin/pin` (ganti wajib sesi admin).
+- **Sesi admin**: token acak, disimpan di server sebagai SHA-256 di `families/{uid}/adminSesi/{hash}` (berlaku 60 menit), dikirim lewat header `X-Admin-Sesi`. Di browser hanya disimpan di memori halaman, jadi setiap membuka mode admin PIN diminta lagi. `POST /api/admin/keluar` menghapusnya.
+- **Lupa PIN**: orang tua login ulang Google (`reauthenticateWithPopup`, `prompt=login` supaya harus mengetik ulang akun), lalu `POST /api/admin/reset` hanya diterima kalau `auth_time` token ≤ 5 menit (`ADMIN_LOGIN_ULANG_DETIK` untuk uji). Belum bisa diuji di container (popup Google diblokir) — **perlu dicoba pemilik**.
+- **Soal pilihan**: `families/{uid}/soalPilihan/{id}` dengan `title, kelas, subject, sourceText, questions, createdAt, updatedAt`. CRUD di `/api/admin/soal-pilihan` (+ `/[id]`), maks 100 paket, 50 soal per paket, mapel harus sesuai jenjang.
+- **Rapikan**: `POST /api/admin/rapikan` memakai `claude-haiku-5-5` (`AI_MODEL_RAPIKAN`), prompt brief 10.3, structured outputs, tanpa `fallbacks`. Pilihan tidak diacak. Jatah 30/keluarga/hari (`AI_LIMIT_RAPIKAN`), terpisah dari jatah anak; dicatat di `logAi` jenis `rapikan`. Kalau AI tidak ada/kunci ditolak, editor otomatis memakai pembaca manual (`bacaManual` di `lib/soalPilihan.ts`).
+- Editor: kelas bawaan mengikuti pemain yang memakai HP ini. "Keluar" kembali ke markas pemain itu (atau daftar pemain).
 
-Setelah itu: Tahap 9 (soal pilihan + soal mirip: `simpanSesi` sudah menerima `sumber: "set" | "set_similar"` dan `setId`; level `pilihan` dihitung setara sedang; halaman hasil perlu tombol soal pilihan), 10 (aksesibilitas), 11 (uji + deploy ke `main`, domain).
+## Berikutnya: Tahap 9 (soal pilihan di sisi anak)
+
+Brief 7.4 no. 4 (segmen "★ Soal pilihan", kartu paket per mapel, chip mapel lain), 7.7 (tombol hasil soal pilihan), 9.4, 10.2.
+- Endpoint anak (tanpa sesi admin) untuk daftar paket **sesuai kelas pemain** — kirim judul, mapel, jumlah soal saja, tanpa kunci.
+- "Kerjakan": buat sesi `sumber: "set"`, `level: "pilihan"`, `setId` dari paket (`simpanSesi` sudah mendukung; acak pilihan? sebaiknya tidak untuk soal 2–3 pilihan — putuskan).
+- "Buat soal mirip (AI)": prompt 10.2, `sumber: "set_similar"`, `level: "pilihan"`, jumlah `min(10, max(5, n paket))`, pakai jatah anak.
+- Halaman hasil: "Buat soal mirip (AI)", "Ulangi soal pilihan ini", "Kembali ke markas"; pesan soal pilihan sudah ada di `pesanHasil`.
+
+Setelah itu: Tahap 10 (aksesibilitas), 11 (uji + deploy ke `main`, domain).
 
 ## Keputusan teknis penting
 
@@ -58,9 +72,12 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:909
   ANTHROPIC_BASE_URL=http://127.0.0.1:4010 ANTHROPIC_API_KEY=sk-tiruan npx next start -p 3100
 node scripts/uji/api-test.mjs; node scripts/uji/api5-test.mjs; node scripts/uji/api6-test.mjs /tmp/mock.log
 node scripts/uji/api7-test.mjs                      # cek jawaban, hadiah, riwayat, statistik, soal contoh
+node scripts/uji/api8-test.mjs                      # PIN admin, sesi admin, soal pilihan, rapikan
+# (api8-test.mjs reset-lama: jalankan server dengan ADMIN_LOGIN_ULANG_DETIK=1)
 node scripts/uji/markas-test.js /tmp/shots          # Playwright, layar 390px
 node scripts/uji/latihan-ui-test.js /tmp/shots      # Playwright: memuat, HUD 4 dunia, hasil, saran
-npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts
+node scripts/uji/admin-ui-test.js /tmp/shots        # Playwright: mode admin
+npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/admin-test.ts
 ```
 
 Login Google asli (popup) tidak bisa diuji di container karena `apis.google.com` diblokir; build emulator menyediakan `window.__masukUji(email)`.

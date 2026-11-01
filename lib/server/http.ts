@@ -17,7 +17,12 @@ export type ApiErrorCode =
   | "ditolak"
   | "json_rusak"
   | "kurang_lengkap"
-  | "ai_belum_siap";
+  | "ai_belum_siap"
+  // Mode admin (brief 7.8, 11)
+  | "pin_salah"
+  | "pin_terkunci"
+  | "admin_perlu"
+  | "login_ulang";
 
 const STATUS: Record<ApiErrorCode, number> = {
   sesi_habis: 401,
@@ -32,6 +37,10 @@ const STATUS: Record<ApiErrorCode, number> = {
   kurang_lengkap: 502,
   ai_belum_siap: 503,
   gangguan: 500,
+  pin_salah: 403,
+  pin_terkunci: 429,
+  admin_perlu: 403,
+  login_ulang: 403,
 };
 
 export class ApiError extends Error {

@@ -10,6 +10,7 @@ const angka = (v: string | undefined, bawaan: number) => {
 };
 export const BATAS_PER_PEMAIN = () => angka(process.env.AI_LIMIT_PER_PLAYER, 20);
 export const BATAS_PER_KELUARGA = () => angka(process.env.AI_LIMIT_PER_FAMILY, 60);
+export const BATAS_RAPIKAN = () => angka(process.env.AI_LIMIT_RAPIKAN, 30);
 
 /** Tanggal hari ini di Indonesia (WIB), dipakai sebagai kunci jatah harian. */
 export function hariIni(d = new Date()): string {
@@ -34,6 +35,22 @@ export async function ambilJatah(familyId: string, pemainId: string): Promise<{ 
     tx.set(ref, { total: FieldValue.increment(1), perPemain: { [pemainId]: FieldValue.increment(1) } }, { merge: true });
   });
   return { tanggal };
+}
+
+/** Jatah merapikan soal admin per keluarga per hari, terpisah dari jatah anak. */
+export async function ambilJatahRapikan(familyId: string): Promise<{ tanggal: string }> {
+  const tanggal = hariIni();
+  const ref = dokHari(familyId, tanggal);
+  await db().runTransaction(async (tx) => {
+    const d = (await tx.get(ref)).data() ?? {};
+    if (((d.rapikan as number | undefined) ?? 0) >= BATAS_RAPIKAN()) throw new ApiError("jatah_habis", "Jatah merapikan soal hari ini sudah habis. Besok bisa lagi.");
+    tx.set(ref, { rapikan: FieldValue.increment(1) }, { merge: true });
+  });
+  return { tanggal };
+}
+
+export async function kembalikanJatahRapikan(familyId: string, tanggal: string): Promise<void> {
+  await dokHari(familyId, tanggal).set({ rapikan: FieldValue.increment(-1) }, { merge: true });
 }
 
 /** Kembalikan jatah kalau soal gagal dibuat. */

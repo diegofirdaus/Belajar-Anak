@@ -33,6 +33,11 @@ http.createServer((req, res) => {
       { q: 'Kunci di luar rentang?', options: ['a', 'b', 'c', 'd'], answer: 7, explain: 'x' }, soal(2),
       { q: 'Pilihan kembar?', options: ['a', 'A', 'c', 'd'], answer: 0, explain: 'x' }, soal(3),
     ] }));
+    if (prompt.includes('Berikut teks soal yang diketik orang tua')) return pesan(JSON.stringify({ soal: [
+      { q: 'Hasil dari 3/4 + 1/4 adalah...', options: ['1/2', '1', '4/8', '2'], answer: 1, explain: 'Penyebut sama, jumlahkan pembilang: 3 + 1 = 4, jadi 4/4 = 1.', keyGuessed: false, optionsAdded: false },
+      { q: 'Ibu punya 12 kue, dibagi rata ke 4 anak. Tiap anak dapat berapa kue?', options: ['2', '3', '4', '6'], answer: 1, explain: '12 : 4 = 3.', keyGuessed: true, optionsAdded: true },
+      { q: 'Soal rusak', options: ['a', 'b'], answer: 9, explain: '', keyGuessed: false, optionsAdded: false },
+    ] }));
     return pesan(JSON.stringify({ soal: Array.from({ length: n }, (_, i) => soal(i)) }));
   });
 }).listen(4010, '127.0.0.1', () => console.log('mock siap'));
