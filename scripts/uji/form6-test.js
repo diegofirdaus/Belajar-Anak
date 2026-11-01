@@ -1,0 +1,28 @@
+const { chromium } = require('playwright');
+let fail = 0; const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x ? '  ' + x : ''}`); if (!c) fail++; };
+(async () => {
+  const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 844 } });
+  await p.goto('http://localhost:3100/sehat'); await p.getByText('Beres!').waitFor({ timeout: 15000 });
+  ok(await p.getByText('terpasang (model claude-sonnet-5-5)').isVisible(), '/sehat: kunci Claude terpasang');
+  await p.goto('http://localhost:3100/mulai'); await p.getByRole('button', { name: 'Masuk dengan Google' }).waitFor();
+  await p.evaluate((e) => window.__masukUji(e), `form6${Date.now()}@contoh.id`);
+  await p.waitForURL('**/kenalan');
+  await p.getByPlaceholder('Nama panggilan kamu').fill('Raka'); await p.getByRole('button', { name: 'Lanjut' }).click();
+  await p.getByRole('button', { name: /^SD/ }).click(); await p.getByRole('button', { name: /^Kelas 5/ }).click();
+  await p.locator('.tcard', { hasText: 'Lembah Dino' }).click(); await p.getByRole('button', { name: 'Masuk ke markas' }).click();
+  await p.waitForURL('**/main/**'); await p.getByRole('button', { name: 'Mulai menggali' }).waitFor();
+  await p.getByLabel('Materi atau tema').fill('pecahan');
+  await p.getByRole('button', { name: 'Mulai menggali' }).click();
+  await p.locator('.qtext').waitFor();
+  ok(await p.getByText('Soal 1 dari 5').isVisible(), 'paket siap: layar mengerjakan soal tampil (tahap 7)');
+  await p.getByRole('button', { name: 'Berhenti dan kembali ke markas' }).click();
+  await p.getByRole('button', { name: 'Mulai menggali' }).waitFor();
+  await p.getByLabel('Materi atau tema').fill('rusak'); await p.getByRole('button', { name: 'Mulai menggali' }).click();
+  await p.getByText('Soalnya belum tersusun rapi. Tekan tombol buat soal sekali lagi.').waitFor();
+  ok(true, 'pesan JSON rusak sesuai brief tampil di form');
+  await p.getByLabel('Materi atau tema').fill('tolak'); await p.getByRole('button', { name: 'Mulai menggali' }).click();
+  await p.getByText('Materi itu tidak bisa dibuatkan soal.', { exact: false }).waitFor();
+  ok(true, 'pesan topik ditolak sesuai brief');
+  ok(await p.getByRole('button', { name: 'Mulai menggali' }).isEnabled(), 'tombol aktif lagi setelah gagal');
+  await b.close(); console.log(fail ? `\n${fail} GAGAL` : '\nSemua lulus'); process.exit(fail ? 1 : 0);
+})().catch((e) => { console.error('ERROR', e.message.split('\n')[0]); process.exit(1); });
