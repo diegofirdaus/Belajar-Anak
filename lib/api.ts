@@ -3,6 +3,7 @@
 import { clientAuth } from "@/lib/firebase/client";
 import type { NewPlayer, Player, PlayerUpdate } from "@/lib/player";
 import type { Riwayat, StatTopik } from "@/lib/latihan";
+import type { DataProgres } from "@/lib/progres";
 import type { HasilJawab, PaketSesi, PermintaanJawab, PermintaanSoal } from "@/lib/soal";
 import type { PaketBaru, PaketPilihan, PaketRingkas, SoalPilihan } from "@/lib/soalPilihan";
 
@@ -110,5 +111,11 @@ export const api = {
   eksporData: (sesi: string) => call<Record<string, unknown>>("/api/keluarga/ekspor", { method: "POST", headers: adminHeader(sesi) }),
   hapusKeluarga: (sesi: string) =>
     call<{ ok: true }>("/api/keluarga/hapus", { method: "POST", body: JSON.stringify({ konfirmasi: "HAPUS" }), headers: adminHeader(sesi) }),
+  progres: (sesi: string) => call<DataProgres>("/api/admin/progres", { headers: adminHeader(sesi) }),
+  detailLatihan: (sesi: string, pemainId: string, latihanId: string) =>
+    call<{ soal: { q: string; options: string[]; answer: number; pilihan: number | null }[] }>(
+      `/api/admin/progres/${encodeURIComponent(pemainId)}/${encodeURIComponent(latihanId)}`,
+      { headers: adminHeader(sesi) },
+    ).then((r) => r.soal),
   deletePlayer: (id: string) => call<{ ok: true }>(`/api/pemain/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };

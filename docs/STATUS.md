@@ -72,6 +72,14 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 - Catatan: HP lain yang masih login ke akun yang sama bisa memakai tokennya sampai ±1 jam (token tidak dicek pencabutan demi kecepatan); keluarga akan terlihat kosong lalu diminta login lagi.
 - Build emulator: `loginUlangGoogle` memakai kredensial tiruan (terbuang dari build asli). Uji: `api10-test.mjs` (+ mode `login-lama`), `data-keluarga-ui-test.js`.
 
+## Dashboard progres orang tua (dimajukan dari Lampiran B no. 5 atas permintaan pemilik)
+
+- Mode admin kini bertab: **Progres anak** (layar pertama setelah PIN), **Soal pilihan**, **Pengaturan** (Ganti PIN, Data keluarga).
+- `GET /api/admin/progres` (sesi admin) → semua anak: profil, hadiah, riwayat (maks 200, tanpa `answers` lewat `select`), statistik topik, jatah AI hari ini per anak & keluarga.
+- `GET /api/admin/progres/[pemainId]/[latihanId]` → soal, pilihan, kunci, dan jawaban anak untuk satu latihan.
+- Tampilan (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`): pilih anak (bawaan = anak di HP ini), ringkasan (latihan 7 hari terakhir, soal dijawab, % benar, terakhir latihan, hadiah, AI hari ini), bar per mapel (hijau ≥ 80, oranye 60–79, merah < 60), topik "Perlu dibantu" dan "Siap naik level" (logika sama dengan chip saran, tanpa batas 6), riwayat 10 + "Tampilkan lebih banyak", ketuk untuk melihat jawaban per soal.
+- Uji: `progres-test.ts`, `api11-test.mjs`, `progres-ui-test.js`; `a11y-test.js` ikut mengaudit layar progres dan pengaturan.
+
 ## Berikutnya: Tahap 11 (uji akhir + rilis)
 
 1. Cocokkan kriteria penerimaan brief 15 satu per satu (sebagian besar sudah tercakup skrip uji); catat yang hanya bisa dicek pemilik (login Google asli, Safari iPad, kualitas soal AI asli).
@@ -103,15 +111,17 @@ node scripts/uji/api7-test.mjs                      # cek jawaban, hadiah, riway
 node scripts/uji/api8-test.mjs                      # PIN admin, sesi admin, soal pilihan, rapikan
 node scripts/uji/api9-test.mjs /tmp/mock.log        # soal pilihan di sisi anak, soal mirip
 node scripts/uji/api10-test.mjs                     # ekspor & hapus data keluarga (mode login-lama: ADMIN_LOGIN_ULANG_DETIK=1)
+node scripts/uji/api11-test.mjs                     # dashboard progres orang tua
 # (api8-test.mjs reset-lama: jalankan server dengan ADMIN_LOGIN_ULANG_DETIK=1)
 node scripts/uji/markas-test.js /tmp/shots          # Playwright, layar 390px
 node scripts/uji/latihan-ui-test.js /tmp/shots      # Playwright: memuat, HUD 4 dunia, hasil, saran
 node scripts/uji/admin-ui-test.js /tmp/shots        # Playwright: mode admin
 node scripts/uji/pilihan-ui-test.js /tmp/shots      # Playwright: soal pilihan di markas
 node scripts/uji/data-keluarga-ui-test.js /tmp/shots # Playwright: unduh & hapus data keluarga
+node scripts/uji/progres-ui-test.js /tmp/shots      # Playwright: dashboard progres
 node scripts/uji/a11y-test.js /tmp/shots           # Playwright + axe-core: aksesibilitas semua layar
 node scripts/uji/kontras-test.mjs                   # kontras token 6 tema (tanpa server)
-npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/admin-test.ts
+npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/admin-test.ts; npx tsx scripts/uji/progres-test.ts
 ```
 
 Login Google asli (popup) tidak bisa diuji di container karena `apis.google.com` diblokir; build emulator menyediakan `window.__masukUji(email)`.

@@ -633,3 +633,32 @@ textarea { min-height: 200px; resize: vertical; line-height: 1.45; }
 .pv-note.warn { color: var(--fg); border: 1px solid var(--accent); padding: 4px 8px; border-radius: 8px; align-self: flex-start; font-weight: 700; }
 .danger-box { border-left: 6px solid var(--bad); padding-left: 12px; }
 .danger-box .row-btns { flex-direction: column; }
+
+/* ---------- Mode admin: tab & progres ---------- */
+.seg.tabs { grid-template-columns: repeat(3, 1fr); }
+.tab {
+  min-height: 46px; padding: 4px 6px; border: var(--bw) solid var(--line); border-radius: var(--radius-s);
+  background: var(--field-bg); font-weight: 700; font-size: .88rem; line-height: 1.2;
+}
+.tab[aria-current="page"] {
+  background: var(--accent); color: var(--accent-fg); border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.stat-grid div { text-align: center; line-height: 1.25; }
+.mapel-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.mapel-list li { display: flex; flex-direction: column; gap: 6px; }
+.bar.nilai.baik > i { background: var(--good); }
+.bar.nilai.cukup > i { background: var(--accent); }
+.bar.nilai.kurang > i { background: var(--bad); }
+.hist-item { flex-direction: column; align-items: stretch !important; }
+.hist-btn {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; min-height: 44px;
+  background: none; border: 0; padding: 0; text-align: left; color: inherit;
+}
+.hist-btn::after { content: "▾"; color: var(--muted); flex: none; }
+.hist-btn[aria-expanded="true"]::after { content: "▴"; }
+.hist-btn .hist-score { margin-left: auto; }
+.hist-detail { padding-top: 10px; }
+.pv-q.salah { border-color: var(--bad); }
+span.chip { min-height: 0; padding: 5px 10px; display: inline-block; }

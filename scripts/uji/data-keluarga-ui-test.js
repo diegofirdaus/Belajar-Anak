@@ -30,6 +30,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   await p.goto(BASE + '/admin');
   await p.getByLabel('PIN admin', { exact: true }).fill('1234');
   await p.getByRole('button', { name: 'Masuk' }).click();
+  await p.locator('.tab', { hasText: 'Pengaturan' }).click();
   await p.getByRole('heading', { name: 'Data keluarga' }).waitFor();
   ok(await p.getByText('Keduanya meminta Anda masuk ulang dengan akun Google orang tua.', { exact: false }).isVisible(), 'kartu Data keluarga di mode admin');
 

@@ -45,6 +45,9 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   await p.screenshot({ path: `${out}/t8-pin-buat.png` });
   await p.getByRole('button', { name: 'Simpan PIN' }).click();
   ok(await toast('PIN admin tersimpan.') === 'PIN admin tersimpan.', 'toast PIN tersimpan');
+  await p.getByRole('heading', { name: 'Progres anak' }).waitFor();
+  ok(await p.locator('.tab[aria-current="page"]').innerText() === 'Progres anak', 'setelah PIN: tab Progres anak terbuka');
+  await p.locator('.tab', { hasText: 'Soal pilihan' }).click();
   await p.getByRole('heading', { name: 'Soal pilihan' }).waitFor();
   await p.locator('.note').waitFor();
   ok(await p.getByText('Belum ada soal pilihan. Tekan "Tambah soal pilihan" untuk membuat yang pertama.').isVisible(), 'daftar kosong');
@@ -122,6 +125,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   ok((await p.locator('.set-card').count()) === 1, 'paket terhapus dari daftar');
 
   // ---------- Ganti PIN, keluar, masuk lagi ----------
+  await p.locator('.tab', { hasText: 'Pengaturan' }).click();
   await p.getByRole('button', { name: 'Ganti PIN admin' }).click();
   await p.getByRole('heading', { name: 'Ganti PIN admin' }).waitFor();
   await pin('PIN baru').fill('5678'); await pin('Ulangi PIN').fill('5678');
@@ -143,6 +147,8 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   await p.getByRole('button', { name: 'Batal' }).click();
   await pin('PIN admin').fill('5678');
   await p.getByRole('button', { name: 'Masuk' }).click();
+  await p.getByRole('heading', { name: 'Progres anak' }).waitFor();
+  await p.locator('.tab', { hasText: 'Soal pilihan' }).click();
   await p.getByRole('heading', { name: 'Soal pilihan' }).waitFor();
   await p.locator('.set-card').first().waitFor();
   ok((await p.locator('.set-card').count()) === 1, 'masuk dengan PIN baru, paket tersimpan');

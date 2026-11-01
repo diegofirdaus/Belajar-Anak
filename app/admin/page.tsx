@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { DaftarPaket } from "@/components/admin/DaftarPaket";
 import { DataKeluarga } from "@/components/admin/DataKeluarga";
+import { ProgresAnak } from "@/components/admin/ProgresAnak";
 import { EditorPaket } from "@/components/admin/EditorPaket";
 import { GerbangPin } from "@/components/admin/GerbangPin";
 import { Pipo } from "@/components/Pipo";
@@ -17,14 +18,28 @@ export default function Admin() {
   return <RequireLogin>{() => <ModeAdmin />}</RequireLogin>;
 }
 
-type Layar = { jenis: "pin" } | { jenis: "ganti-pin" } | { jenis: "daftar" } | { jenis: "editor"; paket: PaketPilihan | null };
+type Layar =
+  | { jenis: "pin" }
+  | { jenis: "ganti-pin" }
+  | { jenis: "progres" }
+  | { jenis: "daftar" }
+  | { jenis: "pengaturan" }
+  | { jenis: "editor"; paket: PaketPilihan | null };
 
 const JUDUL: Record<Layar["jenis"], string> = {
   pin: "Masuk mode admin",
   "ganti-pin": "Ganti PIN admin",
+  progres: "Progres anak",
   daftar: "Soal pilihan",
+  pengaturan: "Pengaturan admin",
   editor: "Tambah soal pilihan",
 };
+
+const TAB: { jenis: "progres" | "daftar" | "pengaturan"; label: string }[] = [
+  { jenis: "progres", label: "Progres anak" },
+  { jenis: "daftar", label: "Soal pilihan" },
+  { jenis: "pengaturan", label: "Pengaturan" },
+];
 
 /**
  * Mode admin (brief 7.8). Sesi admin hanya disimpan di memori halaman:
@@ -81,8 +96,13 @@ function ModeAdmin() {
   function masuk(token: string) {
     setSesi(token);
     setStatus((s) => (s ? { ...s, adaPin: true } : s));
-    setLayar({ jenis: "daftar" });
-    muatPaket(token);
+    setLayar({ jenis: "progres" });
+    window.scrollTo(0, 0);
+  }
+
+  function bukaTab(jenis: "progres" | "daftar" | "pengaturan") {
+    setLayar({ jenis });
+    if (jenis === "daftar" && sesi) muatPaket(sesi);
     window.scrollTo(0, 0);
   }
 
@@ -135,6 +155,22 @@ function ModeAdmin() {
         </button>
       </header>
 
+      {sesi && (layar.jenis === "progres" || layar.jenis === "daftar" || layar.jenis === "pengaturan") && (
+        <nav className="seg tabs" aria-label="Menu mode admin">
+          {TAB.map((t) => (
+            <button
+              key={t.jenis}
+              type="button"
+              className="tab"
+              aria-current={layar.jenis === t.jenis ? "page" : undefined}
+              onClick={() => bukaTab(t.jenis)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
+      )}
+
       {layar.jenis === "pin" && (
         <GerbangPin
           key={status.adaPin ? "masuk" : "buat"}
@@ -144,7 +180,17 @@ function ModeAdmin() {
         />
       )}
       {layar.jenis === "ganti-pin" && sesi && (
-        <GerbangPin buat ganti sesi={sesi} onMasuk={masuk} onPinDihapus={() => {}} onBatal={keDaftar} />
+        <GerbangPin
+          buat
+          ganti
+          sesi={sesi}
+          onMasuk={(token) => {
+            setSesi(token);
+            bukaTab("pengaturan");
+          }}
+          onPinDihapus={() => {}}
+          onBatal={() => bukaTab("pengaturan")}
+        />
       )}
       {layar.jenis === "daftar" && (
         <DaftarPaket
@@ -152,10 +198,21 @@ function ModeAdmin() {
           onTambah={() => setLayar({ jenis: "editor", paket: null })}
           onUbah={(p) => setLayar({ jenis: "editor", paket: p })}
           onHapus={hapus}
-          onGantiPin={() => setLayar({ jenis: "ganti-pin" })}
         />
       )}
-      {layar.jenis === "daftar" && sesi && <DataKeluarga sesi={sesi} onSesiHabis={sesiHabis} onDihapus={() => router.replace("/")} />}
+      {layar.jenis === "progres" && sesi && <ProgresAnak sesi={sesi} onSesiHabis={sesiHabis} />}
+      {layar.jenis === "pengaturan" && sesi && (
+        <>
+          <section className="card" aria-labelledby="pin-judul">
+            <h2 id="pin-judul">PIN admin</h2>
+            <p className="muted small">PIN dipakai untuk membuka mode admin. Jangan beri tahu anak-anak, ya.</p>
+            <button type="button" className="btn ghost small" onClick={() => setLayar({ jenis: "ganti-pin" })}>
+              Ganti PIN admin
+            </button>
+          </section>
+          <DataKeluarga sesi={sesi} onSesiHabis={sesiHabis} onDihapus={() => router.replace("/")} />
+        </>
+      )}
       {layar.jenis === "editor" && sesi && (
         <EditorPaket
           key={layar.paket?.id ?? "baru"}

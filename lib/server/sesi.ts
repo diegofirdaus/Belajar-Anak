@@ -183,12 +183,19 @@ const iso = (t: unknown) => (t instanceof Timestamp ? t.toDate().toISOString() :
 export async function ringkasanLatihan(
   familyId: string,
   pemainId: string,
+  batas: { riwayat: number; topik: number } = { riwayat: 8, topik: 30 },
 ): Promise<{ riwayat: Riwayat[]; topik: StatTopik[] }> {
   const pRef = pemainRef(familyId, pemainId);
   if (!(await pRef.get()).exists) throw new ApiError("tidak_ditemukan");
   const [aSnap, tSnap] = await Promise.all([
-    pRef.collection("attempts").orderBy("createdAt", "desc").limit(8).get(),
-    pRef.collection("topikStat").orderBy("waktu", "desc").limit(30).get(),
+    // Tanpa `answers` (isi soal per latihan) supaya ringan; detail diambil terpisah.
+    pRef
+      .collection("attempts")
+      .select("subject", "topic", "level", "source", "n", "correct", "createdAt")
+      .orderBy("createdAt", "desc")
+      .limit(batas.riwayat)
+      .get(),
+    pRef.collection("topikStat").orderBy("waktu", "desc").limit(batas.topik).get(),
   ]);
   return {
     riwayat: aSnap.docs.map((d) => {
@@ -209,4 +216,20 @@ export async function ringkasanLatihan(
       return { mapel: x.mapel, topik: x.topik, lv: x.lv ?? {}, waktu: iso(x.waktu) };
     }),
   };
+}
+
+/** Detail satu latihan untuk orang tua: soal, pilihan, kunci, dan jawaban anak. */
+export async function detailLatihan(
+  familyId: string,
+  pemainId: string,
+  latihanId: string,
+): Promise<{ q: string; options: string[]; answer: number; pilihan: number | null }[]> {
+  const d = await pemainRef(familyId, pemainId).collection("attempts").doc(latihanId).get();
+  if (!d.exists) throw new ApiError("tidak_ditemukan");
+  return ((d.data()!.answers ?? []) as { q: string; options: string[]; answer: number; pilihan: number | null }[]).map((a) => ({
+    q: a.q,
+    options: a.options,
+    answer: a.answer,
+    pilihan: a.pilihan ?? null,
+  }));
 }

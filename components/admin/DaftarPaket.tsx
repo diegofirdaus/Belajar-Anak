@@ -10,13 +10,11 @@ export function DaftarPaket({
   onTambah,
   onUbah,
   onHapus,
-  onGantiPin,
 }: {
   paket: PaketPilihan[] | null;
   onTambah: () => void;
   onUbah: (p: PaketPilihan) => void;
   onHapus: (p: PaketPilihan) => Promise<void>;
-  onGantiPin: () => void;
 }) {
   const [konfirmasi, setKonfirmasi] = useState<string | null>(null);
   const [sibuk, setSibuk] = useState(false);
@@ -75,9 +73,6 @@ export function DaftarPaket({
           </div>
         ))}
       </div>
-      <button className="linkbtn" type="button" onClick={onGantiPin}>
-        Ganti PIN admin
-      </button>
     </>
   );
 }

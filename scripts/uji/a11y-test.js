@@ -67,6 +67,13 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
     await p.goto(BASE + '/admin'); await p.getByText('Masukkan PIN admin').waitFor();
     await audit(p, `admin PIN (${tag})`);
     await p.getByLabel('PIN admin', { exact: true }).fill('1234'); await p.getByRole('button', { name: 'Masuk' }).click();
+    await p.locator('.mapel-list').waitFor();
+    await audit(p, `admin progres (${tag})`); await lebar(p, `admin progres (${tag})`);
+    await p.locator('.hist-btn').first().click(); await p.locator('.hist-detail .pv-q').first().waitFor();
+    await audit(p, `admin progres detail (${tag})`);
+    await p.locator('.tab', { hasText: 'Pengaturan' }).click(); await p.getByRole('heading', { name: 'Data keluarga' }).waitFor();
+    await audit(p, `admin pengaturan (${tag})`);
+    await p.locator('.tab', { hasText: 'Soal pilihan' }).click();
     await p.locator('.set-card').first().waitFor();
     await audit(p, `admin daftar (${tag})`);
     await p.getByRole('button', { name: 'Ubah' }).click(); await p.locator('.pv-q').first().waitFor();
