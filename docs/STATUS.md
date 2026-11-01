@@ -115,6 +115,13 @@ Isi (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`, semua tangg
 - Pemilik sudah mencentang env Production dan menambahkan alamat produksi ke Firebase Authorized domains; PR #1 di-merge. **Produksi sudah dicek pemilik (1 Nov 2026): `/sehat` Beres, login Google, sesi soal AI — semua jalan.** Alamat produksi: https://markas-latihan.vercel.app. Pemain percobaan sudah dihapus pemilik.
 - Sisa setelah rilis: ganti nama variabel `FIREBASE_SERVICE_ACOUNT` → `FIREBASE_SERVICE_ACCOUNT` lalu hapus cadangannya di `lib/firebase/admin.ts`; domain `markaslatihan.com` (opsional); cek kebijakan Anthropic untuk aplikasi anak sebelum dibuka untuk keluarga lain.
 
+## Perbaikan login di Safari iPhone (setelah rilis)
+
+- Gejala: di HP pemilik muncul "Unable to process request due to missing initial state" di `markas-latihan.firebaseapp.com`. Pop-up login diblokir → app beralih ke `signInWithRedirect` → Safari memisahkan penyimpanan antar-situs, jadi redirect ke domain lain gagal.
+- Perbaikan (opsi 3 dokumentasi Firebase "redirect best practices"): `authDomain` = host app sendiri (`lib/firebase/client.ts`, kecuali localhost/emulator) dan `next.config.ts` meneruskan `/__/auth/*` ke `markas-latihan.firebaseapp.com`.
+- **Wajib di Google Cloud Console** (proyek markas-latihan → APIs & Services → Credentials → OAuth client "Web client (auto created by Google Service)") → Authorized redirect URIs: `https://markas-latihan.vercel.app/__/auth/handler` dan `https://markas-latihan-git-pengembangan-minions-3f7b.vercel.app/__/auth/handler`. Tanpa ini login Google gagal (redirect_uri_mismatch). Domain baru (mis. markaslatihan.com) juga perlu ditambahkan di sini.
+- Container Claude tidak bisa menjangkau firebaseapp.com, jadi penerusan hanya bisa diuji di preview.
+
 ## Keputusan teknis penting
 
 - **Firebase** (bukan Supabase): login Google saja; semua data lewat route server dengan Admin SDK; `firestore.rules` menolak semua akses browser.

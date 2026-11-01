@@ -17,9 +17,20 @@ import { firebaseConfig } from "./config";
 
 let auth: Auth | null = null;
 
+/**
+ * Login Google memakai domain app ini sendiri (diteruskan ke firebaseapp.com lewat rewrites di next.config.ts),
+ * supaya login tetap jalan di Safari iOS yang memisahkan penyimpanan antar-situs.
+ * Di localhost/emulator tetap memakai domain Firebase bawaan.
+ */
+function authDomainApp(): string {
+  if (typeof window === "undefined" || process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "1") return firebaseConfig.authDomain;
+  const host = window.location.host;
+  return /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host) ? firebaseConfig.authDomain : host;
+}
+
 export function clientAuth(): Auth {
   if (auth) return auth;
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  const app = getApps().length ? getApp() : initializeApp({ ...firebaseConfig, authDomain: authDomainApp() });
   auth = getAuth(app);
   auth.languageCode = "id";
   // Syarat ditulis langsung supaya terhapus dari build asli.
