@@ -85,5 +85,21 @@ ok(r.status === 404 && (await jatah(A.uid, raka.id)) === sebelum, 'paket dihapus
 r = await call(`/api/pemain/${raka.id}/ringkasan`, A.token);
 ok(r.body.paketPilihan.length === 1, 'paket yang dihapus hilang dari daftar anak');
 
+/* ---------- Paket besar (50 soal, maksimum) ---------- */
+const besar = await buat('Ulangan panjang', 5, 'Matematika', Array.from({ length: 50 }, (_, i) => q(i + 1)));
+r = await post('/api/soal/pilihan', A.token, { pemainId: raka.id, setId: besar.id });
+ok(r.status === 201 && r.body.soal.length === 50, 'paket 50 soal bisa dikerjakan', r.status);
+const kodeJawab = [];
+let akhirBesar = null;
+for (let i = 0; i < 50; i++) {
+  const x = await post(`/api/sesi/${r.body.sesiId}/jawab`, A.token, { pemainId: raka.id, nomor: i, pilihan: 1 });
+  kodeJawab.push(x.status);
+  if (x.body?.akhir) akhirBesar = x.body.akhir;
+}
+ok(kodeJawab.every((k) => k === 200), 'semua 50 jawaban diterima (dulu gagal mulai soal ke-21)', kodeJawab.filter((k) => k !== 200).length);
+ok(akhirBesar?.benar === 50 && akhirBesar?.n === 50, 'sesi 50 soal selesai 50/50', akhirBesar);
+const luar = await post(`/api/sesi/${r.body.sesiId}/jawab`, A.token, { pemainId: raka.id, nomor: 50, pilihan: 0 });
+ok(luar.status === 400 && luar.body.message === 'Jawaban ini tidak bisa diperiksa. Kembali ke markas, lalu coba lagi.', 'nomor di luar batas: pesan jelas, bukan "koneksi terputus"', luar.body);
+
 console.log(fail ? `\n${fail} GAGAL` : '\nSemua lulus');
 process.exit(fail ? 1 : 0);
