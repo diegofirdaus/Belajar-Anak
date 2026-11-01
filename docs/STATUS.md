@@ -59,7 +59,7 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
   - `--on-good` / `--on-bad` (huruf di kotak benar/salah dan tombol "Ya, hapus": putih di tema terang, gelap di tema gelap),
   - `--field-line` (garis kolom isian ≥ 3:1, WCAG 1.4.11),
   - `--reward-fg` / `--banner-win` tema dasar terang jadi `#8a5a00`, banner menang Blok `#2f7429`.
-- **Penyimpangan dari brief** (demi aturan "kontras AA" di brief 12; menunggu konfirmasi pemilik): Lembah Dino `--accent-fg`/`--btn-fg` jadi gelap `#23301c` (teks putih di oranye `#e8832a` hanya 2,7:1), `--muted` Dino `#56644a`.
+- **Penyimpangan dari brief** (demi aturan "kontras AA" di brief 12; disetujui pemilik): Lembah Dino `--accent-fg`/`--btn-fg` jadi gelap `#23301c` (teks putih di oranye `#e8832a` hanya 2,7:1), `--muted` Dino `#56644a`.
 - Indikator langkah perkenalan diberi `role="img"`.
 - `scripts/uji/a11y-test.js`: axe-core (WCAG 2.1 A/AA) di pembuka, login, daftar pemain, perkenalan, admin (PIN, daftar, editor), /sehat (terang & gelap) dan markas, memuat, mengerjakan, umpan balik, hasil untuk 4 dunia; target sentuh ≥ 44px; tanpa gulir samping di 360 & 430px; fokus keyboard outline 3px; tanpa animasi saat reduced motion. Semua lulus.
 
