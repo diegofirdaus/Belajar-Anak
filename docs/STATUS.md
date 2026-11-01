@@ -107,12 +107,13 @@ Isi (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`, semua tangg
 - Uji: `api12-test.mjs` (validasi, isi permintaan, jatah, foto tidak tersimpan), `foto-ui-test.js` (foto besar diperkecil & jadi JPEG, maks 5, soal bergambar). Server Claude tiruan kini menerima foto.
 - **Belum teruji dengan foto asli**: kualitas baca tulisan tangan/notasi matematika perlu dicoba pemilik.
 
-## Berikutnya: Tahap 11 (uji akhir + rilis)
+## Tahap 11 (uji akhir + rilis)
 
-1. Cocokkan kriteria penerimaan brief 15 satu per satu (sebagian besar sudah tercakup skrip uji); catat yang hanya bisa dicek pemilik (login Google asli, Safari iPad, kualitas soal AI asli).
-2. Gabung `pengembangan` ke `main` (lewat PR), pastikan Vercel Production memakai variabel lingkungan yang sama dengan Preview, dan ganti nama `FIREBASE_SERVICE_ACOUNT` → `FIREBASE_SERVICE_ACCOUNT` lalu hapus cadangan di `lib/firebase/admin.ts`.
-3. Domain `markaslatihan.com` (beli di Vercel) + tambahkan ke Firebase → Authentication → Authorized domains.
-4. Brief 11: cek kebijakan Anthropic untuk aplikasi yang dipakai anak (sebelum dibuka untuk keluarga lain). Ekspor/hapus data keluarga sudah ada.
+- Kriteria brief 15 dicocokkan satu per satu: `docs/UJI-AKHIR.md`. Celah yang belum tercakup ditutup oleh `scripts/uji/akhir-test.js` (pembuka tanpa gulir + denyut, naik kelas SMP→SMA, kunci API tidak muncul di jaringan). Mode `api6 batas` dan `api6 tanpa-kunci` dijalankan ulang: lulus.
+- README diperbarui: variabel opsional, struktur data lengkap, catatan Authorized domains.
+- Rilis = PR `pengembangan` → `main`. Production di Vercel butuh `FIREBASE_SERVICE_ACCOUNT` (atau sementara `FIREBASE_SERVICE_ACOUNT`) dan `ANTHROPIC_API_KEY` dicentang untuk **Production**, dan alamat produksi harus ditambahkan ke Firebase → Authentication → Authorized domains (`*.vercel.app` tidak otomatis). Sambungan Vercel di sesi Claude tidak bisa membaca env/domain proyek, jadi pemilik yang mengecek.
+- Setelah rilis: cek `/sehat` di alamat produksi, login Google, satu sesi soal.
+- Sisa setelah rilis: ganti nama variabel `FIREBASE_SERVICE_ACOUNT` → `FIREBASE_SERVICE_ACCOUNT` lalu hapus cadangannya di `lib/firebase/admin.ts`; domain `markaslatihan.com` (opsional); cek kebijakan Anthropic untuk aplikasi anak sebelum dibuka untuk keluarga lain.
 
 ## Keputusan teknis penting
 
@@ -150,6 +151,7 @@ node scripts/uji/progres-ui-test.js /tmp/shots      # Playwright: dashboard prog
 node scripts/uji/foto-ui-test.js /tmp/shots /tmp/mock.log # Playwright: foto / upload soal
 node scripts/uji/a11y-test.js /tmp/shots           # Playwright + axe-core: aksesibilitas semua layar
 node scripts/uji/kontras-test.mjs                   # kontras token 6 tema (tanpa server)
+node scripts/uji/akhir-test.js                      # uji akhir brief 15 (pembuka, SMP→SMA, kunci API di jaringan)
 npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/admin-test.ts; npx tsx scripts/uji/progres-test.ts
 ```
 
