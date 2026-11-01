@@ -118,3 +118,9 @@ export function bacaManual(teksAsli: string): { soal: SoalPilihan[]; galat: stri
   simpan();
   return { soal, galat };
 }
+
+/** Yang dilihat anak tentang satu paket: tanpa soal dan kunci. */
+export type PaketRingkas = { id: string; title: string; subject: string; n: number };
+
+/** "Buat soal mirip" membuat min(10, max(5, jumlah soal paket)) soal (brief 9.4). */
+export const jumlahSoalMirip = (n: number) => Math.min(10, Math.max(5, n));

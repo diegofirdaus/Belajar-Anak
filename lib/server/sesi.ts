@@ -50,6 +50,7 @@ export async function simpanSesi(
     mapel: s.mapel,
     topik: s.topik,
     level: s.level,
+    setId: s.setId ?? null,
     soal: s.soal.map(({ q, options }) => ({ q, options })),
   };
 }

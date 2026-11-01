@@ -4,10 +4,10 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 
 ## Posisi sekarang
 
-- Branch kerja: **`pengembangan`** (semua tahap baru di-push ke sini). `main` masih commit awal; bisa digabung kapan saja (Tahap 7 sudah dicoba pemilik).
+- Branch kerja: **`pengembangan`** (semua tahap baru di-push ke sini). `main` masih commit awal; digabung di Tahap 11 (atau lebih awal kalau pemilik minta).
 - Preview: https://markas-latihan-git-pengembangan-minions-3f7b.vercel.app (cek server di `/sehat`).
-- Selesai dan sudah dicoba pemilik di preview: **Tahap 1–7** (urutan di brief bagian 14).
-- Selesai dibangun dan lulus uji di container, **belum dicoba pemilik**: **Tahap 8**.
+- Selesai dan sudah dicoba pemilik di preview: **Tahap 1–8** (urutan di brief bagian 14), termasuk Lupa PIN lewat login ulang Google di Safari iPad.
+- Selesai dibangun dan lulus uji di container, **belum dicoba pemilik**: **Tahap 9**.
 
 | Tahap | Isi | Lokasi utama |
 |---|---|---|
@@ -19,6 +19,7 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 | 6 | Soal dibuat AI | `app/api/soal`, `lib/server/ai/*`, `lib/server/pemakaian.ts`, `lib/server/sesi.ts` |
 | 7 | Memuat, mengerjakan + HUD, hasil, hadiah per jawaban, riwayat, saran, soal contoh | `components/latihan/*`, `app/api/sesi/[id]/jawab`, `app/api/soal/contoh`, `app/api/pemain/[id]/ringkasan`, `lib/latihan.ts`, `lib/server/sesi.ts`, `lib/server/soalContoh.ts` |
 | 8 | Mode admin: PIN di server, daftar & editor soal pilihan, rapikan (AI/manual) | `app/admin`, `components/admin/*`, `app/api/admin/*`, `lib/server/admin.ts`, `lib/server/soalPilihan.ts`, `lib/soalPilihan.ts` |
+| 9 | Soal pilihan di sisi anak: ★ Soal pilihan, Kerjakan, Buat soal mirip (AI), tombol hasil | `components/markas/FormSoal.tsx`, `app/api/soal/pilihan`, `app/api/soal/mirip`, `lib/server/soalPilihan.ts`, `lib/server/ai/prompt.ts` |
 
 ## Tahap 7 (selesai)
 
@@ -41,15 +42,20 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 - **Rapikan**: `POST /api/admin/rapikan` memakai `claude-haiku-5-5` (`AI_MODEL_RAPIKAN`), prompt brief 10.3, structured outputs, tanpa `fallbacks`. Pilihan tidak diacak. Jatah 30/keluarga/hari (`AI_LIMIT_RAPIKAN`), terpisah dari jatah anak; dicatat di `logAi` jenis `rapikan`. Kalau AI tidak ada/kunci ditolak, editor otomatis memakai pembaca manual (`bacaManual` di `lib/soalPilihan.ts`).
 - Editor: kelas bawaan mengikuti pemain yang memakai HP ini. "Keluar" kembali ke markas pemain itu (atau daftar pemain).
 
-## Berikutnya: Tahap 9 (soal pilihan di sisi anak)
+## Tahap 9 (selesai)
 
-Brief 7.4 no. 4 (segmen "★ Soal pilihan", kartu paket per mapel, chip mapel lain), 7.7 (tombol hasil soal pilihan), 9.4, 10.2.
-- Endpoint anak (tanpa sesi admin) untuk daftar paket **sesuai kelas pemain** — kirim judul, mapel, jumlah soal saja, tanpa kunci.
-- "Kerjakan": buat sesi `sumber: "set"`, `level: "pilihan"`, `setId` dari paket (`simpanSesi` sudah mendukung; acak pilihan? sebaiknya tidak untuk soal 2–3 pilihan — putuskan).
-- "Buat soal mirip (AI)": prompt 10.2, `sumber: "set_similar"`, `level: "pilihan"`, jumlah `min(10, max(5, n paket))`, pakai jatah anak.
-- Halaman hasil: "Buat soal mirip (AI)", "Ulangi soal pilihan ini", "Kembali ke markas"; pesan soal pilihan sudah ada di `pesanHasil`.
+- `GET /api/pemain/[id]/ringkasan` kini juga mengirim `paketPilihan` untuk **kelas pemain itu saja**: `{id, title, subject, n}` tanpa soal/kunci.
+- Form markas: segmen "★ Soal pilihan" (selebar penuh) hanya muncul kalau ada paket untuk kelas itu. Saat dipilih, materi/jumlah/tombol utama disembunyikan, muncul kartu paket untuk mapel terpilih, atau pesan + chip mapel yang punya paket.
+- **Kerjakan**: `POST /api/soal/pilihan {pemainId, setId}` → sesi `sumber: "set"`, `level: "pilihan"`, `topik` = judul paket, `setId`. Tanpa AI dan tanpa jatah. **Urutan pilihan tidak diacak** (orang tua bisa menulis "Semua benar"). Paket kelas lain ditolak.
+- **Buat soal mirip (AI)**: `POST /api/soal/mirip` → prompt brief 10.2 (contoh maks 12 soal, dibungkus `<<< >>>`), `min(10, max(5, n))` soal, model soal (Sonnet 5.5 + fallback), memakai jatah harian anak, pilihan diacak, log `soal_mirip`. Tombol nonaktif kalau AI tidak tersedia.
+- Hadiah soal pilihan = setara sedang; tidak masuk statistik topik/saran; masuk riwayat dengan `setId`.
+- Halaman hasil soal pilihan: "Buat soal mirip (AI)" (kalau AI ada), "Ulangi soal pilihan ini" (paket asli), "Kembali ke markas".
 
-Setelah itu: Tahap 10 (aksesibilitas), 11 (uji + deploy ke `main`, domain).
+## Berikutnya: Tahap 10 (aksesibilitas)
+
+Brief 12 dan 15: kontras AA di kelima tema (cek token, terutama teks `--muted` dan tombol di Blok/Dino), fokus keyboard di semua kontrol, `aria-live` dan label, reduced motion, cek tampilan 360–430px terang/gelap untuk semua layar. Pertimbangkan uji otomatis (mis. axe-core lewat Playwright).
+
+Setelah itu: Tahap 11 (uji sesuai kriteria brief 15, gabung ke `main`, domain `markaslatihan.com` + Authorized domains di Firebase).
 
 ## Keputusan teknis penting
 
@@ -73,10 +79,12 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:909
 node scripts/uji/api-test.mjs; node scripts/uji/api5-test.mjs; node scripts/uji/api6-test.mjs /tmp/mock.log
 node scripts/uji/api7-test.mjs                      # cek jawaban, hadiah, riwayat, statistik, soal contoh
 node scripts/uji/api8-test.mjs                      # PIN admin, sesi admin, soal pilihan, rapikan
+node scripts/uji/api9-test.mjs /tmp/mock.log        # soal pilihan di sisi anak, soal mirip
 # (api8-test.mjs reset-lama: jalankan server dengan ADMIN_LOGIN_ULANG_DETIK=1)
 node scripts/uji/markas-test.js /tmp/shots          # Playwright, layar 390px
 node scripts/uji/latihan-ui-test.js /tmp/shots      # Playwright: memuat, HUD 4 dunia, hasil, saran
 node scripts/uji/admin-ui-test.js /tmp/shots        # Playwright: mode admin
+node scripts/uji/pilihan-ui-test.js /tmp/shots      # Playwright: soal pilihan di markas
 npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/admin-test.ts
 ```
 

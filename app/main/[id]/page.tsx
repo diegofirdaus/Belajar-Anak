@@ -20,6 +20,7 @@ import { hitungSaran, tanpaAkhiranContoh, type Riwayat as BarisRiwayat, type Sar
 import type { Player } from "@/lib/player";
 import type { Rewards } from "@/lib/rewards";
 import type { PaketSesi } from "@/lib/soal";
+import type { PaketRingkas } from "@/lib/soalPilihan";
 import { WORLDS } from "@/lib/worlds";
 
 export default function Markas() {
@@ -32,10 +33,9 @@ type Layar =
   | { jenis: "kerja"; paket: PaketSesi; awal: Rewards; nilai: NilaiForm | null }
   | { jenis: "hasil"; paket: PaketSesi; awal: Rewards; nilai: NilaiForm | null; hasil: AkhirSesi };
 
-type Ringkasan = { riwayat: BarisRiwayat[]; topik: StatTopik[]; aiTersedia: boolean };
+type Ringkasan = { riwayat: BarisRiwayat[]; topik: StatTopik[]; paketPilihan: PaketRingkas[]; aiTersedia: boolean };
 
-const keFormSoal = () =>
-  requestAnimationFrame(() => document.getElementById("form-soal")?.scrollIntoView({ block: "start" }));
+const keFormSoal = () => requestAnimationFrame(() => document.getElementById("form-soal")?.scrollIntoView({ block: "start" }));
 
 /** Markas pemain (brief 7.4) beserta layar memuat, mengerjakan, dan hasil (brief 7.5–7.7). */
 function IsiMarkas() {
@@ -75,7 +75,7 @@ function IsiMarkas() {
       .ringkasan(id)
       .then(setRingkasan)
       // Riwayat dan saran hanya pelengkap: kalau gagal, markas tetap bisa dipakai.
-      .catch(() => setRingkasan((r) => r ?? { riwayat: [], topik: [], aiTersedia: true }));
+      .catch(() => setRingkasan((r) => r ?? { riwayat: [], topik: [], paketPilihan: [], aiTersedia: true }));
   }, [id]);
 
   useEffect(() => {
@@ -94,7 +94,7 @@ function IsiMarkas() {
     router.replace("/mulai");
   }
 
-  async function mulai(sumber: { jenis: "ai"; nilai: NilaiForm } | { jenis: "contoh" }) {
+  async function mulai(sumber: { jenis: "ai"; nilai: NilaiForm } | { jenis: "contoh" } | { jenis: "set" | "mirip"; setId: string }) {
     if (!pemain) return;
     const awal = pemain.rewards;
     if (sumber.jenis === "ai") setNilai(sumber.nilai);
@@ -105,18 +105,22 @@ function IsiMarkas() {
     pembatal.current = c;
     try {
       const paket =
-        sumber.jenis === "ai"
-          ? await api.buatSoal(
-              {
-                pemainId: pemain.id,
-                mapel: sumber.nilai.mapel,
-                topik: sumber.nilai.topik,
-                level: sumber.nilai.level,
-                n: Number(sumber.nilai.jumlah) as 5 | 10,
-              },
-              c.signal,
-            )
-          : await api.soalContoh(pemain.id, c.signal);
+        sumber.jenis === "set"
+          ? await api.kerjakanPilihan(pemain.id, sumber.setId, c.signal)
+          : sumber.jenis === "mirip"
+            ? await api.soalMirip(pemain.id, sumber.setId, c.signal)
+            : sumber.jenis === "ai"
+              ? await api.buatSoal(
+                  {
+                    pemainId: pemain.id,
+                    mapel: sumber.nilai.mapel,
+                    topik: sumber.nilai.topik,
+                    level: sumber.nilai.level as Level,
+                    n: Number(sumber.nilai.jumlah) as 5 | 10,
+                  },
+                  c.signal,
+                )
+              : await api.soalContoh(pemain.id, c.signal);
       if (c.signal.aborted) return;
       setLayar({ jenis: "kerja", paket, awal, nilai: sumber.jenis === "ai" ? sumber.nilai : null });
     } catch (e) {
@@ -124,6 +128,8 @@ function IsiMarkas() {
       setLayar({ jenis: "markas" });
       setGalatForm(apiMessage(e, "soal"));
       if (e instanceof ApiFailure && e.code === "ai_belum_siap") setRingkasan((r) => (r ? { ...r, aiTersedia: false } : r));
+      // Paket mungkin baru dihapus orang tua: muat ulang daftar soal pilihan.
+      if (e instanceof ApiFailure && e.code === "tidak_ditemukan") muatRingkasan();
       keFormSoal();
     } finally {
       if (pembatal.current === c) pembatal.current = null;
@@ -208,8 +214,11 @@ function IsiMarkas() {
           awal={layar.awal}
           akhir={pemain.rewards}
           hasil={layar.hasil}
+          aiTersedia={ringkasan?.aiTersedia ?? true}
           onLevelBerikut={(l) => ulangi(l)}
           onSoalBaru={() => ulangi()}
+          onMirip={() => layar.paket.setId && mulai({ jenis: "mirip", setId: layar.paket.setId })}
+          onUlangiPilihan={() => layar.paket.setId && mulai({ jenis: "set", setId: layar.paket.setId })}
           onMarkas={keMarkas}
         />
       </>
@@ -244,6 +253,9 @@ function IsiMarkas() {
           onKirim={(n) => mulai({ jenis: "ai", nilai: n })}
           aiTersedia={ringkasan?.aiTersedia ?? true}
           onContoh={() => mulai({ jenis: "contoh" })}
+          paketPilihan={ringkasan?.paketPilihan ?? []}
+          onKerjakan={(setId) => mulai({ jenis: "set", setId })}
+          onMirip={(setId) => mulai({ jenis: "mirip", setId })}
         />
         <SaranLatihan saran={hitungSaran(ringkasan?.topik ?? [])} onPilih={pilihSaran} />
         <Riwayat daftar={ringkasan?.riwayat ?? null} />

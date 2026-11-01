@@ -16,8 +16,11 @@ export function Hasil({
   awal,
   akhir,
   hasil,
+  aiTersedia,
   onLevelBerikut,
   onSoalBaru,
+  onMirip,
+  onUlangiPilihan,
   onMarkas,
 }: {
   nama: string;
@@ -28,6 +31,9 @@ export function Hasil({
   hasil: AkhirSesi;
   onLevelBerikut: (l: Level) => void;
   onSoalBaru: () => void;
+  aiTersedia: boolean;
+  onMirip: () => void;
+  onUlangiPilihan: () => void;
   onMarkas: () => void;
 }) {
   const { benar, n } = hasil;
@@ -69,6 +75,18 @@ export function Hasil({
             )}
             <button type="button" className={bisaNaik ? "btn ghost" : "btn"} onClick={onSoalBaru}>
               Soal baru, level sama
+            </button>
+          </>
+        )}
+        {(paket.sumber === "set" || paket.sumber === "set_similar") && paket.setId && (
+          <>
+            {aiTersedia && (
+              <button type="button" className="btn" onClick={onMirip}>
+                Buat soal mirip (AI)
+              </button>
+            )}
+            <button type="button" className={aiTersedia ? "btn ghost" : "btn"} onClick={onUlangiPilihan}>
+              Ulangi soal pilihan ini
             </button>
           </>
         )}

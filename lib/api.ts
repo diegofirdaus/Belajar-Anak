@@ -4,7 +4,7 @@ import { clientAuth } from "@/lib/firebase/client";
 import type { NewPlayer, Player, PlayerUpdate } from "@/lib/player";
 import type { Riwayat, StatTopik } from "@/lib/latihan";
 import type { HasilJawab, PaketSesi, PermintaanJawab, PermintaanSoal } from "@/lib/soal";
-import type { PaketBaru, PaketPilihan, SoalPilihan } from "@/lib/soalPilihan";
+import type { PaketBaru, PaketPilihan, PaketRingkas, SoalPilihan } from "@/lib/soalPilihan";
 
 export class ApiFailure extends Error {
   constructor(public code: string, message?: string) {
@@ -25,6 +25,7 @@ export function apiMessage(e: unknown, konteks?: "soal"): string {
     return 'Materi itu tidak bisa dibuatkan soal. Coba tulis materi pelajaran sekolah, misalnya "pecahan" atau "sistem pernapasan".';
   if (code === "json_rusak") return "Soalnya belum tersusun rapi. Tekan tombol buat soal sekali lagi.";
   if (code === "kurang_lengkap") return "Soalnya belum lengkap. Tekan tombol buat soal sekali lagi.";
+  if (code === "tidak_ditemukan" && konteks === "soal" && e instanceof ApiFailure && e.message !== code) return e.message;
   if (code === "ai_belum_siap") return "Pembuat soal belum siap. Minta orang tua mengecek kunci Claude API, atau coba soal contoh.";
   // Mode admin (brief 7.8)
   if (code === "pin_salah") return "PIN salah. Coba lagi.";
@@ -74,10 +75,14 @@ export const api = {
     call<PaketSesi>("/api/soal", { method: "POST", body: JSON.stringify(p), signal }),
   soalContoh: (pemainId: string, signal?: AbortSignal) =>
     call<PaketSesi>("/api/soal/contoh", { method: "POST", body: JSON.stringify({ pemainId }), signal }),
+  kerjakanPilihan: (pemainId: string, setId: string, signal?: AbortSignal) =>
+    call<PaketSesi>("/api/soal/pilihan", { method: "POST", body: JSON.stringify({ pemainId, setId }), signal }),
+  soalMirip: (pemainId: string, setId: string, signal?: AbortSignal) =>
+    call<PaketSesi>("/api/soal/mirip", { method: "POST", body: JSON.stringify({ pemainId, setId }), signal }),
   jawab: (sesiId: string, j: PermintaanJawab) =>
     call<HasilJawab>(`/api/sesi/${encodeURIComponent(sesiId)}/jawab`, { method: "POST", body: JSON.stringify(j) }),
   ringkasan: (pemainId: string) =>
-    call<{ riwayat: Riwayat[]; topik: StatTopik[]; aiTersedia: boolean }>(
+    call<{ riwayat: Riwayat[]; topik: StatTopik[]; paketPilihan: PaketRingkas[]; aiTersedia: boolean }>(
       `/api/pemain/${encodeURIComponent(pemainId)}/ringkasan`,
     ),
   /* ---------- Mode admin ---------- */

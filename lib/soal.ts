@@ -37,6 +37,8 @@ export type PaketSesi = {
   mapel: string;
   topik: string;
   level: string;
+  /** Paket soal pilihan asal (untuk sumber `set` dan `set_similar`). */
+  setId: string | null;
   soal: SoalTanpaKunci[];
 };
 
