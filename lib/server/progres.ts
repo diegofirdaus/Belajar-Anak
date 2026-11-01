@@ -6,7 +6,8 @@ import { db } from "@/lib/firebase/admin";
 import { listPlayers } from "./players";
 import { ringkasanLatihan } from "./sesi";
 
-export const RIWAYAT_MAKS = 200;
+// Seluruh riwayat (tanpa isi soal) supaya perbandingan bulanan mencakup bulan-bulan lama.
+export const RIWAYAT_MAKS = 2000;
 
 /** Progres semua anak dalam keluarga untuk dashboard orang tua (mode admin). */
 export async function progresKeluarga(familyId: string): Promise<DataProgres> {

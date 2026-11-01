@@ -37,7 +37,7 @@ ok(pr.riwayat.every((x) => !('answers' in x)), 'daftar riwayat tanpa isi soal (r
 ok(pr.topik.length === 2 && pr.rewards.blok.kayu === 7, 'statistik topik & hadiah', pr.rewards.blok);
 ok(pr.aiHariIni === 3 && r.body.pemain[1].aiHariIni === 0, 'pemakaian AI hari ini per anak', pr.aiHariIni);
 ok(r.body.ai.keluargaHariIni === 3 && r.body.ai.batasPemain === 50 && r.body.ai.batasKeluarga === 100, 'pemakaian & batas AI keluarga', r.body.ai);
-ok(r.body.pemain[1].riwayat.length === 0 && r.body.riwayatMaks === 200, 'anak tanpa latihan; batas riwayat');
+ok(r.body.pemain[1].riwayat.length === 0 && r.body.riwayatMaks === 2000, 'anak tanpa latihan; batas riwayat');
 
 const d = await call(`/api/admin/progres/${raka.id}/${terakhir.sesiId}`, A.token, {}, sesi);
 ok(d.status === 200 && d.body.soal.length === 5, 'detail latihan: 5 soal');

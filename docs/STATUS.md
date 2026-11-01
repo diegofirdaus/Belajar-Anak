@@ -74,15 +74,27 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 
 ## Dashboard progres orang tua (dimajukan dari Lampiran B no. 5 atas permintaan pemilik)
 
-- Mode admin kini bertab: **Progres anak** (layar pertama setelah PIN), **Soal pilihan**, **Pengaturan** (Ganti PIN, Data keluarga).
+- Mode admin kini bertab (isi Progres anak diganti v2, lihat di atas): **Progres anak** (layar pertama setelah PIN), **Soal pilihan**, **Pengaturan** (Ganti PIN, Data keluarga).
 - `GET /api/admin/progres` (sesi admin) → semua anak: profil, hadiah, riwayat (maks 200, tanpa `answers` lewat `select`), statistik topik, jatah AI hari ini per anak & keluarga.
 - `GET /api/admin/progres/[pemainId]/[latihanId]` → soal, pilihan, kunci, dan jawaban anak untuk satu latihan.
 - Tampilan (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`): pilih anak (bawaan = anak di HP ini), ringkasan (latihan 7 hari terakhir, soal dijawab, % benar, terakhir latihan, hadiah, AI hari ini), bar per mapel (hijau ≥ 80, oranye 60–79, merah < 60), topik "Perlu dibantu" dan "Siap naik level" (logika sama dengan chip saran, tanpa batas 6), riwayat 10 + "Tampilkan lebih banyak", ketuk untuk melihat jawaban per soal.
 - Uji: `progres-test.ts`, `api11-test.mjs`, `progres-ui-test.js`; `a11y-test.js` ikut mengaudit layar progres dan pengaturan.
 
-## Menunggu dari pemilik
+## Dashboard progres v2 (masukan pemilik: "kurang langsung paham")
 
-- **Masukan untuk dashboard progres**: pemilik sudah mencoba (berjalan), punya masukan yang akan disampaikan nanti. Kerjakan masukan itu sebelum Tahap 11 kalau sudah ada.
+Contoh tampilan disetujui pemilik lewat artifact mockup sebelum dibangun. Keputusan:
+- **Tanpa perbandingan antar anak** (menghindari kesan ranking saudara).
+- **Tanpa rata-rata gabungan semua mapel** (tidak adil); persen benar selalu per mapel.
+- **"7 hari terakhir" bergeser setiap hari** (bukan minggu kalender), dihitung ulang setiap halaman dibuka.
+
+Isi (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`, semua tanggal WIB):
+1. Kartu status per anak (sekaligus pemilih anak): hijau = latihan ≥ 3 hari berbeda dalam 7 hari; oranye = tidak latihan ≥ 3 hari; selain itu netral. Sorotan "▲ {mapel} naik X poin" hanya kalau mapel itu ≥ 2 latihan di 7 hari terakhir dan 7 hari sebelumnya, dan selisih ≥ 5 poin (`AMBANG` di `lib/progres.ts`).
+2. Grafik aktivitas 14 hari dan tren nilai **per mapel** (per 7 hari, maks 8 periode) dengan pita warna level tertinggi soal AI (kuning = sedang, jingga = sulit) dan garis 80% = dikuasai.
+3. Perbandingan dua bulan pilihan (bawaan bulan lalu vs bulan ini): latihan, hari aktif, soal dijawab, soal pilihan, lalu rata-rata benar per mapel.
+4. "Yang bisa Anda bantu": maks 3 (topik lemah ≤ 2, mapel tidak dilatih ≥ 21 hari ≤ 1, topik siap naik ≤ 1).
+5. Detail dilipat: per mata pelajaran, riwayat + jawaban per soal, hadiah & pemakaian AI.
+- Server kini mengirim seluruh riwayat (tanpa isi soal, maks 2.000 per anak) untuk perbandingan bulanan.
+- Uji: `progres-test.ts` (status, aktivitas, tren, bulan, bantuan), `progres-ui-test.js` (riwayat lampau ditulis langsung ke emulator).
 
 ## Berikutnya: Tahap 11 (uji akhir + rilis)
 
