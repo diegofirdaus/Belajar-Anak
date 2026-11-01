@@ -112,7 +112,7 @@ Isi (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`, semua tangg
 - Kriteria brief 15 dicocokkan satu per satu: `docs/UJI-AKHIR.md`. Celah yang belum tercakup ditutup oleh `scripts/uji/akhir-test.js` (pembuka tanpa gulir + denyut, naik kelas SMP→SMA, kunci API tidak muncul di jaringan). Mode `api6 batas` dan `api6 tanpa-kunci` dijalankan ulang: lulus.
 - README diperbarui: variabel opsional, struktur data lengkap, catatan Authorized domains.
 - Rilis = PR `pengembangan` → `main`. Production di Vercel butuh `FIREBASE_SERVICE_ACCOUNT` (atau sementara `FIREBASE_SERVICE_ACOUNT`) dan `ANTHROPIC_API_KEY` dicentang untuk **Production**, dan alamat produksi harus ditambahkan ke Firebase → Authentication → Authorized domains (`*.vercel.app` tidak otomatis). Sambungan Vercel di sesi Claude tidak bisa membaca env/domain proyek, jadi pemilik yang mengecek.
-- Pemilik sudah mencentang env Production dan menambahkan alamat produksi ke Firebase Authorized domains; PR #1 di-merge. Setelah rilis: cek `/sehat` di alamat produksi, login Google, satu sesi soal.
+- Pemilik sudah mencentang env Production dan menambahkan alamat produksi ke Firebase Authorized domains; PR #1 di-merge. **Produksi sudah dicek pemilik (1 Nov 2026): `/sehat` Beres, login Google, sesi soal AI — semua jalan.** Alamat produksi: https://markas-latihan.vercel.app. Pemain percobaan sudah dihapus pemilik.
 - Sisa setelah rilis: ganti nama variabel `FIREBASE_SERVICE_ACOUNT` → `FIREBASE_SERVICE_ACCOUNT` lalu hapus cadangannya di `lib/firebase/admin.ts`; domain `markaslatihan.com` (opsional); cek kebijakan Anthropic untuk aplikasi anak sebelum dibuka untuk keluarga lain.
 
 ## Keputusan teknis penting
