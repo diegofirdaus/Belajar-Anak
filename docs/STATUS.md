@@ -129,7 +129,7 @@ Kerjakan berurutan 1 → 2 → 3, **rilis terpisah** (pengembangan → preview d
 - Uji: `acak-test.ts` (pola rujukan, sebaran, kunci selalu pindah, pencocokan teks), `api9-test.mjs` (bagian "Acak posisi jawaban"), `admin-ui-test.js` (saklar, catatan), `pilihan-ui-test.js` (paket uji memakai `acakPilihan: false` supaya posisi kunci tetap), `a11y-test.js` lulus.
 - Dicoba pemilik di preview: letak jawaban berpindah dan saklar berfungsi ("udah pas").
 
-### 2. Soal esai untuk soal pilihan orang tua — SUDAH DIBANGUN, belum dicoba pemilik di preview
+### 2. Soal esai untuk soal pilihan orang tua — SELESAI, sudah dicoba pemilik di preview dengan Claude asli (2 Nov 2026), dirilis lewat PR ke main
 Sesuai rencana yang disepakati (hanya soal pilihan orang tua; dua tingkat benar/belum tepat; keputusan dihitung kode). Lokasi:
 - **Data**: `SoalPilihan.jenis = "esai"`, `options: []`, kunci di `esai: {contoh, wajib[1–2], pelengkap[0–3]}` (`lib/soalPilihan.ts`, skema menolak esai berpilihan/tanpa poin wajib). Soal sesi membawa `jenis`/`esai`; browser hanya menerima `{q, options: [], jenis}`.
 - **Rapikan & baca foto** (`lib/server/ai/prompt.ts` `aturanEsai`): AI menandai `jenis` pilihan/esai; isian/uraian tidak lagi dipaksa jadi pilihan ganda. AI mengisi `contohJawaban`, `poinWajib`, `poinPelengkap` (+ `keyGuessed` kalau jawaban tidak tertulis). `saringRapikan` → `dariAi` merapikan bentuknya (poin wajib kosong → diisi contoh jawaban; kelebihan poin dipotong; esai tanpa contoh & poin dibuang). Pembaca manual (tanpa AI) belum mengenali esai.
@@ -143,7 +143,8 @@ Sesuai rencana yang disepakati (hanya soal pilihan orang tua; dua tingkat benar/
 - **Riwayat & dashboard**: `attempts.answers[i]` untuk esai menyimpan `jenis, benar, hadiah, esai{teks, poin[], keliru, contoh, koreksi}`. Detail riwayat menampilkan jawaban anak, ✓/✗ per poin (wajib/pelengkap) + kutipan, fakta keliru, contoh. Tombol **Tandai benar / Tandai salah** → `POST /api/admin/progres/[pemainId]/[latihanId] {nomor, benar}` (sesi admin): skor latihan dan hadiah anak disesuaikan dalam satu transaksi (`koreksiEsai`, `kurangiHadiah`). Bonus boss Pahlawan di akhir sesi tidak dihitung ulang. Grafik di halaman yang sedang terbuka baru ikut berubah setelah dibuka ulang.
 - **Soal mirip (AI)** tetap pilihan ganda; contoh esai dikirim sebagai "soal + Jawaban: …" setelah contoh pilihan ganda.
 - Uji: `esai-test.ts` (keputusan, penjaga kutipan, jawaban kosong, skema, kurangi hadiah), `api13-test.mjs` (rapikan, simpan, kerjakan, periksa, jatah, bujukan, AI rusak, riwayat, koreksi, soal mirip), `esai-ui-test.js` (anak, dashboard, editor + axe). Semua uji lama tetap lulus.
-- **Perlu dicoba pemilik di preview** (dengan Claude asli): ketik/foto soal uraian → cek kartu esai → simpan → anak kerjakan (jawaban benar dengan kata sendiri, jawaban kurang, jawaban keliru) → dashboard koreksi. Kualitas penilaian Haiku per poin belum teruji dengan AI asli.
+- Dicoba pemilik di preview dengan Claude asli memakai pemain & paket percobaan "Tes" (lalu dihapus): "aman udah semua".
+- **Catatan data**: preview dan produksi kemungkinan memakai proyek Firebase yang sama, jadi data percobaan di preview langsung terlihat di produksi. Saat mencoba, pakai pemain/paket percobaan lalu hapus.
 
 ### 3. Gambar di soal dari foto (paling besar)
 - Saat baca foto, AI juga memperkirakan **kotak letak gambar** untuk soal `perluGambar`.
