@@ -26,6 +26,8 @@ export type PaketPilihan = {
   subject: string;
   sourceText: string;
   questions: SoalPilihan[];
+  /** Acak urutan pilihan setiap kali dikerjakan (bawaan menyala; paket lama tanpa field = menyala). */
+  acakPilihan: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -51,6 +53,7 @@ export const paketSchema = z
     subject: z.string().min(1).max(40),
     sourceText: z.string().max(TEKS_ADMIN_MAKS),
     questions: z.array(soalPilihanSchema).min(1, "Belum ada soal yang bisa disimpan.").max(SOAL_PER_PAKET_MAKS),
+    acakPilihan: z.boolean().default(true),
   })
   .strict()
   .refine((p) => MAPEL[jenjangOf(p.kelas)].includes(p.subject), "Mata pelajaran tidak tersedia untuk kelas ini.");

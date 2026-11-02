@@ -67,7 +67,7 @@ families/{uid}/players/{id}        name, kelas, theme, academicYear, rewards, cr
 families/{uid}/players/{id}/sesi/{sesiId}       paket soal lengkap dengan kunci (tidak pernah dikirim ke browser sebelum dijawab), jawaban
 families/{uid}/players/{id}/attempts/{sesiId}   riwayat latihan selesai: mapel, topik, level, sumber, skor, jawaban per soal
 families/{uid}/players/{id}/topikStat/{hash}    statistik topik per level (best, last, tries) untuk saran
-families/{uid}/soalPilihan/{id}                 soal pilihan orang tua (judul, kelas, mapel, teks asli, soal)
+families/{uid}/soalPilihan/{id}                 soal pilihan orang tua (judul, kelas, mapel, teks asli, soal, saklar acak pilihan)
 families/{uid}/adminSesi/{sha256}               sesi mode admin (60 menit)
 families/{uid}/pemakaian/{YYYY-MM-DD}           jatah AI harian (WIB): total, perPemain, rapikan
 families/{uid}/logAi/{id}                       model, token masuk/keluar, hasil per permintaan AI (tanpa isi foto)

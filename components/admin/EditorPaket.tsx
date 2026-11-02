@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from "react";
 import { useToast } from "@/components/Toast";
 import { api, apiMessage, ApiFailure } from "@/lib/api";
+import { merujukPilihanLain } from "@/lib/acakPilihan";
 import { siapkanFoto } from "@/lib/foto";
 import { JENJANG_INFO, MAPEL, jenjangOf, kelasInJenjang, kelasShort, type Jenjang } from "@/lib/kelas";
 import {
@@ -54,6 +55,7 @@ export function EditorPaket({
   const [mapel, setMapel] = useState(paket?.subject ?? MAPEL[jenjangOf(kelasAwal)][0]);
   const [teks, setTeks] = useState(paket?.sourceText ?? "");
   const [soal, setSoal] = useState<SoalPilihan[]>(() => paket?.questions.map((q) => ({ ...q, options: [...q.options] })) ?? []);
+  const [acakPilihan, setAcakPilihan] = useState(paket?.acakPilihan ?? true);
   const [teksBerubah, setTeksBerubah] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
   const [merapikan, setMerapikan] = useState(false);
@@ -166,7 +168,7 @@ export function EditorPaket({
     try {
       await api.simpanPaket(
         sesi,
-        { title: judul.trim() || judulBawaan(mapelAktif, kelas), kelas, subject: mapelAktif, sourceText: teks, questions: soal },
+        { title: judul.trim() || judulBawaan(mapelAktif, kelas), kelas, subject: mapelAktif, sourceText: teks, questions: soal, acakPilihan },
         paket?.id,
       );
       toast(`Tersimpan. Muncul untuk ${kelasShort(kelas)} di pelajaran ${mapelAktif}.`);
@@ -286,6 +288,17 @@ export function EditorPaket({
             <span className="muted num">{soal.length} soal</span>
           </div>
           <p className="pv-note">Ketuk pilihan untuk menjadikannya kunci jawaban.</p>
+          <label className="saklar">
+            <input type="checkbox" role="switch" checked={acakPilihan} onChange={(e) => setAcakPilihan(e.target.checked)} />
+            <span className="saklar-teks">
+              <strong>Acak urutan pilihan</strong>
+              <span className="pv-note">
+                {acakPilihan
+                  ? "Setiap kali dikerjakan, urutan A–D diacak dan letak jawaban benar berpindah. Urutan soal tetap."
+                  : "Pilihan tampil persis seperti urutan di sini."}
+              </span>
+            </span>
+          </label>
           <ol className="pv">
             {soal.map((q, i) => (
               <li key={`${i}-${q.q}`} className={q.keyGuessed || q.perluGambar ? "pv-q warn" : "pv-q"}>
@@ -297,6 +310,9 @@ export function EditorPaket({
                   <span className="pv-note warn">Soal ini butuh gambar yang tidak bisa ditampilkan. Hapus, atau ubah teksnya supaya tanpa gambar.</span>
                 )}
                 {q.optionsAdded && <span className="pv-note">Sebagian pilihan jawaban ditambahkan AI.</span>}
+                {acakPilihan && merujukPilihanLain(q.options) && (
+                  <span className="pv-note">Urutan pilihan soal ini tidak diacak karena ada pilihan yang merujuk pilihan lain.</span>
+                )}
                 {q.options.map((o, k) => (
                   <button
                     key={k}

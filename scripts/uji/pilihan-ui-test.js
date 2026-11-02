@@ -16,7 +16,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   const post = async (path, body, sesi) => (await fetch(BASE + path, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + T, ...(sesi ? { 'x-admin-sesi': sesi } : {}) }, body: JSON.stringify(body) })).json();
   const sesi = (await post('/api/admin/pin', { pin: '1234' })).token;
   const q = (teks, opsi, kunci) => ({ q: teks, options: opsi, answer: kunci, explain: 'Penjelasan dari orang tua.', keyGuessed: false, optionsAdded: false });
-  await post('/api/admin/soal-pilihan', { title: 'UTS Pecahan', kelas: 5, subject: 'Matematika', sourceText: '', questions: [q('Hasil 1/2 + 1/2?', ['1', '2', '1/4'], 0), q('Hasil 3/4 - 1/4?', ['1/2', '1', '2/4', '0'], 0)] }, sesi);
+  await post('/api/admin/soal-pilihan', { title: 'UTS Pecahan', kelas: 5, subject: 'Matematika', sourceText: '', questions: [q('Hasil 1/2 + 1/2?', ['1', '2', '1/4'], 0), q('Hasil 3/4 - 1/4?', ['1/2', '1', '2/4', '0'], 0)], acakPilihan: false }, sesi); // urutan tetap supaya posisi kunci bisa diuji
   await post('/api/admin/soal-pilihan', { title: 'Ulangan IPAS', kelas: 5, subject: 'IPAS', sourceText: '', questions: [q('Planet terdekat dari Matahari?', ['Merkurius', 'Venus'], 0)] }, sesi);
   const raka = (await post('/api/pemain', { name: 'Raka', kelas: 5, theme: 'blok' })).player;
   const nadia = (await post('/api/pemain', { name: 'Nadia', kelas: 8, theme: 'antariksa' })).player;
@@ -62,7 +62,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   await p.getByRole('button', { name: 'Kerjakan' }).click();
   await p.locator('.qtext').waitFor();
   ok(await p.locator('.qtop .tag').innerText() === 'soal pilihan · UTS Pecahan' && await p.getByText('Soal 1 dari 2').isVisible(), 'tag "soal pilihan · UTS Pecahan"');
-  ok((await opsi().count()) === 3 && (await opsi().first().innerText()).replace(/\s+/g, '') === 'A1', 'soal 3 pilihan, urutan asli');
+  ok((await opsi().count()) === 3 && (await opsi().first().innerText()).replace(/\s+/g, '') === 'A1', 'soal 3 pilihan, urutan asli (saklar acak mati)');
   await opsi().nth(0).click(); await p.locator('.fb').waitFor();
   ok(await p.locator('.fb .reward-pop').innerText() === '+1 batu' && await p.getByText('Penjelasan dari orang tua.').isVisible(), 'benar: +1 batu (setara sedang), penjelasan orang tua');
   await lanjut();
