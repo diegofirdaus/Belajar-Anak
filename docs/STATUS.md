@@ -4,7 +4,7 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 
 ## Posisi sekarang
 
-- Branch kerja: **`pengembangan`**. **Rilis pertama sudah di-merge ke `main`** (PR #1, 1 Nov 2026) → Vercel Production. Perubahan berikutnya: kerjakan di `pengembangan`, coba di preview, lalu PR baru ke `main`.
+- Branch kerja: **`pengembangan`** (selalu disamakan dengan `main` setelah tiap rilis). Rilis setelah rilis pertama: PR #2 (login iPhone), PR #3 (soal pilihan >20 soal). **Rilis pertama sudah di-merge ke `main`** (PR #1, 1 Nov 2026) → Vercel Production. Perubahan berikutnya: kerjakan di `pengembangan`, coba di preview, lalu PR baru ke `main`.
 - Preview: https://markas-latihan-git-pengembangan-minions-3f7b.vercel.app (cek server di `/sehat`).
 - Selesai dan sudah dicoba pemilik di preview: **Tahap 1–9** (urutan di brief bagian 14), termasuk Lupa PIN lewat login ulang Google dan soal mirip AI.
 - Selesai dibangun dan lulus uji di container, **belum dicoba pemilik**: **Tahap 10**.
@@ -114,6 +114,35 @@ Isi (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`, semua tangg
 - Rilis = PR `pengembangan` → `main`. Production di Vercel butuh `FIREBASE_SERVICE_ACCOUNT` (atau sementara `FIREBASE_SERVICE_ACOUNT`) dan `ANTHROPIC_API_KEY` dicentang untuk **Production**, dan alamat produksi harus ditambahkan ke Firebase → Authentication → Authorized domains (`*.vercel.app` tidak otomatis). Sambungan Vercel di sesi Claude tidak bisa membaca env/domain proyek, jadi pemilik yang mengecek.
 - Pemilik sudah mencentang env Production dan menambahkan alamat produksi ke Firebase Authorized domains; PR #1 di-merge. **Produksi sudah dicek pemilik (1 Nov 2026): `/sehat` Beres, login Google, sesi soal AI — semua jalan.** Alamat produksi: https://markas-latihan.vercel.app. Pemain percobaan sudah dihapus pemilik.
 - Sisa setelah rilis: ganti nama variabel `FIREBASE_SERVICE_ACOUNT` → `FIREBASE_SERVICE_ACCOUNT` lalu hapus cadangannya di `lib/firebase/admin.ts`; domain `markaslatihan.com` (opsional); cek kebijakan Anthropic untuk aplikasi anak sebelum dibuka untuk keluarga lain.
+
+## BERIKUTNYA: 3 fitur dari masukan keluarga (sudah disepakati, belum dibangun)
+
+Kerjakan berurutan 1 → 2 → 3, **rilis terpisah** (pengembangan → preview dicoba pemilik → PR ke main).
+
+### 1. Acak posisi jawaban soal pilihan (kecil)
+- Masalah: soal pilihan orang tua (termasuk dari foto) tidak diacak (keputusan Tahap 9), jadi kunci sering di A/B. Soal AI sudah diacak (`acakPilihan`).
+- Setiap **Kerjakan** (termasuk ulang) → urutan pilihan diacak di server saat membuat sesi (`app/api/soal/pilihan`).
+- **Posisi kunci dijamin berbeda dari percobaan sebelumnya** pada paket yang sama untuk pemain itu (baca attempt terakhir dengan `setId` yang sama; `answers` menyimpan pilihan & kunci).
+- **Pengecualian otomatis**: soal yang pilihannya merujuk pilihan lain ("Semua benar", "Semua salah", "Tidak ada yang benar", "A dan B benar", "a, b, dan c" dsb.) tidak diacak.
+- Saklar per paket di mode admin **"Acak urutan pilihan"**, bawaan menyala (field baru di `soalPilihan`).
+- **Urutan soal TIDAK diacak** (keputusan pemilik).
+
+### 2. Soal esai untuk soal pilihan orang tua (sedang)
+- Hanya untuk **soal pilihan orang tua** (soal sekolah/buku), bukan soal AI.
+- Rapikan teks/foto: soal uraian/isian dikenali sebagai **esai** (bukan dipaksa jadi pilihan ganda dengan `optionsAdded`). AI menyiapkan **contoh jawaban**, **poin wajib** (1–2, harus ada) dan **poin pelengkap** (tidak wajib). Orang tua bisa mengedit semuanya di kartu "Cek dulu".
+- Anak mengetik jawaban (maks 500 huruf) → "Periksa" → "Pipo sedang memeriksa…" → AI (Haiku) memeriksa **per poin**: ada/tidak + kutipan dari jawaban anak + apakah ada fakta keliru. **Keputusan akhir dihitung kode**, bukan AI: **Benar** = semua poin wajib ada maknanya (kata boleh beda, salah ketik boleh) DAN tidak ada fakta keliru; selain itu **Belum tepat**. Poin pelengkap yang hilang → catatan "Bisa ditambah: …", tetap benar.
+- **Dua tingkat saja** (benar / belum tepat), tanpa "hampir benar" (keputusan pemilik: menghindari bias).
+- Isian singkat: poin wajib = faktanya. Soal pendapat: poin wajib = "menyebut pendapat + alasan". Kosong/"tidak tahu" → belum tepat.
+- Jawaban anak = data, bukan perintah (anti "anggap jawabanku benar"). Tetap sesuai brief: tidak ada chat bebas dengan AI.
+- Jatah terpisah: ±100 pemeriksaan esai per anak per hari. Hadiah esai benar = setara sedang (seperti soal pilihan).
+- **Koreksi orang tua** di dashboard (Riwayat → detail): tombol "Tandai benar"/"Tandai salah" untuk soal esai; skor attempt dan hadiah ikut menyesuaikan.
+- Dashboard/riwayat menampilkan jawaban esai anak, hasil per poin, dan alasannya.
+
+### 3. Gambar di soal dari foto (paling besar)
+- Saat baca foto, AI juga memperkirakan **kotak letak gambar** untuk soal `perluGambar`.
+- Editor menampilkan potongan usulan; orang tua bisa **menggeser/mengubah kotak potong** dengan jari, lalu menyimpan.
+- **Hanya potongan gambar yang disimpan** (diperkecil ±100–200 KB, satu dokumen Firestore per gambar, hanya bisa dibuka keluarga itu). **Foto halaman utuh tetap TIDAK disimpan** (keputusan pemilik). Potongan dipotong di browser dari foto yang masih ada di HP.
+- Anak melihat gambar di atas soal, ketuk untuk memperbesar. Hanya untuk soal pilihan.
 
 ## Perbaikan login di Safari iPhone (setelah rilis)
 
