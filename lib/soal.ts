@@ -1,13 +1,17 @@
 import { z } from "zod";
 import { LEVELS } from "./kelas";
 import type { HadiahSatu, SumberSoal } from "./latihan";
+import type { HasilEsai } from "./esai";
 import type { Rewards } from "./rewards";
-import { SOAL_PER_PAKET_MAKS } from "./soalPilihan";
+import { ESAI_JAWABAN_MAKS, SOAL_PER_PAKET_MAKS, type KunciEsai } from "./soalPilihan";
 
-/** Satu soal pilihan ganda (brief 6). `answer` = indeks dari 0. */
-export type Soal = { q: string; options: string[]; answer: number; explain: string };
+/**
+ * Satu soal (brief 6). Pilihan ganda: `answer` = indeks dari 0.
+ * Soal esai (hanya dari soal pilihan orang tua): `jenis: "esai"`, `options` kosong, kunci di `esai`.
+ */
+export type Soal = { q: string; options: string[]; answer: number; explain: string; jenis?: "esai"; esai?: KunciEsai };
 /** Soal yang dikirim ke browser: tanpa kunci dan penjelasan sebelum anak menjawab. */
-export type SoalTanpaKunci = { q: string; options: string[] };
+export type SoalTanpaKunci = { q: string; options: string[]; jenis?: "esai" };
 
 export const JUMLAH_SOAL = [5, 10] as const;
 export const TOPIK_MAKS = 120;
@@ -48,16 +52,23 @@ export const jawabSchema = z
     pemainId: z.string().min(1).max(128),
     // Paket terbesar adalah soal pilihan orang tua (maks SOAL_PER_PAKET_MAKS), bukan paket AI (maks 10).
     nomor: z.number().int().min(0).max(SOAL_PER_PAKET_MAKS - 1),
-    pilihan: z.number().int().min(0).max(3),
+    pilihan: z.number().int().min(0).max(3).optional(),
+    /** Jawaban soal esai. */
+    teks: z.string().max(ESAI_JAWABAN_MAKS, `Jawaban maksimal ${ESAI_JAWABAN_MAKS} huruf.`).optional(),
   })
-  .strict();
+  .strict()
+  .refine((j) => (j.pilihan === undefined) !== (j.teks === undefined), "Jawaban tidak dikenal.");
 export type PermintaanJawab = z.infer<typeof jawabSchema>;
 
 /** Hasil cek satu jawaban. Kunci dan penjelasan baru dikirim setelah anak menjawab. */
 export type HasilJawab = {
   benar: boolean;
+  /** Pilihan anak; -1 untuk soal esai. */
   pilihan: number;
+  /** Kunci; -1 untuk soal esai. */
   answer: number;
+  /** Hasil pemeriksaan soal esai (per poin). */
+  esai?: HasilEsai;
   explain: string;
   hadiah: HadiahSatu | null;
   /** Hadiah pemain setelah jawaban ini (sudah tersimpan). */

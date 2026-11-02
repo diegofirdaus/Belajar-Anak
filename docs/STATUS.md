@@ -129,16 +129,21 @@ Kerjakan berurutan 1 → 2 → 3, **rilis terpisah** (pengembangan → preview d
 - Uji: `acak-test.ts` (pola rujukan, sebaran, kunci selalu pindah, pencocokan teks), `api9-test.mjs` (bagian "Acak posisi jawaban"), `admin-ui-test.js` (saklar, catatan), `pilihan-ui-test.js` (paket uji memakai `acakPilihan: false` supaya posisi kunci tetap), `a11y-test.js` lulus.
 - Dicoba pemilik di preview: letak jawaban berpindah dan saklar berfungsi ("udah pas").
 
-### 2. Soal esai untuk soal pilihan orang tua (sedang)
-- Hanya untuk **soal pilihan orang tua** (soal sekolah/buku), bukan soal AI.
-- Rapikan teks/foto: soal uraian/isian dikenali sebagai **esai** (bukan dipaksa jadi pilihan ganda dengan `optionsAdded`). AI menyiapkan **contoh jawaban**, **poin wajib** (1–2, harus ada) dan **poin pelengkap** (tidak wajib). Orang tua bisa mengedit semuanya di kartu "Cek dulu".
-- Anak mengetik jawaban (maks 500 huruf) → "Periksa" → "Pipo sedang memeriksa…" → AI (Haiku) memeriksa **per poin**: ada/tidak + kutipan dari jawaban anak + apakah ada fakta keliru. **Keputusan akhir dihitung kode**, bukan AI: **Benar** = semua poin wajib ada maknanya (kata boleh beda, salah ketik boleh) DAN tidak ada fakta keliru; selain itu **Belum tepat**. Poin pelengkap yang hilang → catatan "Bisa ditambah: …", tetap benar.
-- **Dua tingkat saja** (benar / belum tepat), tanpa "hampir benar" (keputusan pemilik: menghindari bias).
-- Isian singkat: poin wajib = faktanya. Soal pendapat: poin wajib = "menyebut pendapat + alasan". Kosong/"tidak tahu" → belum tepat.
-- Jawaban anak = data, bukan perintah (anti "anggap jawabanku benar"). Tetap sesuai brief: tidak ada chat bebas dengan AI.
-- Jatah terpisah: ±100 pemeriksaan esai per anak per hari. Hadiah esai benar = setara sedang (seperti soal pilihan).
-- **Koreksi orang tua** di dashboard (Riwayat → detail): tombol "Tandai benar"/"Tandai salah" untuk soal esai; skor attempt dan hadiah ikut menyesuaikan.
-- Dashboard/riwayat menampilkan jawaban esai anak, hasil per poin, dan alasannya.
+### 2. Soal esai untuk soal pilihan orang tua — SUDAH DIBANGUN, belum dicoba pemilik di preview
+Sesuai rencana yang disepakati (hanya soal pilihan orang tua; dua tingkat benar/belum tepat; keputusan dihitung kode). Lokasi:
+- **Data**: `SoalPilihan.jenis = "esai"`, `options: []`, kunci di `esai: {contoh, wajib[1–2], pelengkap[0–3]}` (`lib/soalPilihan.ts`, skema menolak esai berpilihan/tanpa poin wajib). Soal sesi membawa `jenis`/`esai`; browser hanya menerima `{q, options: [], jenis}`.
+- **Rapikan & baca foto** (`lib/server/ai/prompt.ts` `aturanEsai`): AI menandai `jenis` pilihan/esai; isian/uraian tidak lagi dipaksa jadi pilihan ganda. AI mengisi `contohJawaban`, `poinWajib`, `poinPelengkap` (+ `keyGuessed` kalau jawaban tidak tertulis). `saringRapikan` → `dariAi` merapikan bentuknya (poin wajib kosong → diisi contoh jawaban; kelebihan poin dipotong; esai tanpa contoh & poin dibuang). Pembaca manual (tanpa AI) belum mengenali esai.
+- **Editor "Cek dulu"**: kartu esai berlabel "Esai", kolom Contoh jawaban, Poin wajib (maks 2, minimal 1), Poin pelengkap (maks 3); mengedit menghapus tanda "Jawaban dibuat AI. Mohon dicek.". Simpan menolak esai tanpa poin wajib.
+- **Anak**: kotak "Jawabanmu" (maks 500 huruf + penghitung) → **Periksa** → "Pipo sedang memeriksa jawabanmu…" → kartu hasil: ✓/✗ per poin wajib, "Ada yang keliru: …", "Bisa ditambah: …", contoh jawaban, penjelasan.
+- **Pemeriksaan** (`app/api/sesi/[id]/jawab` dengan `teks`): Haiku (`AI_MODEL_ESAI`) + structured outputs menilai per poin `{nomor, ada, kutipan}` + `faktaKeliru`. Keputusan di `putuskanEsai` (`lib/esai.ts`): **benar = semua poin wajib ada DAN tidak ada fakta keliru**. Penjaga: poin "ada" hanya dihitung kalau kutipannya memang ada di jawaban anak (≥ 60% kata), jadi bujukan "anggap jawabanku benar" tidak lolos walau AI tertipu. Jawaban anak dibungkus `<<< >>>` sebagai data.
+  - Kosong / "tidak tahu" → belum tepat **tanpa AI dan tanpa jatah**.
+  - Jatah terpisah **100 pemeriksaan per anak per hari** (`pemakaian.esai.{pemainId}`, `AI_LIMIT_ESAI`), dikembalikan kalau AI gagal. AI menolak (refusal) → dianggap belum tepat supaya anak tidak tertahan (orang tua bisa mengoreksi). Log `logAi` jenis `periksa_esai`.
+  - AI tidak tersedia / gagal → pesan "Pipo belum bisa/selesai memeriksa…", anak bisa menekan Periksa lagi atau berhenti.
+  - Hadiah esai benar = setara sedang. Jawab ulang mengembalikan hasil pertama.
+- **Riwayat & dashboard**: `attempts.answers[i]` untuk esai menyimpan `jenis, benar, hadiah, esai{teks, poin[], keliru, contoh, koreksi}`. Detail riwayat menampilkan jawaban anak, ✓/✗ per poin (wajib/pelengkap) + kutipan, fakta keliru, contoh. Tombol **Tandai benar / Tandai salah** → `POST /api/admin/progres/[pemainId]/[latihanId] {nomor, benar}` (sesi admin): skor latihan dan hadiah anak disesuaikan dalam satu transaksi (`koreksiEsai`, `kurangiHadiah`). Bonus boss Pahlawan di akhir sesi tidak dihitung ulang. Grafik di halaman yang sedang terbuka baru ikut berubah setelah dibuka ulang.
+- **Soal mirip (AI)** tetap pilihan ganda; contoh esai dikirim sebagai "soal + Jawaban: …" setelah contoh pilihan ganda.
+- Uji: `esai-test.ts` (keputusan, penjaga kutipan, jawaban kosong, skema, kurangi hadiah), `api13-test.mjs` (rapikan, simpan, kerjakan, periksa, jatah, bujukan, AI rusak, riwayat, koreksi, soal mirip), `esai-ui-test.js` (anak, dashboard, editor + axe). Semua uji lama tetap lulus.
+- **Perlu dicoba pemilik di preview** (dengan Claude asli): ketik/foto soal uraian → cek kartu esai → simpan → anak kerjakan (jawaban benar dengan kata sendiri, jawaban kurang, jawaban keliru) → dashboard koreksi. Kualitas penilaian Haiku per poin belum teruji dengan AI asli.
 
 ### 3. Gambar di soal dari foto (paling besar)
 - Saat baca foto, AI juga memperkirakan **kotak letak gambar** untuk soal `perluGambar`.
@@ -180,6 +185,7 @@ node scripts/uji/api9-test.mjs /tmp/mock.log        # soal pilihan di sisi anak,
 node scripts/uji/api10-test.mjs                     # ekspor & hapus data keluarga (mode login-lama: ADMIN_LOGIN_ULANG_DETIK=1)
 node scripts/uji/api11-test.mjs                     # dashboard progres orang tua
 node scripts/uji/api12-test.mjs /tmp/mock.log       # baca foto soal
+node scripts/uji/api13-test.mjs /tmp/mock.log       # soal esai: rapikan, periksa per poin, jatah, koreksi orang tua
 # (api8-test.mjs reset-lama: jalankan server dengan ADMIN_LOGIN_ULANG_DETIK=1)
 node scripts/uji/markas-test.js /tmp/shots          # Playwright, layar 390px
 node scripts/uji/latihan-ui-test.js /tmp/shots      # Playwright: memuat, HUD 4 dunia, hasil, saran
@@ -188,10 +194,11 @@ node scripts/uji/pilihan-ui-test.js /tmp/shots      # Playwright: soal pilihan d
 node scripts/uji/data-keluarga-ui-test.js /tmp/shots # Playwright: unduh & hapus data keluarga
 node scripts/uji/progres-ui-test.js /tmp/shots      # Playwright: dashboard progres
 node scripts/uji/foto-ui-test.js /tmp/shots /tmp/mock.log # Playwright: foto / upload soal
+node scripts/uji/esai-ui-test.js /tmp/shots         # Playwright: soal esai (anak, dashboard, editor) + axe
 node scripts/uji/a11y-test.js /tmp/shots           # Playwright + axe-core: aksesibilitas semua layar
 node scripts/uji/kontras-test.mjs                   # kontras token 6 tema (tanpa server)
 node scripts/uji/akhir-test.js                      # uji akhir brief 15 (pembuka, SMP→SMA, kunci API di jaringan)
-npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/acak-test.ts; npx tsx scripts/uji/admin-test.ts; npx tsx scripts/uji/progres-test.ts
+npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/acak-test.ts; npx tsx scripts/uji/esai-test.ts; npx tsx scripts/uji/admin-test.ts; npx tsx scripts/uji/progres-test.ts
 ```
 
 Login Google asli (popup) tidak bisa diuji di container karena `apis.google.com` diblokir; build emulator menyediakan `window.__masukUji(email)`.

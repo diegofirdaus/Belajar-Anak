@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useState } from "react";
 import { api, apiMessage, ApiFailure } from "@/lib/api";
+import type { DetailSoal } from "@/lib/esai";
 import { getDevicePlayer } from "@/lib/device";
 import { kelasShort } from "@/lib/kelas";
 import { labelLevel, tanggalPendek, type Riwayat } from "@/lib/latihan";
@@ -539,13 +540,28 @@ function Detail({ anak, data, sesi, onSesiHabis }: { anak: ProgresPemain; data: 
   );
 }
 
-type DetailSoal = { q: string; options: string[]; answer: number; pilihan: number | null }[];
-
 function BarisRiwayat({ x, anak, sesi, onSesiHabis }: { x: Riwayat; anak: ProgresPemain; sesi: string; onSesiHabis: () => void }) {
   const id = useId();
   const [buka, setBuka] = useState(false);
-  const [detail, setDetail] = useState<DetailSoal | null>(null);
+  const [detail, setDetail] = useState<DetailSoal[] | null>(null);
   const [galat, setGalat] = useState<string | null>(null);
+  const [skor, setSkor] = useState(x.benar);
+  const [mengoreksi, setMengoreksi] = useState<number | null>(null);
+
+  async function koreksi(nomor: number, benar: boolean) {
+    setMengoreksi(nomor);
+    setGalat(null);
+    try {
+      const r = await api.koreksiEsai(sesi, anak.id, x.id, nomor, benar);
+      setDetail(r.soal);
+      setSkor(r.benar);
+    } catch (e) {
+      if (e instanceof ApiFailure && e.code === "admin_perlu") onSesiHabis();
+      else setGalat(apiMessage(e));
+    } finally {
+      setMengoreksi(null);
+    }
+  }
 
   function alihkan() {
     const baru = !buka;
@@ -571,8 +587,8 @@ function BarisRiwayat({ x, anak, sesi, onSesiHabis }: { x: Riwayat; anak: Progre
             {x.mapel} · {labelLevel(x.level)} · {tanggalPendek(x.waktu)}
           </span>
         </span>
-        <span className="hist-score num" aria-label={`${x.benar} dari ${x.n} benar`}>
-          {x.benar}/{x.n}
+        <span className="hist-score num" aria-label={`${skor} dari ${x.n} benar`}>
+          {skor}/{x.n}
         </span>
       </button>
       {buka && (
@@ -586,6 +602,17 @@ function BarisRiwayat({ x, anak, sesi, onSesiHabis }: { x: Riwayat; anak: Progre
           {detail && (
             <ol className="pv">
               {detail.map((d, i) => {
+                if (d.jenis === "esai")
+                  return (
+                    <SoalEsaiRiwayat
+                      key={i}
+                      nomor={i}
+                      d={d}
+                      nama={anak.name}
+                      sibuk={mengoreksi !== null}
+                      onKoreksi={(benar) => koreksi(i, benar)}
+                    />
+                  );
                 const benar = d.pilihan === d.answer;
                 return (
                   <li key={i} className={benar ? "pv-q" : "pv-q salah"}>
@@ -612,6 +639,56 @@ function BarisRiwayat({ x, anak, sesi, onSesiHabis }: { x: Riwayat; anak: Progre
             </ol>
           )}
         </div>
+      )}
+    </li>
+  );
+}
+
+/** Soal esai di riwayat: jawaban anak, hasil per poin, dan koreksi orang tua. */
+function SoalEsaiRiwayat({
+  nomor,
+  d,
+  nama,
+  sibuk,
+  onKoreksi,
+}: {
+  nomor: number;
+  d: DetailSoal;
+  nama: string;
+  sibuk: boolean;
+  onKoreksi: (benar: boolean) => void;
+}) {
+  const e = d.esai;
+  const benar = Boolean(d.benar);
+  return (
+    <li className={benar ? "pv-q" : "pv-q salah"}>
+      <p>
+        {nomor + 1}. {d.q} <span className="tag-esai">Esai</span>
+      </p>
+      {!e ? (
+        <p className="small muted">Tidak dijawab.</p>
+      ) : (
+        <>
+          <p className="small">
+            Jawaban {nama}: <b>{benar ? "✓ Benar" : "✗ Belum tepat"}</b>
+            {e.koreksi && <span className="muted"> (dikoreksi orang tua)</span>}
+          </p>
+          <blockquote className="esai-kutip">{e.teks || <span className="muted">(kosong)</span>}</blockquote>
+          <ul className="esai-poin-hasil small">
+            {e.poin.map((p, k) => (
+              <li key={k}>
+                <span aria-hidden="true">{p.ada ? "✓" : "✗"}</span> {p.wajib ? "Wajib" : "Pelengkap"}: {p.poin}
+                <span className="sr-only">{p.ada ? " (ada)" : " (belum ada)"}</span>
+                {p.ada && p.kutipan && <span className="muted"> — “{p.kutipan}”</span>}
+              </li>
+            ))}
+          </ul>
+          {e.keliru && <p className="small">Fakta keliru: {e.keliru}</p>}
+          {e.contoh && <p className="small muted">Contoh jawaban: {e.contoh}</p>}
+          <button type="button" className="btn ghost small" disabled={sibuk} onClick={() => onKoreksi(!benar)}>
+            {benar ? "Tandai salah" : "Tandai benar"}
+          </button>
+        </>
       )}
     </li>
   );

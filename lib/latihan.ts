@@ -51,6 +51,29 @@ export function terapkanJawabanBenar(r: Rewards, dunia: WorldId, level: LevelHad
   return { rewards: baru, hadiah: { dunia, tulang: h.tulang, kerangkaBaru } };
 }
 
+/**
+ * Kebalikan `terapkanJawabanBenar`: dipakai saat orang tua menandai jawaban esai jadi salah.
+ * Tidak pernah membuat hadiah negatif. Kerangka dino yang selesai karena jawaban itu dibongkar lagi.
+ */
+export function kurangiHadiah(r: Rewards, h: HadiahSatu | null): Rewards {
+  if (!h) return r;
+  const baru: Rewards = structuredClone(r);
+  if (h.dunia === "blok") baru.blok[h.material] = Math.max(0, baru.blok[h.material] - 1);
+  else if (h.dunia === "pahlawan") baru.pahlawan.xp = Math.max(0, baru.pahlawan.xp - h.xp);
+  else if (h.dunia === "antariksa") baru.antariksa.fuel = Math.max(0, baru.antariksa.fuel - h.liter);
+  else {
+    let bones = baru.dino.bones - h.tulang;
+    for (const nama of [...h.kerangkaBaru].reverse()) {
+      const k = baru.dino.done.lastIndexOf(nama);
+      if (k < 0) continue;
+      baru.dino.done.splice(k, 1);
+      bones += TULANG_PER_KERANGKA;
+    }
+    baru.dino.bones = Math.max(0, bones);
+  }
+  return baru;
+}
+
 /** Boss Pahlawan diselesaikan saat sesi berakhir: kalah kalau benar ≥ ceil(70% × n), bonus 15 XP. */
 export function terapkanAkhirSesi(r: Rewards, dunia: WorldId, benar: number, n: number): { rewards: Rewards; bossKalah: boolean } {
   if (dunia !== "pahlawan") return { rewards: r, bossKalah: false };

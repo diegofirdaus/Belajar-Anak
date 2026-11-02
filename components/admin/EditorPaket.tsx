@@ -9,9 +9,13 @@ import { JENJANG_INFO, MAPEL, jenjangOf, kelasInJenjang, kelasShort, type Jenjan
 import {
   FOTO_MAKS,
   JUDUL_MAKS,
+  POIN_HURUF_MAKS,
+  POIN_PELENGKAP_MAKS,
+  POIN_WAJIB_MAKS,
   TEKS_ADMIN_MAKS,
   bacaManual,
   judulBawaan,
+  type KunciEsai,
   type PaketPilihan,
   type SoalPilihan,
 } from "@/lib/soalPilihan";
@@ -54,7 +58,7 @@ export function EditorPaket({
   const [kelas, setKelas] = useState(paket?.kelas ?? kelasAwal);
   const [mapel, setMapel] = useState(paket?.subject ?? MAPEL[jenjangOf(kelasAwal)][0]);
   const [teks, setTeks] = useState(paket?.sourceText ?? "");
-  const [soal, setSoal] = useState<SoalPilihan[]>(() => paket?.questions.map((q) => ({ ...q, options: [...q.options] })) ?? []);
+  const [soal, setSoal] = useState<SoalPilihan[]>(() => paket?.questions.map((q) => structuredClone(q)) ?? []);
   const [acakPilihan, setAcakPilihan] = useState(paket?.acakPilihan ?? true);
   const [teksBerubah, setTeksBerubah] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
@@ -156,6 +160,10 @@ export function EditorPaket({
     setSoal((daftar) => daftar.map((q, j) => (j === i ? { ...q, answer: k, keyGuessed: false } : q)));
   }
 
+  function ubahEsai(i: number, esai: KunciEsai) {
+    setSoal((daftar) => daftar.map((q, j) => (j === i ? { ...q, esai, keyGuessed: false } : q)));
+  }
+
   function hapusSoal(i: number) {
     setSoal((daftar) => daftar.filter((_, j) => j !== i));
   }
@@ -163,12 +171,19 @@ export function EditorPaket({
   async function simpan() {
     if (!soal.length) return setGalat('Tekan "Rapikan soal" dulu supaya soalnya bisa dicek sebelum disimpan.');
     if (teksBerubah) return setGalat('Teks soal berubah setelah dirapikan. Tekan "Rapikan soal" lagi supaya hasilnya ikut diperbarui.');
+    const bersih = soal.map((q) =>
+      q.esai
+        ? { ...q, esai: { contoh: q.esai.contoh.trim(), wajib: q.esai.wajib.map((x) => x.trim()).filter(Boolean), pelengkap: q.esai.pelengkap.map((x) => x.trim()).filter(Boolean) } }
+        : q,
+    );
+    const tanpaPoin = bersih.findIndex((q) => q.esai && !q.esai.wajib.length);
+    if (tanpaPoin >= 0) return setGalat(`Soal esai nomor ${tanpaPoin + 1} belum punya poin wajib. Isi minimal 1 poin yang harus ada di jawaban anak.`);
     setGalat(null);
     setMenyimpan(true);
     try {
       await api.simpanPaket(
         sesi,
-        { title: judul.trim() || judulBawaan(mapelAktif, kelas), kelas, subject: mapelAktif, sourceText: teks, questions: soal, acakPilihan },
+        { title: judul.trim() || judulBawaan(mapelAktif, kelas), kelas, subject: mapelAktif, sourceText: teks, questions: bersih, acakPilihan },
         paket?.id,
       );
       toast(`Tersimpan. Muncul untuk ${kelasShort(kelas)} di pelajaran ${mapelAktif}.`);
@@ -287,7 +302,10 @@ export function EditorPaket({
             <h2 id={`${id}-cek`}>Cek dulu sebelum simpan</h2>
             <span className="muted num">{soal.length} soal</span>
           </div>
-          <p className="pv-note">Ketuk pilihan untuk menjadikannya kunci jawaban.</p>
+          <p className="pv-note">
+            Ketuk pilihan untuk menjadikannya kunci jawaban.
+            {soal.some((q) => q.esai) && " Soal esai dinilai benar kalau semua poin wajib ada di jawaban anak (kata boleh beda) dan tidak ada fakta yang keliru."}
+          </p>
           <label className="saklar">
             <input type="checkbox" role="switch" checked={acakPilihan} onChange={(e) => setAcakPilihan(e.target.checked)} />
             <span className="saklar-teks">
@@ -305,7 +323,8 @@ export function EditorPaket({
                 <p>
                   {i + 1}. {q.q}
                 </p>
-                {q.keyGuessed && <span className="pv-note warn">Kunci dipilih AI. Mohon dicek.</span>}
+                {q.esai && <span className="tag-esai">Esai · anak mengetik jawaban</span>}
+                {q.keyGuessed && <span className="pv-note warn">{q.esai ? "Jawaban dibuat AI. Mohon dicek." : "Kunci dipilih AI. Mohon dicek."}</span>}
                 {q.perluGambar && (
                   <span className="pv-note warn">Soal ini butuh gambar yang tidak bisa ditampilkan. Hapus, atau ubah teksnya supaya tanpa gambar.</span>
                 )}
@@ -325,6 +344,7 @@ export function EditorPaket({
                     <span>{o}</span>
                   </button>
                 ))}
+                {q.esai && <EditorEsai nomor={i + 1} esai={q.esai} onUbah={(e) => ubahEsai(i, e)} />}
                 {q.explain && <p className="pv-note">Penjelasan: {q.explain}</p>}
                 <button type="button" className="linkbtn danger" onClick={() => hapusSoal(i)}>
                   Hapus soal ini
@@ -344,5 +364,58 @@ export function EditorPaket({
         </button>
       </div>
     </>
+  );
+}
+
+/** Kunci soal esai di kartu "Cek dulu": contoh jawaban, poin wajib (1–2), poin pelengkap (0–3). */
+function EditorEsai({ nomor, esai, onUbah }: { nomor: number; esai: KunciEsai; onUbah: (e: KunciEsai) => void }) {
+  const id = useId();
+  const ubahPoin = (jenis: "wajib" | "pelengkap", k: number, v: string) => onUbah({ ...esai, [jenis]: esai[jenis].map((x, j) => (j === k ? v : x)) });
+  const hapusPoin = (jenis: "wajib" | "pelengkap", k: number) => onUbah({ ...esai, [jenis]: esai[jenis].filter((_, j) => j !== k) });
+  const tambahPoin = (jenis: "wajib" | "pelengkap") => onUbah({ ...esai, [jenis]: [...esai[jenis], ""] });
+
+  const daftar = (jenis: "wajib" | "pelengkap", judul: string, maks: number, min: number) => (
+    <fieldset className="esai-poin">
+      <legend>{judul}</legend>
+      {esai[jenis].map((x, k) => (
+        <div key={k} className="esai-baris">
+          <input
+            className="input"
+            type="text"
+            maxLength={POIN_HURUF_MAKS}
+            aria-label={`Soal ${nomor}, ${jenis === "wajib" ? "poin wajib" : "poin pelengkap"} ${k + 1}`}
+            value={x}
+            onChange={(e) => ubahPoin(jenis, k, e.target.value)}
+          />
+          {esai[jenis].length > min && (
+            <button type="button" className="linkbtn danger" onClick={() => hapusPoin(jenis, k)} aria-label={`Hapus ${jenis === "wajib" ? "poin wajib" : "poin pelengkap"} ${k + 1} soal ${nomor}`}>
+              Hapus
+            </button>
+          )}
+        </div>
+      ))}
+      {esai[jenis].length < maks && (
+        <button type="button" className="linkbtn" onClick={() => tambahPoin(jenis)}>
+          + Tambah {jenis === "wajib" ? "poin wajib" : "poin pelengkap"}
+        </button>
+      )}
+    </fieldset>
+  );
+
+  return (
+    <div className="esai-kunci">
+      <div className="field">
+        <label htmlFor={`${id}-contoh`}>Contoh jawaban</label>
+        <textarea
+          id={`${id}-contoh`}
+          className="esai-contoh"
+          maxLength={2000}
+          value={esai.contoh}
+          onChange={(e) => onUbah({ ...esai, contoh: e.target.value })}
+        />
+      </div>
+      {daftar("wajib", "Poin wajib (harus ada supaya benar)", POIN_WAJIB_MAKS, 1)}
+      {daftar("pelengkap", "Poin pelengkap (tidak wajib)", POIN_PELENGKAP_MAKS, 0)}
+    </div>
   );
 }

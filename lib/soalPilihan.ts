@@ -7,7 +7,19 @@ export const TEKS_ADMIN_MAKS = 20_000;
 export const SOAL_PER_PAKET_MAKS = 50;
 export const PAKET_MAKS = 100;
 
-/** Satu soal pilihan. `options` 2–4 (soal yang dibaca tanpa AI boleh kurang dari 4). */
+/** Batas soal esai (STATUS "BERIKUTNYA" no. 2). */
+export const ESAI_JAWABAN_MAKS = 500;
+export const POIN_WAJIB_MAKS = 2;
+export const POIN_PELENGKAP_MAKS = 3;
+export const POIN_HURUF_MAKS = 200;
+
+/** Kunci soal esai: contoh jawaban, poin wajib (1–2, harus ada), poin pelengkap (boleh tidak ada). */
+export type KunciEsai = { contoh: string; wajib: string[]; pelengkap: string[] };
+
+/**
+ * Satu soal pilihan orang tua. Pilihan ganda: `options` 2–4 (soal yang dibaca tanpa AI boleh kurang dari 4).
+ * Esai (`jenis: "esai"`): `options` kosong, `answer` 0 (tidak dipakai), kunci di `esai`.
+ */
 export type SoalPilihan = {
   q: string;
   options: string[];
@@ -17,7 +29,19 @@ export type SoalPilihan = {
   optionsAdded: boolean;
   /** Dari foto: soal bergantung pada gambar/diagram yang tidak bisa ditampilkan. */
   perluGambar?: boolean;
+  jenis?: "esai";
+  esai?: KunciEsai;
 };
+
+const teks = (maks: number) => z.string().transform((s) => s.trim()).pipe(z.string().min(1).max(maks));
+
+export const esaiSchema = z
+  .object({
+    contoh: z.string().max(2000).transform((s) => s.trim()),
+    wajib: z.array(teks(POIN_HURUF_MAKS)).min(1, "Soal esai butuh minimal 1 poin wajib.").max(POIN_WAJIB_MAKS),
+    pelengkap: z.array(teks(POIN_HURUF_MAKS)).max(POIN_PELENGKAP_MAKS),
+  })
+  .strict();
 
 export type PaketPilihan = {
   id: string;
@@ -32,19 +56,31 @@ export type PaketPilihan = {
   updatedAt: string;
 };
 
-const teks = (maks: number) => z.string().transform((s) => s.trim()).pipe(z.string().min(1).max(maks));
 
 export const soalPilihanSchema = z
   .object({
     q: teks(2000),
-    options: z.array(teks(500)).min(2).max(4),
+    options: z.array(teks(500)).max(4),
     answer: z.number().int().min(0).max(3),
     explain: z.string().max(2000).transform((s) => s.trim()),
     keyGuessed: z.boolean(),
     optionsAdded: z.boolean(),
     perluGambar: z.boolean().optional(),
+    jenis: z.literal("esai").optional(),
+    esai: esaiSchema.optional(),
   })
-  .refine((s) => s.answer < s.options.length, "Kunci jawaban di luar pilihan.");
+  .superRefine((s, ctx) => {
+    if (s.jenis === "esai") {
+      if (s.options.length) ctx.addIssue({ code: "custom", message: "Soal esai tidak punya pilihan jawaban." });
+      if (!s.esai) ctx.addIssue({ code: "custom", message: "Soal esai butuh contoh jawaban dan poin wajib." });
+      return;
+    }
+    if (s.esai) ctx.addIssue({ code: "custom", message: "Kunci esai hanya untuk soal esai." });
+    if (s.options.length < 2) ctx.addIssue({ code: "custom", message: "Soal pilihan ganda butuh minimal 2 pilihan." });
+    else if (s.answer >= s.options.length) ctx.addIssue({ code: "custom", message: "Kunci jawaban di luar pilihan." });
+  });
+
+export const adalahEsai = (q: { jenis?: string }) => q.jenis === "esai";
 
 export const paketSchema = z
   .object({

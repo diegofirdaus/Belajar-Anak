@@ -26,6 +26,22 @@ http.createServer((req, res) => {
     });
     const soal = (i) => ({ q: `Soal nomor ${i + 1}?`, options: [`Benar ${i + 1}`, `Salah A${i}`, `Salah B${i}`, `Salah C${i}`], answer: 0, explain: `Karena benar ${i + 1}.` });
 
+    // Pemeriksaan esai: poin "ada" kalau salah satu kata (≥ 5 huruf) poin muncul di jawaban; "keliru" → fakta keliru;
+    // "rusak" → JSON rusak; "PALSU" → AI mengaku semua poin ada dengan kutipan karangan (harus ditolak kode).
+    if (prompt.includes('Kamu memeriksa jawaban esai')) {
+      const daftar = prompt.split('Poin yang dinilai:\n')[1].split('\nTugas:')[0].split('\n').map((x) => x.replace(/^\d+\. /, ''));
+      const jawaban = prompt.split('<<<\n')[1].split('\n>>>')[0];
+      const kecil = jawaban.toLowerCase();
+      if (jawaban.includes('rusak')) return pesan('ini bukan JSON {');
+      if (jawaban.includes('PALSU')) return pesan(JSON.stringify({ poin: daftar.map((_, i) => ({ nomor: i + 1, ada: true, kutipan: 'tumbuhan membuat makanan dengan cahaya matahari' })), faktaKeliru: false, keliru: '' }));
+      const poin = daftar.map((d, i) => {
+        const kata = d.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 5).find((w) => kecil.includes(w)) ?? '@@';
+        const k = kecil.indexOf(kata);
+        return { nomor: i + 1, ada: k >= 0, kutipan: k >= 0 ? jawaban.slice(k, k + kata.length) : '' };
+      });
+      const keliru = kecil.includes('keliru');
+      return pesan(JSON.stringify({ poin, faktaKeliru: keliru, keliru: keliru ? 'Matahari tidak mengelilingi bumi.' : '' }));
+    }
     if (prompt.includes('lambat')) return setTimeout(() => pesan(JSON.stringify({ soal: Array.from({ length: n }, (_, i) => soal(i)) })), 4000);
     if (prompt.includes('sibuk')) return kirim(429, { type: 'error', error: { type: 'rate_limit_error', message: 'tiruan' } });
     if (prompt.includes('kuncisalah')) return kirim(401, { type: 'error', error: { type: 'authentication_error', message: 'tiruan' } });
@@ -48,6 +64,14 @@ http.createServer((req, res) => {
         ],
       }));
     }
+    const esai = (o) => ({ jenis: 'esai', options: [], answer: 0, optionsAdded: false, keyGuessed: true, explain: 'Tumbuhan membuat makanan sendiri.', ...o });
+    if (prompt.includes('Berikut teks soal yang diketik orang tua') && prompt.split('<<<').pop().includes('uraian')) return pesan(JSON.stringify({ soal: [
+      { jenis: 'pilihan', q: 'Hasil dari 3/4 + 1/4 adalah...', options: ['1/2', '1', '4/8', '2'], answer: 1, explain: '3 + 1 = 4, jadi 4/4 = 1.', keyGuessed: false, optionsAdded: false, contohJawaban: '', poinWajib: [], poinPelengkap: [] },
+      esai({ q: 'Jelaskan proses fotosintesis!', contohJawaban: 'Fotosintesis adalah proses tumbuhan membuat makanan sendiri dengan bantuan cahaya matahari dan menghasilkan oksigen.', poinWajib: ['Tumbuhan membuat makanan sendiri', 'Membutuhkan cahaya matahari'], poinPelengkap: ['Menghasilkan oksigen'] }),
+      esai({ q: 'Ibu kota Indonesia adalah ...', options: ['harus', 'dibuang'], answer: 1, optionsAdded: true, keyGuessed: false, contohJawaban: 'Jakarta', poinWajib: [], poinPelengkap: [] }),
+      esai({ q: 'Poin terlalu banyak?', contohJawaban: 'x', poinWajib: ['a1', 'a2', 'a3'], poinPelengkap: ['b1', 'b2', 'b3', 'b4', ''] }),
+      esai({ q: 'Esai tanpa kunci', contohJawaban: '', poinWajib: [], poinPelengkap: [] }),
+    ] }));
     if (prompt.includes('Berikut teks soal yang diketik orang tua')) return pesan(JSON.stringify({ soal: [
       { q: 'Hasil dari 3/4 + 1/4 adalah...', options: ['1/2', '1', '4/8', '2'], answer: 1, explain: 'Penyebut sama, jumlahkan pembilang: 3 + 1 = 4, jadi 4/4 = 1.', keyGuessed: false, optionsAdded: false },
       { q: 'Ibu punya 12 kue, dibagi rata ke 4 anak. Tiap anak dapat berapa kue?', options: ['2', '3', '4', '6'], answer: 1, explain: '12 : 4 = 3.', keyGuessed: true, optionsAdded: true },

@@ -1,6 +1,7 @@
 "use client";
 
 import { clientAuth } from "@/lib/firebase/client";
+import type { DetailSoal } from "@/lib/esai";
 import type { NewPlayer, Player, PlayerUpdate } from "@/lib/player";
 import type { Riwayat, StatTopik } from "@/lib/latihan";
 import type { DataProgres } from "@/lib/progres";
@@ -115,9 +116,14 @@ export const api = {
     call<{ ok: true }>("/api/keluarga/hapus", { method: "POST", body: JSON.stringify({ konfirmasi: "HAPUS" }), headers: adminHeader(sesi) }),
   progres: (sesi: string) => call<DataProgres>("/api/admin/progres", { headers: adminHeader(sesi) }),
   detailLatihan: (sesi: string, pemainId: string, latihanId: string) =>
-    call<{ soal: { q: string; options: string[]; answer: number; pilihan: number | null }[] }>(
-      `/api/admin/progres/${encodeURIComponent(pemainId)}/${encodeURIComponent(latihanId)}`,
-      { headers: adminHeader(sesi) },
-    ).then((r) => r.soal),
+    call<{ soal: DetailSoal[] }>(`/api/admin/progres/${encodeURIComponent(pemainId)}/${encodeURIComponent(latihanId)}`, {
+      headers: adminHeader(sesi),
+    }).then((r) => r.soal),
+  koreksiEsai: (sesi: string, pemainId: string, latihanId: string, nomor: number, benar: boolean) =>
+    call<{ soal: DetailSoal[]; benar: number }>(`/api/admin/progres/${encodeURIComponent(pemainId)}/${encodeURIComponent(latihanId)}`, {
+      method: "POST",
+      body: JSON.stringify({ nomor, benar }),
+      headers: adminHeader(sesi),
+    }),
   deletePlayer: (id: string) => call<{ ok: true }>(`/api/pemain/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };
