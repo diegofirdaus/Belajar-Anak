@@ -3,6 +3,7 @@ import "server-only";
 import { randomInt } from "node:crypto";
 import { z } from "zod";
 import type { Soal } from "@/lib/soal";
+import { kotakDariAi, type Kotak } from "@/lib/gambarSoal";
 import {
   POIN_HURUF_MAKS,
   POIN_PELENGKAP_MAKS,
@@ -74,11 +75,21 @@ function dariAi(item: unknown): unknown {
 
 /** Hasil merapikan teks admin: buang item tidak valid, urutan pilihan dipertahankan (tidak diacak). */
 export function saringRapikan(mentah: unknown): SoalPilihan[] {
+  return saringDenganKotak(mentah, 0).map((x) => x.soal);
+}
+
+/**
+ * Seperti `saringRapikan`, ditambah usulan kotak gambar per soal dari baca foto
+ * (hanya untuk soal `perluGambar`; tidak ikut disimpan di paket).
+ */
+export function saringDenganKotak(mentah: unknown, jumlahFoto: number): { soal: SoalPilihan; kotak: Kotak | null }[] {
   if (!Array.isArray(mentah)) return [];
-  const hasil: SoalPilihan[] = [];
+  const hasil: { soal: SoalPilihan; kotak: Kotak | null }[] = [];
   for (const item of mentah.slice(0, SOAL_PER_PAKET_MAKS)) {
     const h = soalPilihanSchema.safeParse(dariAi(item));
-    if (h.success) hasil.push(h.data);
+    if (!h.success) continue;
+    const kotak = h.data.perluGambar ? kotakDariAi((item as { gambar?: unknown }).gambar, jumlahFoto) : null;
+    hasil.push({ soal: h.data, kotak });
   }
   return hasil;
 }

@@ -53,7 +53,7 @@ const terakhir = () => { const b = fs.readFileSync(LOG, 'utf8').trim().split('\n
   await p.locator('.toast', { hasText: '3 soal terbaca dari 2 foto.' }).waitFor({ timeout: 20000 });
   ok(true, 'toast: 3 soal terbaca dari 2 foto');
   ok((await p.getByLabel('Soal', { exact: true }).inputValue()).startsWith('1. Hasil dari 1/2 + 1/4 adalah...'), 'teks hasil bacaan masuk ke kolom soal (bisa diedit)');
-  ok((await p.locator('.pv-q').count()) === 3 && await p.getByText('Soal ini butuh gambar yang tidak bisa ditampilkan.', { exact: false }).isVisible(), 'kartu cek: 3 soal, soal bergambar ditandai');
+  ok((await p.locator('.pv-q').count()) === 3 && (await p.locator('.pv-q', { hasText: 'Perhatikan gambar' }).locator('.potong').count()) === 1, 'kartu cek: 3 soal, soal bergambar langsung menampilkan usulan potongan gambar');
   const kirim = terakhir().messages[0].content;
   ok(kirim.length === 3 && kirim.every((x, k) => (k < 2 ? x.type === 'image' && x.media_type === 'image/jpeg' : x.type === 'text')), 'foto PNG dikirim sebagai JPEG, sebelum teks');
   ok(kirim[0].panjang < 1_600_000 && kirim[1].panjang < 5000, 'foto besar diperkecil sebelum dikirim', `${kirim[0].panjang} / ${kirim[1].panjang}`);

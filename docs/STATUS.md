@@ -115,7 +115,7 @@ Isi (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`, semua tangg
 - Pemilik sudah mencentang env Production dan menambahkan alamat produksi ke Firebase Authorized domains; PR #1 di-merge. **Produksi sudah dicek pemilik (1 Nov 2026): `/sehat` Beres, login Google, sesi soal AI — semua jalan.** Alamat produksi: https://markas-latihan.vercel.app. Pemain percobaan sudah dihapus pemilik.
 - Sisa setelah rilis: ganti nama variabel `FIREBASE_SERVICE_ACOUNT` → `FIREBASE_SERVICE_ACCOUNT` lalu hapus cadangannya di `lib/firebase/admin.ts`; domain `markaslatihan.com` (opsional); cek kebijakan Anthropic untuk aplikasi anak sebelum dibuka untuk keluarga lain.
 
-## BERIKUTNYA: 3 fitur dari masukan keluarga (sudah disepakati, belum dibangun)
+## 3 fitur dari masukan keluarga (SEMUA SELESAI dan dirilis: PR #4 acak, PR #5 esai, PR berikutnya gambar)
 
 Kerjakan berurutan 1 → 2 → 3, **rilis terpisah** (pengembangan → preview dicoba pemilik → PR ke main).
 
@@ -146,11 +146,16 @@ Sesuai rencana yang disepakati (hanya soal pilihan orang tua; dua tingkat benar/
 - Dicoba pemilik di preview dengan Claude asli memakai pemain & paket percobaan "Tes" (lalu dihapus): "aman udah semua".
 - **Catatan data**: preview dan produksi kemungkinan memakai proyek Firebase yang sama, jadi data percobaan di preview langsung terlihat di produksi. Saat mencoba, pakai pemain/paket percobaan lalu hapus.
 
-### 3. Gambar di soal dari foto (paling besar)
-- Saat baca foto, AI juga memperkirakan **kotak letak gambar** untuk soal `perluGambar`.
-- Editor menampilkan potongan usulan; orang tua bisa **menggeser/mengubah kotak potong** dengan jari, lalu menyimpan.
-- **Hanya potongan gambar yang disimpan** (diperkecil ±100–200 KB, satu dokumen Firestore per gambar, hanya bisa dibuka keluarga itu). **Foto halaman utuh tetap TIDAK disimpan** (keputusan pemilik). Potongan dipotong di browser dari foto yang masih ada di HP.
-- Anak melihat gambar di atas soal, ketuk untuk memperbesar. Hanya untuk soal pilihan.
+### 3. Gambar di soal dari foto — SELESAI, sudah dicoba pemilik di preview dengan Claude asli (2 Nov 2026), dirilis lewat PR ke main
+- **Usulan kotak**: prompt baca foto meminta `gambar: {foto, x1, y1, x2, y2}` (skala 0–1000) untuk soal `perluGambar`. `POST /api/admin/baca-foto` kini membalas `{teks, soal, kotak[]}`; `kotak` sejajar dengan `soal`, pecahan 0–1, foto dari 0 (`kotakDariAi` di `lib/gambarSoal.ts`; kotak tidak valid → null). Kotak tidak ikut disimpan.
+- **Editor** (`components/admin/PotongGambar.tsx`): foto yang sudah diperkecil disimpan **hanya di memori halaman**. Soal `perluGambar` dengan usulan langsung menampilkan alat potong: seret di dalam kotak = geser, seret sudut = ubah ukuran (pointer events, `touch-action: none`), keyboard: panah = geser, Shift + panah = ubah ukuran. Ada pilihan "Foto 1/2/…" kalau lebih dari satu foto. "Pakai gambar ini" memotong di browser (`potongGambar` di `lib/foto.ts`: sisi ≤ 900 px, JPEG turun bertahap sampai ≤ ±180 KB). Setelah itu ada pratinjau + "Potong ulang" + "Hapus gambar".
+  - Soal lain bisa diberi gambar: "+ Tambah gambar dari foto" (dari foto yang sudah dibaca, atau pilih foto baru tanpa AI, mis. saat mengubah paket lama; kotak awal di tengah).
+  - Simpan: potongan diunggah dulu satu per satu (`POST /api/admin/gambar`), lalu paket disimpan dengan `gambarId`. Simpan ditolak kalau masih ada alat potong yang terbuka.
+- **Server** (`lib/server/gambarSoal.ts`): `families/{uid}/gambarSoal/{id}` = `{data, media_type, setId, dibuat}`; maks base64 400.000 (±300 KB), maks 1.000 gambar per keluarga. Saat paket disimpan: gambar harus ada dan bukan milik paket lain (`klaimGambar`), lalu gambar paket itu yang tidak dipakai lagi dihapus, juga gambar yatim (tanpa paket) yang lebih tua dari 1 hari (`bersihkanGambar`). Paket dihapus → gambarnya ikut terhapus. Ekspor & hapus data keluarga otomatis mencakup koleksi ini.
+- **Anak**: `GET /api/gambar/[id]` (login keluarga itu saja; keluarga lain 404). Gambar tampil di atas soal (`components/GambarSoal.tsx`, disimpan di memori halaman), ketuk → `<dialog>` layar penuh, "Tutup"/Escape/ketuk latar untuk menutup. Bisa untuk soal pilihan ganda maupun esai dari paket orang tua; soal AI tidak punya gambar.
+- Belum: gambar belum tampil di detail riwayat dashboard.
+- Uji: `gambar-test.ts` (kotak AI, geser, tarik sudut, skema), `api14-test.mjs` (kotak dari baca foto, validasi, klaim/milik paket lain, akses keluarga, bersihkan yatim & paket dihapus), `gambar-ui-test.js` (usulan potongan, seret & tarik sudut, keyboard, isi potongan, simpan, paket lama, anak & perbesar, axe). `foto-ui-test.js` disesuaikan (soal bergambar kini langsung membuka alat potong).
+- Dicoba pemilik di preview (iPad, Claude asli, paket/pemain percobaan): "udah pas".
 
 ## Perbaikan login di Safari iPhone (setelah rilis)
 
@@ -187,6 +192,7 @@ node scripts/uji/api10-test.mjs                     # ekspor & hapus data keluar
 node scripts/uji/api11-test.mjs                     # dashboard progres orang tua
 node scripts/uji/api12-test.mjs /tmp/mock.log       # baca foto soal
 node scripts/uji/api13-test.mjs /tmp/mock.log       # soal esai: rapikan, periksa per poin, jatah, koreksi orang tua
+node scripts/uji/api14-test.mjs /tmp/mock.log       # gambar soal: kotak usulan, simpan potongan, klaim & bersihkan
 # (api8-test.mjs reset-lama: jalankan server dengan ADMIN_LOGIN_ULANG_DETIK=1)
 node scripts/uji/markas-test.js /tmp/shots          # Playwright, layar 390px
 node scripts/uji/latihan-ui-test.js /tmp/shots      # Playwright: memuat, HUD 4 dunia, hasil, saran
@@ -196,10 +202,11 @@ node scripts/uji/data-keluarga-ui-test.js /tmp/shots # Playwright: unduh & hapus
 node scripts/uji/progres-ui-test.js /tmp/shots      # Playwright: dashboard progres
 node scripts/uji/foto-ui-test.js /tmp/shots /tmp/mock.log # Playwright: foto / upload soal
 node scripts/uji/esai-ui-test.js /tmp/shots         # Playwright: soal esai (anak, dashboard, editor) + axe
+node scripts/uji/gambar-ui-test.js /tmp/shots       # Playwright: potong gambar (seret, sudut, keyboard), anak & perbesar + axe
 node scripts/uji/a11y-test.js /tmp/shots           # Playwright + axe-core: aksesibilitas semua layar
 node scripts/uji/kontras-test.mjs                   # kontras token 6 tema (tanpa server)
 node scripts/uji/akhir-test.js                      # uji akhir brief 15 (pembuka, SMP→SMA, kunci API di jaringan)
-npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/acak-test.ts; npx tsx scripts/uji/esai-test.ts; npx tsx scripts/uji/admin-test.ts; npx tsx scripts/uji/progres-test.ts
+npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/acak-test.ts; npx tsx scripts/uji/esai-test.ts; npx tsx scripts/uji/gambar-test.ts; npx tsx scripts/uji/admin-test.ts; npx tsx scripts/uji/progres-test.ts
 ```
 
 Login Google asli (popup) tidak bisa diuji di container karena `apis.google.com` diblokir; build emulator menyediakan `window.__masukUji(email)`.

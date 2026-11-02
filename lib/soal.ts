@@ -9,9 +9,18 @@ import { ESAI_JAWABAN_MAKS, SOAL_PER_PAKET_MAKS, type KunciEsai } from "./soalPi
  * Satu soal (brief 6). Pilihan ganda: `answer` = indeks dari 0.
  * Soal esai (hanya dari soal pilihan orang tua): `jenis: "esai"`, `options` kosong, kunci di `esai`.
  */
-export type Soal = { q: string; options: string[]; answer: number; explain: string; jenis?: "esai"; esai?: KunciEsai };
+export type Soal = {
+  q: string;
+  options: string[];
+  answer: number;
+  explain: string;
+  jenis?: "esai";
+  esai?: KunciEsai;
+  /** Gambar soal dari foto (hanya soal pilihan orang tua). */
+  gambarId?: string;
+};
 /** Soal yang dikirim ke browser: tanpa kunci dan penjelasan sebelum anak menjawab. */
-export type SoalTanpaKunci = { q: string; options: string[]; jenis?: "esai" };
+export type SoalTanpaKunci = { q: string; options: string[]; jenis?: "esai"; gambarId?: string };
 
 export const JUMLAH_SOAL = [5, 10] as const;
 export const TOPIK_MAKS = 120;
