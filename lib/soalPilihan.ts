@@ -1,5 +1,6 @@
 // Soal pilihan dari orang tua (brief 6 `question_sets`, 7.8). Dipakai server dan browser.
 import { z } from "zod";
+import { gambarIdSchema } from "./gambarSoal";
 import { MAPEL, jenjangOf, kelasShort } from "./kelas";
 
 export const JUDUL_MAKS = 60;
@@ -31,6 +32,8 @@ export type SoalPilihan = {
   perluGambar?: boolean;
   jenis?: "esai";
   esai?: KunciEsai;
+  /** Potongan gambar dari foto (`families/{uid}/gambarSoal/{id}`), tampil di atas soal. */
+  gambarId?: string;
 };
 
 const teks = (maks: number) => z.string().transform((s) => s.trim()).pipe(z.string().min(1).max(maks));
@@ -68,6 +71,7 @@ export const soalPilihanSchema = z
     perluGambar: z.boolean().optional(),
     jenis: z.literal("esai").optional(),
     esai: esaiSchema.optional(),
+    gambarId: gambarIdSchema.optional(),
   })
   .superRefine((s, ctx) => {
     if (s.jenis === "esai") {

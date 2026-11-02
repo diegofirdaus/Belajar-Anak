@@ -1,5 +1,6 @@
 "use client";
 
+import { GAMBAR_SISI_MAKS, GAMBAR_TARGET_BYTE, type Kotak } from "./gambarSoal";
 import { FOTO_BASE64_MAKS, FOTO_TOTAL_MAKS } from "./soalPilihan";
 
 /** Sisi terpanjang yang disarankan untuk dibaca Claude, dan cadangan kalau total masih terlalu besar. */
@@ -52,4 +53,42 @@ export async function siapkanFoto(files: File[]): Promise<{ media_type: "image/j
     }
   }
   throw new Error("Foto terlalu besar. Coba kirim lebih sedikit foto sekaligus.");
+}
+
+/* ---------- Potongan gambar soal (STATUS "BERIKUTNYA" no. 3) ---------- */
+
+const muatUrl = (url: string) =>
+  new Promise<HTMLImageElement>((ok, gagal) => {
+    const img = new Image();
+    img.onload = () => ok(img);
+    img.onerror = () => gagal(new Error("Foto tidak bisa dibuka."));
+    img.src = url;
+  });
+
+/**
+ * Potong bagian foto (kotak dalam pecahan 0–1) menjadi JPEG kecil (sisi ≤ 900 px, ±≤ 180 KB).
+ * Dipotong di HP dari foto yang masih ada di memori; foto utuh tidak pernah dikirim untuk disimpan.
+ */
+export async function potongGambar(urlFoto: string, k: Kotak): Promise<string> {
+  const img = await muatUrl(urlFoto);
+  const sx = k.x1 * img.naturalWidth;
+  const sy = k.y1 * img.naturalHeight;
+  const sw = Math.max(1, (k.x2 - k.x1) * img.naturalWidth);
+  const sh = Math.max(1, (k.y2 - k.y1) * img.naturalHeight);
+  for (const sisi of [GAMBAR_SISI_MAKS, 700, 520]) {
+    const skala = Math.min(1, sisi / Math.max(sw, sh));
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(sw * skala));
+    c.height = Math.max(1, Math.round(sh * skala));
+    const g = c.getContext("2d");
+    if (!g) throw new Error("Gambar tidak bisa diproses.");
+    g.fillStyle = "#ffffff";
+    g.fillRect(0, 0, c.width, c.height);
+    g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    for (const mutu of [0.85, 0.75, 0.62]) {
+      const data = c.toDataURL("image/jpeg", mutu).split(",")[1] ?? "";
+      if (data.length * 0.75 <= GAMBAR_TARGET_BYTE) return data;
+    }
+  }
+  throw new Error("Potongan gambar terlalu besar. Perkecil kotaknya.");
 }

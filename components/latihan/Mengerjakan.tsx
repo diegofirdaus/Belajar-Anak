@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { GambarSoal } from "@/components/GambarSoal";
 import { Pipo } from "@/components/Pipo";
 import { ApiFailure, api, apiMessage } from "@/lib/api";
 import { bisaDitambah } from "@/lib/esai";
@@ -124,6 +125,7 @@ export function Mengerjakan({
       <HudDunia dunia={dunia} awal={awal} kini={kini} benar={benar} salah={salah} n={n} kena={kena} />
 
       <section className="card" aria-label={`Soal ${i + 1}`}>
+        {soal.gambarId && <GambarSoal key={soal.gambarId} id={soal.gambarId} alt={`Gambar untuk soal ${i + 1}`} />}
         <p className="qtext" ref={teksSoal} tabIndex={-1}>
           {soal.q}
         </p>

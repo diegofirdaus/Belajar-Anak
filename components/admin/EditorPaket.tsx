@@ -3,8 +3,11 @@
 import { useId, useRef, useState } from "react";
 import { useToast } from "@/components/Toast";
 import { api, apiMessage, ApiFailure } from "@/lib/api";
+import { GambarSoal } from "@/components/GambarSoal";
 import { merujukPilihanLain } from "@/lib/acakPilihan";
 import { siapkanFoto } from "@/lib/foto";
+import { kotakTengah, type Kotak } from "@/lib/gambarSoal";
+import { PotongGambar } from "./PotongGambar";
 import { JENJANG_INFO, MAPEL, jenjangOf, kelasInJenjang, kelasShort, type Jenjang } from "@/lib/kelas";
 import {
   FOTO_MAKS,
@@ -21,6 +24,18 @@ import {
 } from "@/lib/soalPilihan";
 
 const HURUF = "ABCD";
+
+/** Soal di editor + data sementara gambar (tidak ikut disimpan di paket). */
+type SoalEditor = SoalPilihan & {
+  /** Usulan letak gambar dari AI saat membaca foto. */
+  kotakUsulan?: Kotak;
+  /** Potongan yang sudah dipilih tapi belum diunggah (base64 JPEG). */
+  gambarBaru?: string;
+  potongTerbuka?: boolean;
+};
+
+const keSoal = ({ kotakUsulan: _k, gambarBaru: _g, potongTerbuka: _p, ...q }: SoalEditor): SoalPilihan => q;
+const adaGambar = (q: SoalEditor) => Boolean(q.gambarBaru || q.gambarId);
 const kurangiGerak = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const CONTOH = `Ketik atau tempel soal di sini. Tidak harus rapi. Contoh:
@@ -58,7 +73,9 @@ export function EditorPaket({
   const [kelas, setKelas] = useState(paket?.kelas ?? kelasAwal);
   const [mapel, setMapel] = useState(paket?.subject ?? MAPEL[jenjangOf(kelasAwal)][0]);
   const [teks, setTeks] = useState(paket?.sourceText ?? "");
-  const [soal, setSoal] = useState<SoalPilihan[]>(() => paket?.questions.map((q) => structuredClone(q)) ?? []);
+  const [soal, setSoal] = useState<SoalEditor[]>(() => paket?.questions.map((q) => structuredClone(q)) ?? []);
+  /** Foto yang dibaca di editor ini (data URL), hanya di memori HP untuk memotong gambar soal. */
+  const [foto, setFoto] = useState<string[]>([]);
   const [acakPilihan, setAcakPilihan] = useState(paket?.acakPilihan ?? true);
   const [teksBerubah, setTeksBerubah] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
@@ -101,11 +118,17 @@ export function EditorPaket({
     try {
       const gambar = await siapkanFoto(files);
       const hasil = await api.bacaFoto(sesi, { kelas, mapel: mapelAktif, gambar });
+      const awalFoto = foto.length;
+      setFoto((f) => [...f, ...gambar.map((g) => `data:image/jpeg;base64,${g.data}`)]);
+      const soalFoto: SoalEditor[] = hasil.soal.map((q, i) => {
+        const k = hasil.kotak?.[i];
+        return k ? { ...q, kotakUsulan: { ...k, foto: k.foto + awalFoto }, potongTerbuka: true } : q;
+      });
       const kosong = !teks.trim();
       setTeks((t) => (kosong ? hasil.teks : `${t.trimEnd()}\n\n${hasil.teks}`));
       if (kosong || !teksBerubah) {
         // Soal yang sudah dirapikan tetap; soal dari foto ditambahkan di belakang.
-        setSoal((lama) => [...(kosong ? [] : lama), ...hasil.soal]);
+        setSoal((lama) => [...(kosong ? [] : lama), ...soalFoto]);
         setTeksBerubah(false);
       } else {
         setTeksBerubah(true);
@@ -139,7 +162,13 @@ export function EditorPaket({
     setMerapikan(true);
     try {
       const hasil = await api.rapikan(sesi, { kelas, mapel: mapelAktif, teks });
-      setSoal(hasil);
+      // Gambar yang sudah dipotong/diusulkan tetap menempel pada soal dengan teks yang sama.
+      setSoal((lama) =>
+        hasil.map((q): SoalEditor => {
+          const x = lama.find((l) => l.q === q.q && (adaGambar(l) || l.kotakUsulan));
+          return x ? { ...q, gambarId: x.gambarId, gambarBaru: x.gambarBaru, kotakUsulan: x.kotakUsulan, perluGambar: x.perluGambar || q.perluGambar } : q;
+        }),
+      );
       setTeksBerubah(false);
       tampilkanCek();
     } catch (e) {
@@ -164,6 +193,22 @@ export function EditorPaket({
     setSoal((daftar) => daftar.map((q, j) => (j === i ? { ...q, esai, keyGuessed: false } : q)));
   }
 
+  const ubahSoal = (i: number, f: (q: SoalEditor) => SoalEditor) => setSoal((daftar) => daftar.map((q, j) => (j === i ? f(q) : q)));
+
+  /** Foto baru khusus untuk memotong gambar (tanpa AI), mis. saat mengubah paket lama. */
+  async function fotoUntukGambar(i: number, daftar: FileList | null) {
+    const f = daftar?.[0];
+    if (!f) return;
+    try {
+      const [g] = await siapkanFoto([f]);
+      const indeks = foto.length;
+      setFoto((x) => [...x, `data:image/jpeg;base64,${g.data}`]);
+      ubahSoal(i, (q) => ({ ...q, kotakUsulan: kotakTengah(indeks), potongTerbuka: true }));
+    } catch (e) {
+      setGalat(e instanceof Error ? e.message : "Foto tidak bisa dibuka.");
+    }
+  }
+
   function hapusSoal(i: number) {
     setSoal((daftar) => daftar.filter((_, j) => j !== i));
   }
@@ -171,15 +216,38 @@ export function EditorPaket({
   async function simpan() {
     if (!soal.length) return setGalat('Tekan "Rapikan soal" dulu supaya soalnya bisa dicek sebelum disimpan.');
     if (teksBerubah) return setGalat('Teks soal berubah setelah dirapikan. Tekan "Rapikan soal" lagi supaya hasilnya ikut diperbarui.');
-    const bersih = soal.map((q) =>
+    const terbuka = soal.findIndex((q) => q.potongTerbuka);
+    if (terbuka >= 0) return setGalat(`Gambar soal nomor ${terbuka + 1} belum selesai dipotong. Tekan "Pakai gambar ini" atau "Batal".`);
+    setGalat(null);
+    setMenyimpan(true);
+    // Unggah potongan gambar baru dulu (satu per satu), lalu simpan paket dengan id gambarnya.
+    const siap: SoalEditor[] = [];
+    try {
+      for (const q of soal) {
+        if (!q.gambarBaru) {
+          siap.push(q);
+          continue;
+        }
+        const gambarId = await api.simpanGambar(sesi, q.gambarBaru);
+        siap.push({ ...q, gambarId, gambarBaru: undefined });
+      }
+    } catch (e) {
+      setSoal((lama) => lama.map((q, i) => siap[i] ?? q));
+      setMenyimpan(false);
+      if (e instanceof ApiFailure && e.code === "admin_perlu") return onSesiHabis();
+      return setGalat(`Gambar soal belum berhasil disimpan. ${apiMessage(e)}`);
+    }
+    setSoal(siap);
+    const bersih = siap.map(keSoal).map((q) =>
       q.esai
         ? { ...q, esai: { contoh: q.esai.contoh.trim(), wajib: q.esai.wajib.map((x) => x.trim()).filter(Boolean), pelengkap: q.esai.pelengkap.map((x) => x.trim()).filter(Boolean) } }
         : q,
     );
     const tanpaPoin = bersih.findIndex((q) => q.esai && !q.esai.wajib.length);
-    if (tanpaPoin >= 0) return setGalat(`Soal esai nomor ${tanpaPoin + 1} belum punya poin wajib. Isi minimal 1 poin yang harus ada di jawaban anak.`);
-    setGalat(null);
-    setMenyimpan(true);
+    if (tanpaPoin >= 0) {
+      setMenyimpan(false);
+      return setGalat(`Soal esai nomor ${tanpaPoin + 1} belum punya poin wajib. Isi minimal 1 poin yang harus ada di jawaban anak.`);
+    }
     try {
       await api.simpanPaket(
         sesi,
@@ -319,14 +387,62 @@ export function EditorPaket({
           </label>
           <ol className="pv">
             {soal.map((q, i) => (
-              <li key={`${i}-${q.q}`} className={q.keyGuessed || q.perluGambar ? "pv-q warn" : "pv-q"}>
+              <li key={`${i}-${q.q}`} className={q.keyGuessed || (q.perluGambar && !adaGambar(q)) ? "pv-q warn" : "pv-q"}>
                 <p>
                   {i + 1}. {q.q}
                 </p>
                 {q.esai && <span className="tag-esai">Esai · anak mengetik jawaban</span>}
                 {q.keyGuessed && <span className="pv-note warn">{q.esai ? "Jawaban dibuat AI. Mohon dicek." : "Kunci dipilih AI. Mohon dicek."}</span>}
-                {q.perluGambar && (
-                  <span className="pv-note warn">Soal ini butuh gambar yang tidak bisa ditampilkan. Hapus, atau ubah teksnya supaya tanpa gambar.</span>
+                {q.perluGambar && !adaGambar(q) && !q.potongTerbuka && (
+                  <span className="pv-note warn">Soal ini butuh gambar. Potong gambarnya dari foto, atau hapus/ubah soalnya supaya tanpa gambar.</span>
+                )}
+                {q.potongTerbuka && foto.length > 0 ? (
+                  <PotongGambar
+                    nomor={i + 1}
+                    foto={foto}
+                    awal={q.kotakUsulan ?? kotakTengah(foto.length - 1)}
+                    onPakai={(data) => ubahSoal(i, (x) => ({ ...x, gambarBaru: data, potongTerbuka: false }))}
+                    onBatal={() => ubahSoal(i, (x) => ({ ...x, potongTerbuka: false }))}
+                  />
+                ) : adaGambar(q) ? (
+                  <div className="gambar-editor">
+                    <GambarSoal id={q.gambarId} data={q.gambarBaru} alt={`Gambar soal ${i + 1}`} />
+                    <div className="row-btns">
+                      {foto.length > 0 && (
+                        <button type="button" className="linkbtn" onClick={() => ubahSoal(i, (x) => ({ ...x, potongTerbuka: true }))}>
+                          Potong ulang
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="linkbtn danger"
+                        onClick={() => ubahSoal(i, (x) => ({ ...x, gambarId: undefined, gambarBaru: undefined }))}
+                      >
+                        Hapus gambar
+                      </button>
+                    </div>
+                  </div>
+                ) : foto.length > 0 ? (
+                  <button type="button" className="linkbtn" onClick={() => ubahSoal(i, (x) => ({ ...x, potongTerbuka: true }))}>
+                    {q.kotakUsulan ? "Lihat usulan gambar dari foto" : "+ Tambah gambar dari foto"}
+                  </button>
+                ) : (
+                  <span className="foto-gambar">
+                    <input
+                      id={`${id}-gbr-${i}`}
+                      className="sr-only"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        void fotoUntukGambar(i, e.target.files).finally(() => {
+                          e.target.value = "";
+                        });
+                      }}
+                    />
+                    <label htmlFor={`${id}-gbr-${i}`} className="linkbtn">
+                      + Tambah gambar dari foto
+                    </label>
+                  </span>
                 )}
                 {q.optionsAdded && <span className="pv-note">Sebagian pilihan jawaban ditambahkan AI.</span>}
                 {acakPilihan && merujukPilihanLain(q.options) && (

@@ -59,7 +59,7 @@ http.createServer((req, res) => {
         teks: `1. Hasil dari 1/2 + 1/4 adalah...\nA. 3/4\nB. 2/6\nC. 1/6\nD. 2/4\nKunci: A\n\n2. Perhatikan gambar. Berapa banyak segitiga?\n\n3. Ada ${foto.length} foto soal.`,
         soal: [
           { q: 'Hasil dari 1/2 + 1/4 adalah...', options: ['3/4', '2/6', '1/6', '2/4'], answer: 0, explain: '1/2 = 2/4, lalu 2/4 + 1/4 = 3/4.', keyGuessed: false, optionsAdded: false, perluGambar: false },
-          { q: 'Perhatikan gambar. Berapa banyak segitiga?', options: ['3', '4', '5', '6'], answer: 1, explain: 'Hitung semua segitiga.', keyGuessed: true, optionsAdded: true, perluGambar: true },
+          { q: 'Perhatikan gambar. Berapa banyak segitiga?', options: ['3', '4', '5', '6'], answer: 1, explain: 'Hitung semua segitiga.', keyGuessed: true, optionsAdded: true, perluGambar: true, gambar: { foto: foto.length, x1: 100, y1: 200, x2: 600, y2: 700 } },
           { q: `Ada ${foto.length} foto soal.`, options: ['Benar', 'Salah'], answer: 0, explain: '', keyGuessed: false, optionsAdded: false, perluGambar: false },
         ],
       }));

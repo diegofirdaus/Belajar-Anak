@@ -3,6 +3,8 @@ import "server-only";
 import { FieldValue, Timestamp, type DocumentSnapshot } from "firebase-admin/firestore";
 import { db } from "@/lib/firebase/admin";
 import { PAKET_MAKS, judulBawaan, type PaketBaru, type PaketPilihan, type PaketRingkas, type SoalPilihan } from "@/lib/soalPilihan";
+import { gambarDipakai } from "@/lib/gambarSoal";
+import { bersihkanGambar, klaimGambar } from "./gambarSoal";
 import { ApiError } from "./http";
 
 const koleksi = (familyId: string) => db().collection("families").doc(familyId).collection("soalPilihan");
@@ -45,14 +47,20 @@ export async function buatPaket(familyId: string, p: PaketBaru): Promise<PaketPi
   const col = koleksi(familyId);
   if ((await col.count().get()).data().count >= PAKET_MAKS) throw new ApiError("batas", `Maksimal ${PAKET_MAKS} paket soal pilihan.`);
   const ref = col.doc();
+  const dipakai = gambarDipakai(p.questions);
+  await klaimGambar(familyId, ref.id, dipakai);
   await ref.set({ ...isi(p), createdAt: FieldValue.serverTimestamp() });
+  await bersihkanGambar(familyId, ref.id, dipakai);
   return toPaket(await ref.get());
 }
 
 export async function ubahPaket(familyId: string, id: string, p: PaketBaru): Promise<PaketPilihan> {
   const ref = koleksi(familyId).doc(id);
   if (!(await ref.get()).exists) throw new ApiError("tidak_ditemukan");
+  const dipakai = gambarDipakai(p.questions);
+  await klaimGambar(familyId, id, dipakai);
   await ref.update(isi(p));
+  await bersihkanGambar(familyId, id, dipakai);
   return toPaket(await ref.get());
 }
 
@@ -60,6 +68,7 @@ export async function hapusPaket(familyId: string, id: string): Promise<void> {
   const ref = koleksi(familyId).doc(id);
   if (!(await ref.get()).exists) throw new ApiError("tidak_ditemukan");
   await ref.delete();
+  await bersihkanGambar(familyId, id, []);
 }
 
 /** Paket soal pilihan untuk satu kelas (sisi anak, brief 7.4): hanya judul, mapel, jumlah soal. */

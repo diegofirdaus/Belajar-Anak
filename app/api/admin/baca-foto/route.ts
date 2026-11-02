@@ -3,7 +3,7 @@ import { TEKS_ADMIN_MAKS, bacaFotoSchema } from "@/lib/soalPilihan";
 import { requireAdmin } from "@/lib/server/admin";
 import { MODEL_BACA_FOTO, aiTersedia, mintaJson } from "@/lib/server/ai/claude";
 import { SKEMA_BACA_FOTO, promptBacaFoto } from "@/lib/server/ai/prompt";
-import { saringRapikan } from "@/lib/server/ai/validasi";
+import { saringDenganKotak } from "@/lib/server/ai/validasi";
 import { requireFamily } from "@/lib/server/auth";
 import { ApiError, handle, json } from "@/lib/server/http";
 import { ambilJatahRapikan, catatAi, kembalikanJatahRapikan } from "@/lib/server/pemakaian";
@@ -35,11 +35,13 @@ export function POST(req: Request) {
         waktuMaks: 100_000,
       });
       const data = (hasil.data ?? {}) as { teks?: unknown; soal?: unknown };
-      const soal = saringRapikan(data.soal);
+      const hasilSoal = saringDenganKotak(data.soal, p.gambar.length);
+      const soal = hasilSoal.map((x) => x.soal);
       const teks = typeof data.teks === "string" ? data.teks.trim().slice(0, TEKS_ADMIN_MAKS) : "";
       await catatAi(familyId, { jenis: "baca_foto", model: hasil.model, hasil: soal.length ? "ok" : "kurang_lengkap", pemakaian: hasil.pemakaian });
       if (!soal.length) throw new ApiError("kurang_lengkap", "Tidak ada soal yang terbaca dari foto.");
-      return json({ teks, soal });
+      // Usulan kotak gambar per soal (sejajar dengan `soal`) untuk dipotong di browser dari foto yang masih ada di HP.
+      return json({ teks, soal, kotak: hasilSoal.map((x) => x.kotak) });
     } catch (e) {
       await kembalikanJatahRapikan(familyId, tanggal);
       if (e instanceof ApiError && e.ai) {

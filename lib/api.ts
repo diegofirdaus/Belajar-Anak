@@ -2,6 +2,7 @@
 
 import { clientAuth } from "@/lib/firebase/client";
 import type { DetailSoal } from "@/lib/esai";
+import type { Kotak } from "@/lib/gambarSoal";
 import type { NewPlayer, Player, PlayerUpdate } from "@/lib/player";
 import type { Riwayat, StatTopik } from "@/lib/latihan";
 import type { DataProgres } from "@/lib/progres";
@@ -106,11 +107,14 @@ export const api = {
   hapusPaket: (sesi: string, id: string) =>
     call<{ ok: true }>(`/api/admin/soal-pilihan/${encodeURIComponent(id)}`, { method: "DELETE", headers: adminHeader(sesi) }),
   bacaFoto: (sesi: string, b: { kelas: number; mapel: string; gambar: { media_type: "image/jpeg"; data: string }[] }) =>
-    call<{ teks: string; soal: SoalPilihan[] }>("/api/admin/baca-foto", { method: "POST", body: JSON.stringify(b), headers: adminHeader(sesi) }),
+    call<{ teks: string; soal: SoalPilihan[]; kotak: (Kotak | null)[] }>("/api/admin/baca-foto", { method: "POST", body: JSON.stringify(b), headers: adminHeader(sesi) }),
   rapikan: (sesi: string, b: { kelas: number; mapel: string; teks: string }) =>
     call<{ soal: SoalPilihan[] }>("/api/admin/rapikan", { method: "POST", body: JSON.stringify(b), headers: adminHeader(sesi) }).then(
       (r) => r.soal,
     ),
+  simpanGambar: (sesi: string, data: string) =>
+    call<{ id: string }>("/api/admin/gambar", { method: "POST", body: JSON.stringify({ data }), headers: adminHeader(sesi) }).then((r) => r.id),
+  gambar: (id: string) => call<{ data: string; media_type: string }>(`/api/gambar/${encodeURIComponent(id)}`),
   eksporData: (sesi: string) => call<Record<string, unknown>>("/api/keluarga/ekspor", { method: "POST", headers: adminHeader(sesi) }),
   hapusKeluarga: (sesi: string) =>
     call<{ ok: true }>("/api/keluarga/hapus", { method: "POST", body: JSON.stringify({ konfirmasi: "HAPUS" }), headers: adminHeader(sesi) }),
