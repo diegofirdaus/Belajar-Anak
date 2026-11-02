@@ -115,7 +115,7 @@ Isi (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`, semua tangg
 - Pemilik sudah mencentang env Production dan menambahkan alamat produksi ke Firebase Authorized domains; PR #1 di-merge. **Produksi sudah dicek pemilik (1 Nov 2026): `/sehat` Beres, login Google, sesi soal AI — semua jalan.** Alamat produksi: https://markas-latihan.vercel.app. Pemain percobaan sudah dihapus pemilik.
 - Sisa setelah rilis: ganti nama variabel `FIREBASE_SERVICE_ACOUNT` → `FIREBASE_SERVICE_ACCOUNT` lalu hapus cadangannya di `lib/firebase/admin.ts`; domain `markaslatihan.com` (opsional); cek kebijakan Anthropic untuk aplikasi anak sebelum dibuka untuk keluarga lain.
 
-## BERIKUTNYA: 3 fitur dari masukan keluarga (sudah disepakati, belum dibangun)
+## 3 fitur dari masukan keluarga (SEMUA SELESAI dan dirilis: PR #4 acak, PR #5 esai, PR berikutnya gambar)
 
 Kerjakan berurutan 1 → 2 → 3, **rilis terpisah** (pengembangan → preview dicoba pemilik → PR ke main).
 
@@ -146,7 +146,7 @@ Sesuai rencana yang disepakati (hanya soal pilihan orang tua; dua tingkat benar/
 - Dicoba pemilik di preview dengan Claude asli memakai pemain & paket percobaan "Tes" (lalu dihapus): "aman udah semua".
 - **Catatan data**: preview dan produksi kemungkinan memakai proyek Firebase yang sama, jadi data percobaan di preview langsung terlihat di produksi. Saat mencoba, pakai pemain/paket percobaan lalu hapus.
 
-### 3. Gambar di soal dari foto — SUDAH DIBANGUN, belum dicoba pemilik di preview
+### 3. Gambar di soal dari foto — SELESAI, sudah dicoba pemilik di preview dengan Claude asli (2 Nov 2026), dirilis lewat PR ke main
 - **Usulan kotak**: prompt baca foto meminta `gambar: {foto, x1, y1, x2, y2}` (skala 0–1000) untuk soal `perluGambar`. `POST /api/admin/baca-foto` kini membalas `{teks, soal, kotak[]}`; `kotak` sejajar dengan `soal`, pecahan 0–1, foto dari 0 (`kotakDariAi` di `lib/gambarSoal.ts`; kotak tidak valid → null). Kotak tidak ikut disimpan.
 - **Editor** (`components/admin/PotongGambar.tsx`): foto yang sudah diperkecil disimpan **hanya di memori halaman**. Soal `perluGambar` dengan usulan langsung menampilkan alat potong: seret di dalam kotak = geser, seret sudut = ubah ukuran (pointer events, `touch-action: none`), keyboard: panah = geser, Shift + panah = ubah ukuran. Ada pilihan "Foto 1/2/…" kalau lebih dari satu foto. "Pakai gambar ini" memotong di browser (`potongGambar` di `lib/foto.ts`: sisi ≤ 900 px, JPEG turun bertahap sampai ≤ ±180 KB). Setelah itu ada pratinjau + "Potong ulang" + "Hapus gambar".
   - Soal lain bisa diberi gambar: "+ Tambah gambar dari foto" (dari foto yang sudah dibaca, atau pilih foto baru tanpa AI, mis. saat mengubah paket lama; kotak awal di tengah).
@@ -155,7 +155,7 @@ Sesuai rencana yang disepakati (hanya soal pilihan orang tua; dua tingkat benar/
 - **Anak**: `GET /api/gambar/[id]` (login keluarga itu saja; keluarga lain 404). Gambar tampil di atas soal (`components/GambarSoal.tsx`, disimpan di memori halaman), ketuk → `<dialog>` layar penuh, "Tutup"/Escape/ketuk latar untuk menutup. Bisa untuk soal pilihan ganda maupun esai dari paket orang tua; soal AI tidak punya gambar.
 - Belum: gambar belum tampil di detail riwayat dashboard.
 - Uji: `gambar-test.ts` (kotak AI, geser, tarik sudut, skema), `api14-test.mjs` (kotak dari baca foto, validasi, klaim/milik paket lain, akses keluarga, bersihkan yatim & paket dihapus), `gambar-ui-test.js` (usulan potongan, seret & tarik sudut, keyboard, isi potongan, simpan, paket lama, anak & perbesar, axe). `foto-ui-test.js` disesuaikan (soal bergambar kini langsung membuka alat potong).
-- **Perlu dicoba pemilik di preview** (pakai paket/pemain percobaan): foto LKS yang ada gambarnya → cek ketepatan usulan kotak dari Claude asli → geser/ubah dengan jari di iPad → simpan → anak melihat & memperbesar.
+- Dicoba pemilik di preview (iPad, Claude asli, paket/pemain percobaan): "udah pas".
 
 ## Perbaikan login di Safari iPhone (setelah rilis)
 
