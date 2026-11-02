@@ -119,7 +119,7 @@ Isi (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`, semua tangg
 
 Kerjakan berurutan 1 → 2 → 3, **rilis terpisah** (pengembangan → preview dicoba pemilik → PR ke main).
 
-### 1. Acak posisi jawaban soal pilihan — SUDAH DIBANGUN, belum dicoba pemilik di preview
+### 1. Acak posisi jawaban soal pilihan — SELESAI, sudah dicoba pemilik di preview (2 Nov 2026), dirilis lewat PR ke main
 - Masalah: soal pilihan orang tua (termasuk dari foto) tidak diacak (keputusan Tahap 9), jadi kunci sering di A/B. Soal AI sudah diacak (`acakPilihan`).
 - Setiap **Kerjakan** (termasuk ulang) → urutan pilihan diacak di server saat membuat sesi (`app/api/soal/pilihan`), logika murni di `lib/acakPilihan.ts`.
 - **Posisi kunci dijamin berbeda dari percobaan sebelumnya** pada paket yang sama untuk pemain itu. Sumbernya **sesi "Kerjakan" terakhir** (`players/{pid}/sesi` dengan `setId` sama dan `sumber: "set"`; `soalSesiTerakhirPaket` di `lib/server/sesi.ts`), bukan `attempts`: sesi yang ditinggal juga dihitung karena anak sudah melihat urutannya; sesi "soal mirip" tidak dihitung. Soal dicocokkan lewat teks soal (nomor sama didahulukan), jadi tetap benar walau paket diubah. Query tanpa `orderBy` (tidak perlu indeks gabungan).
@@ -127,7 +127,7 @@ Kerjakan berurutan 1 → 2 → 3, **rilis terpisah** (pengembangan → preview d
 - Saklar per paket di editor (kartu "Cek dulu"): **"Acak urutan pilihan"**, bawaan menyala. Field `acakPilihan` di `soalPilihan`; paket lama tanpa field dianggap menyala.
 - **Urutan soal TIDAK diacak** (keputusan pemilik).
 - Uji: `acak-test.ts` (pola rujukan, sebaran, kunci selalu pindah, pencocokan teks), `api9-test.mjs` (bagian "Acak posisi jawaban"), `admin-ui-test.js` (saklar, catatan), `pilihan-ui-test.js` (paket uji memakai `acakPilihan: false` supaya posisi kunci tetap), `a11y-test.js` lulus.
-- **Perlu dicoba pemilik di preview**: kerjakan paket yang sama 2–3 kali dan lihat letak jawaban benar berpindah; matikan saklar di mode admin.
+- Dicoba pemilik di preview: letak jawaban berpindah dan saklar berfungsi ("udah pas").
 
 ### 2. Soal esai untuk soal pilihan orang tua (sedang)
 - Hanya untuk **soal pilihan orang tua** (soal sekolah/buku), bukan soal AI.
