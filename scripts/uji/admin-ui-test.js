@@ -65,6 +65,9 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   await p.getByRole('button', { name: 'Rapikan soal' }).click();
   await p.getByRole('heading', { name: 'Cek dulu sebelum simpan' }).waitFor();
   ok(await p.getByText('2 soal', { exact: true }).isVisible(), 'kartu cek: 2 soal');
+  const saklar = () => p.getByRole('switch', { name: /Acak urutan pilihan/ });
+  ok(await saklar().isChecked(), 'saklar "Acak urutan pilihan" bawaan menyala');
+  ok((await saklar().evaluate((e) => e.closest('label').getBoundingClientRect().height)) >= 44, 'saklar: target sentuh ≥ 44px');
   ok((await p.locator('.pv-q.warn').count()) === 1 && await p.getByText('Kunci dipilih AI. Mohon dicek.').isVisible(), 'kunci tebakan AI ditandai');
   ok(await p.getByText('Sebagian pilihan jawaban ditambahkan AI.').isVisible(), 'catatan pilihan ditambahkan AI');
   ok(await p.locator('.pv-q').nth(0).locator('.pv-opt[aria-pressed="true"]').innerText().then((t) => t.includes('1') && t.startsWith('B')), 'kunci soal 1 = B (aria-pressed)');
@@ -90,12 +93,13 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   ok(opsiKelas.join('|') === 'Kelas 7 (kelas 1 SMP)|Kelas 8 (kelas 2 SMP)|Kelas 9 (kelas 3 SMP)', 'opsi kelas SMP', opsiKelas.join('|'));
   ok((await p.getByLabel('Mata pelajaran').locator('option').allInnerTexts()).includes('Informatika'), 'mapel ikut jenjang SMP');
   await p.getByLabel('Judul paket').fill('Latihan UTS Bilangan');
-  await p.getByLabel('Soal', { exact: true }).fill('1. kuncisalah −3 + 5 = ...\nA. 2\nB. −2\nKunci: A\n2. Tanpa kunci\nA. x\nB. y');
+  await p.getByLabel('Soal', { exact: true }).fill('1. kuncisalah −3 + 5 = ...\nA. 2\nB. −2\nKunci: A\n2. Tanpa kunci\nA. x\nB. y\n3. Mana bilangan bulat?\nA. −1\nB. 0\nC. 7\nD. Semua benar\nKunci: D');
   await p.getByRole('button', { name: 'Rapikan soal' }).click();
   await p.getByRole('heading', { name: 'Cek dulu sebelum simpan' }).waitFor();
   ok((await p.locator('.form-msg').innerText()).startsWith('AI belum bisa dipakai, jadi soal dibaca dari format nomor, pilihan, dan "Kunci: ...".') && (await p.locator('.form-msg').innerText()).includes('Soal nomor 2 belum punya baris "Kunci: ...".'), 'AI gagal → pembaca manual + galat per nomor');
   ok(await p.getByText('Tulis setiap soal dengan nomor, pilihan A sampai D, dan baris "Kunci: ..." supaya bisa dibaca.').isVisible(), 'catatan berganti ke format manual');
-  ok((await p.locator('.pv-q').count()) === 1, 'soal valid tetap tampil');
+  ok((await p.locator('.pv-q').count()) === 2, 'soal valid tetap tampil');
+  ok((await p.locator('.pv-q').nth(1).getByText('Urutan pilihan soal ini tidak diacak karena ada pilihan yang merujuk pilihan lain.').isVisible()) && (await p.locator('.pv-q').nth(0).getByText('tidak diacak').count()) === 0, 'soal "Semua benar": catatan tidak diacak');
   await p.getByRole('button', { name: 'Simpan soal pilihan' }).click();
   ok(await toast('Tersimpan. Muncul untuk Kelas 7 SMP di pelajaran Matematika.') === 'Tersimpan. Muncul untuk Kelas 7 SMP di pelajaran Matematika.', 'simpan paket SMP');
   await p.locator('.set-card').nth(1).waitFor();
@@ -105,13 +109,22 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   // ---------- Ubah ----------
   await p.locator('.set-card').nth(1).getByRole('button', { name: 'Ubah' }).click();
   await p.getByRole('heading', { name: 'Ubah soal pilihan' }).waitFor();
-  ok(await p.getByLabel('Judul paket').inputValue() === 'Latihan UTS Bilangan' && await p.getByLabel('Kelas', { exact: true }).inputValue() === '7' && (await p.locator('.pv-q').count()) === 1, 'editor ubah terisi data lama');
+  ok(await p.getByLabel('Judul paket').inputValue() === 'Latihan UTS Bilangan' && await p.getByLabel('Kelas', { exact: true }).inputValue() === '7' && (await p.locator('.pv-q').count()) === 2, 'editor ubah terisi data lama');
+  ok(await saklar().isChecked(), 'saklar tersimpan menyala');
+  await saklar().click();
+  ok(!(await saklar().isChecked()) && await p.getByText('Pilihan tampil persis seperti urutan di sini.').isVisible() && (await p.getByText('tidak diacak').count()) === 0, 'saklar dimatikan: keterangan berganti, catatan per soal hilang');
+  await p.screenshot({ path: `${out}/t8-editor-saklar.png`, fullPage: true });
   ok((await lebar()) <= 390, 'editor tanpa gulir ke samping');
   await p.getByLabel('Judul paket').fill('UTS Bilangan Bulat');
   await p.getByRole('button', { name: 'Simpan soal pilihan' }).click();
   await toast('Tersimpan.');
   await p.getByText('UTS Bilangan Bulat').waitFor();
   ok((await p.locator('.set-card').count()) === 2, 'ubah tidak menambah paket baru');
+  await p.locator('.set-card').nth(1).getByRole('button', { name: 'Ubah' }).click();
+  await p.getByRole('heading', { name: 'Ubah soal pilihan' }).waitFor();
+  ok(!(await saklar().isChecked()), 'saklar mati tersimpan');
+  await p.getByRole('button', { name: 'Batal' }).click();
+  await p.locator('.set-card').nth(1).waitFor();
 
   // ---------- Hapus ----------
   await p.locator('.set-card').nth(1).getByRole('button', { name: 'Hapus' }).click();

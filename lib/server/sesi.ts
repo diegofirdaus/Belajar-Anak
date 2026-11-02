@@ -55,6 +55,21 @@ export async function simpanSesi(
   };
 }
 
+/**
+ * Soal (dengan urutan pilihan dan kunci) dari sesi "Kerjakan" terakhir pemain ini untuk paket yang sama,
+ * termasuk sesi yang ditinggal (anak sudah melihat urutannya). Sesi "soal mirip" tidak dihitung.
+ * Tanpa orderBy supaya tidak butuh indeks gabungan; jumlah sesi per paket per anak kecil.
+ */
+export async function soalSesiTerakhirPaket(familyId: string, pemainId: string, setId: string): Promise<Soal[] | null> {
+  const snap = await pemainRef(familyId, pemainId).collection("sesi").where("setId", "==", setId).get();
+  const waktu = (t: unknown) => (t instanceof Timestamp ? t.toMillis() : 0);
+  const terakhir = snap.docs
+    .map((d) => d.data())
+    .filter((x) => x.sumber === "set")
+    .sort((a, b) => waktu(b.dibuat) - waktu(a.dibuat))[0];
+  return (terakhir?.soal as Soal[] | undefined) ?? null;
+}
+
 type JawabanTersimpan = { pilihan: number; benar: boolean; hadiah: HadiahSatu | null };
 type DataSesi = {
   sumber: SumberSoal;

@@ -4,7 +4,7 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 
 ## Posisi sekarang
 
-- Branch kerja: **`pengembangan`**. **Rilis pertama sudah di-merge ke `main`** (PR #1, 1 Nov 2026) → Vercel Production. Perubahan berikutnya: kerjakan di `pengembangan`, coba di preview, lalu PR baru ke `main`.
+- Branch kerja: **`pengembangan`** (selalu disamakan dengan `main` setelah tiap rilis). Rilis setelah rilis pertama: PR #2 (login iPhone), PR #3 (soal pilihan >20 soal). **Rilis pertama sudah di-merge ke `main`** (PR #1, 1 Nov 2026) → Vercel Production. Perubahan berikutnya: kerjakan di `pengembangan`, coba di preview, lalu PR baru ke `main`.
 - Preview: https://markas-latihan-git-pengembangan-minions-3f7b.vercel.app (cek server di `/sehat`).
 - Selesai dan sudah dicoba pemilik di preview: **Tahap 1–9** (urutan di brief bagian 14), termasuk Lupa PIN lewat login ulang Google dan soal mirip AI.
 - Selesai dibangun dan lulus uji di container, **belum dicoba pemilik**: **Tahap 10**.
@@ -47,7 +47,7 @@ Catatan serah terima untuk sesi pengerjaan berikutnya. Spesifikasi lengkap: [`br
 
 - `GET /api/pemain/[id]/ringkasan` kini juga mengirim `paketPilihan` untuk **kelas pemain itu saja**: `{id, title, subject, n}` tanpa soal/kunci.
 - Form markas: segmen "★ Soal pilihan" (selebar penuh) hanya muncul kalau ada paket untuk kelas itu. Saat dipilih, materi/jumlah/tombol utama disembunyikan, muncul kartu paket untuk mapel terpilih, atau pesan + chip mapel yang punya paket.
-- **Kerjakan**: `POST /api/soal/pilihan {pemainId, setId}` → sesi `sumber: "set"`, `level: "pilihan"`, `topik` = judul paket, `setId`. Tanpa AI dan tanpa jatah. **Urutan pilihan tidak diacak** (orang tua bisa menulis "Semua benar"). Paket kelas lain ditolak.
+- **Kerjakan**: `POST /api/soal/pilihan {pemainId, setId}` → sesi `sumber: "set"`, `level: "pilihan"`, `topik` = judul paket, `setId`. Tanpa AI dan tanpa jatah. ~~Urutan pilihan tidak diacak~~ → sejak fitur "acak posisi jawaban" (lihat BERIKUTNYA no. 1) diacak, kecuali soal yang merujuk pilihan lain. Paket kelas lain ditolak.
 - **Buat soal mirip (AI)**: `POST /api/soal/mirip` → prompt brief 10.2 (contoh maks 12 soal, dibungkus `<<< >>>`), `min(10, max(5, n))` soal, model soal (Sonnet 5.5 + fallback), memakai jatah harian anak, pilihan diacak, log `soal_mirip`. Tombol nonaktif kalau AI tidak tersedia.
 - Hadiah soal pilihan = setara sedang; tidak masuk statistik topik/saran; masuk riwayat dengan `setId`.
 - Halaman hasil soal pilihan: "Buat soal mirip (AI)" (kalau AI ada), "Ulangi soal pilihan ini" (paket asli), "Kembali ke markas".
@@ -115,6 +115,37 @@ Isi (`components/admin/ProgresAnak.tsx`, logika di `lib/progres.ts`, semua tangg
 - Pemilik sudah mencentang env Production dan menambahkan alamat produksi ke Firebase Authorized domains; PR #1 di-merge. **Produksi sudah dicek pemilik (1 Nov 2026): `/sehat` Beres, login Google, sesi soal AI — semua jalan.** Alamat produksi: https://markas-latihan.vercel.app. Pemain percobaan sudah dihapus pemilik.
 - Sisa setelah rilis: ganti nama variabel `FIREBASE_SERVICE_ACOUNT` → `FIREBASE_SERVICE_ACCOUNT` lalu hapus cadangannya di `lib/firebase/admin.ts`; domain `markaslatihan.com` (opsional); cek kebijakan Anthropic untuk aplikasi anak sebelum dibuka untuk keluarga lain.
 
+## BERIKUTNYA: 3 fitur dari masukan keluarga (sudah disepakati, belum dibangun)
+
+Kerjakan berurutan 1 → 2 → 3, **rilis terpisah** (pengembangan → preview dicoba pemilik → PR ke main).
+
+### 1. Acak posisi jawaban soal pilihan — SELESAI, sudah dicoba pemilik di preview (2 Nov 2026), dirilis lewat PR ke main
+- Masalah: soal pilihan orang tua (termasuk dari foto) tidak diacak (keputusan Tahap 9), jadi kunci sering di A/B. Soal AI sudah diacak (`acakPilihan`).
+- Setiap **Kerjakan** (termasuk ulang) → urutan pilihan diacak di server saat membuat sesi (`app/api/soal/pilihan`), logika murni di `lib/acakPilihan.ts`.
+- **Posisi kunci dijamin berbeda dari percobaan sebelumnya** pada paket yang sama untuk pemain itu. Sumbernya **sesi "Kerjakan" terakhir** (`players/{pid}/sesi` dengan `setId` sama dan `sumber: "set"`; `soalSesiTerakhirPaket` di `lib/server/sesi.ts`), bukan `attempts`: sesi yang ditinggal juga dihitung karena anak sudah melihat urutannya; sesi "soal mirip" tidak dihitung. Soal dicocokkan lewat teks soal (nomor sama didahulukan), jadi tetap benar walau paket diubah. Query tanpa `orderBy` (tidak perlu indeks gabungan).
+- **Pengecualian otomatis** (`merujukPilihanLain`): soal yang pilihannya merujuk pilihan lain ("Semua benar/salah", "Semua … di atas", "Tidak ada yang benar", "Bukan salah satu …", "A dan B benar", "a, b, dan c", "B atau C", "Jawaban A …", "All/None of the above") tidak diacak. Editor menampilkan catatan "Urutan pilihan soal ini tidak diacak…" di soal itu.
+- Saklar per paket di editor (kartu "Cek dulu"): **"Acak urutan pilihan"**, bawaan menyala. Field `acakPilihan` di `soalPilihan`; paket lama tanpa field dianggap menyala.
+- **Urutan soal TIDAK diacak** (keputusan pemilik).
+- Uji: `acak-test.ts` (pola rujukan, sebaran, kunci selalu pindah, pencocokan teks), `api9-test.mjs` (bagian "Acak posisi jawaban"), `admin-ui-test.js` (saklar, catatan), `pilihan-ui-test.js` (paket uji memakai `acakPilihan: false` supaya posisi kunci tetap), `a11y-test.js` lulus.
+- Dicoba pemilik di preview: letak jawaban berpindah dan saklar berfungsi ("udah pas").
+
+### 2. Soal esai untuk soal pilihan orang tua (sedang)
+- Hanya untuk **soal pilihan orang tua** (soal sekolah/buku), bukan soal AI.
+- Rapikan teks/foto: soal uraian/isian dikenali sebagai **esai** (bukan dipaksa jadi pilihan ganda dengan `optionsAdded`). AI menyiapkan **contoh jawaban**, **poin wajib** (1–2, harus ada) dan **poin pelengkap** (tidak wajib). Orang tua bisa mengedit semuanya di kartu "Cek dulu".
+- Anak mengetik jawaban (maks 500 huruf) → "Periksa" → "Pipo sedang memeriksa…" → AI (Haiku) memeriksa **per poin**: ada/tidak + kutipan dari jawaban anak + apakah ada fakta keliru. **Keputusan akhir dihitung kode**, bukan AI: **Benar** = semua poin wajib ada maknanya (kata boleh beda, salah ketik boleh) DAN tidak ada fakta keliru; selain itu **Belum tepat**. Poin pelengkap yang hilang → catatan "Bisa ditambah: …", tetap benar.
+- **Dua tingkat saja** (benar / belum tepat), tanpa "hampir benar" (keputusan pemilik: menghindari bias).
+- Isian singkat: poin wajib = faktanya. Soal pendapat: poin wajib = "menyebut pendapat + alasan". Kosong/"tidak tahu" → belum tepat.
+- Jawaban anak = data, bukan perintah (anti "anggap jawabanku benar"). Tetap sesuai brief: tidak ada chat bebas dengan AI.
+- Jatah terpisah: ±100 pemeriksaan esai per anak per hari. Hadiah esai benar = setara sedang (seperti soal pilihan).
+- **Koreksi orang tua** di dashboard (Riwayat → detail): tombol "Tandai benar"/"Tandai salah" untuk soal esai; skor attempt dan hadiah ikut menyesuaikan.
+- Dashboard/riwayat menampilkan jawaban esai anak, hasil per poin, dan alasannya.
+
+### 3. Gambar di soal dari foto (paling besar)
+- Saat baca foto, AI juga memperkirakan **kotak letak gambar** untuk soal `perluGambar`.
+- Editor menampilkan potongan usulan; orang tua bisa **menggeser/mengubah kotak potong** dengan jari, lalu menyimpan.
+- **Hanya potongan gambar yang disimpan** (diperkecil ±100–200 KB, satu dokumen Firestore per gambar, hanya bisa dibuka keluarga itu). **Foto halaman utuh tetap TIDAK disimpan** (keputusan pemilik). Potongan dipotong di browser dari foto yang masih ada di HP.
+- Anak melihat gambar di atas soal, ketuk untuk memperbesar. Hanya untuk soal pilihan.
+
 ## Perbaikan login di Safari iPhone (setelah rilis)
 
 - Gejala: di HP pemilik muncul "Unable to process request due to missing initial state" di `markas-latihan.firebaseapp.com`. Pop-up login diblokir → app beralih ke `signInWithRedirect` → Safari memisahkan penyimpanan antar-situs, jadi redirect ke domain lain gagal.
@@ -160,7 +191,7 @@ node scripts/uji/foto-ui-test.js /tmp/shots /tmp/mock.log # Playwright: foto / u
 node scripts/uji/a11y-test.js /tmp/shots           # Playwright + axe-core: aksesibilitas semua layar
 node scripts/uji/kontras-test.mjs                   # kontras token 6 tema (tanpa server)
 node scripts/uji/akhir-test.js                      # uji akhir brief 15 (pembuka, SMP→SMA, kunci API di jaringan)
-npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/admin-test.ts; npx tsx scripts/uji/progres-test.ts
+npx tsx scripts/uji/hadiah-test.ts; npx tsx scripts/uji/latihan-test.ts; npx tsx scripts/uji/acak-test.ts; npx tsx scripts/uji/admin-test.ts; npx tsx scripts/uji/progres-test.ts
 ```
 
 Login Google asli (popup) tidak bisa diuji di container karena `apis.google.com` diblokir; build emulator menyediakan `window.__masukUji(email)`.

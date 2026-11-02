@@ -101,5 +101,57 @@ ok(akhirBesar?.benar === 50 && akhirBesar?.n === 50, 'sesi 50 soal selesai 50/50
 const luar = await post(`/api/sesi/${r.body.sesiId}/jawab`, A.token, { pemainId: raka.id, nomor: 50, pilihan: 0 });
 ok(luar.status === 400 && luar.body.message === 'Jawaban ini tidak bisa diperiksa. Kembali ke markas, lalu coba lagi.', 'nomor di luar batas: pesan jelas, bukan "koneksi terputus"', luar.body);
 
+/* ---------- Acak posisi jawaban (STATUS "BERIKUTNYA" no. 1) ---------- */
+const kunciSesi = async (sesiId) => {
+  const d = await (await fetch(`${FS}/families/${A.uid}/players/${raka.id}/sesi/${sesiId}`, { headers: { authorization: 'Bearer owner' } })).json();
+  return d.fields.soal.arrayValue.values.map((v) => Number(v.mapValue.fields.answer.integerValue));
+};
+const biasa = (i) => ({ q: `Berapa ${i} + ${i}?`, options: [`${i * 2}`, `${i * 2 + 1}`, `${i * 2 + 2}`, `${i * 2 + 3}`], answer: 0, explain: '', keyGuessed: false, optionsAdded: false });
+const rujuk = { q: 'Mana yang hewan?', options: ['Kucing', 'Anjing', 'Ayam', 'Semua benar'], answer: 3, explain: '', keyGuessed: false, optionsAdded: false };
+const acakP = await buat('Acak', 5, 'Matematika', [biasa(1), biasa(2), rujuk, biasa(3), biasa(4)]);
+ok(acakP.acakPilihan === true, 'saklar "Acak urutan pilihan" bawaan menyala', acakP.acakPilihan);
+let sebelumK = null;
+let selaluPindah = true, kunciTetap = true, rujukTetap = true, urutSoalTetap = true;
+const posisiK = new Set();
+for (let k = 0; k < 8; k++) {
+  if (k === 4) await post('/api/soal/mirip', A.token, { pemainId: raka.id, setId: acakP.id }); // sesi soal mirip tidak dihitung
+  r = await post('/api/soal/pilihan', A.token, { pemainId: raka.id, setId: acakP.id });
+  const kunci = await kunciSesi(r.body.sesiId);
+  r.body.soal.forEach((x, i) => {
+    const asli = acakP.questions[i];
+    if (x.q !== asli.q) urutSoalTetap = false;
+    if (x.options[kunci[i]] !== asli.options[asli.answer] || [...x.options].sort().join() !== [...asli.options].sort().join()) kunciTetap = false;
+    if (i === 2) { if (x.options.join() !== rujuk.options.join() || kunci[i] !== 3) rujukTetap = false; }
+    else { posisiK.add(kunci[i]); if (sebelumK && sebelumK[i] === kunci[i]) selaluPindah = false; }
+  });
+  sebelumK = kunci;
+}
+ok(urutSoalTetap, 'urutan soal tidak diacak');
+ok(kunciTetap, 'kunci menunjuk jawaban yang sama setelah diacak');
+ok(posisiK.size >= 3, 'posisi kunci tersebar', [...posisiK]);
+ok(selaluPindah, 'posisi kunci selalu berbeda dari percobaan sebelumnya (termasuk sesi yang ditinggal)');
+ok(rujukTetap, 'soal dengan "Semua benar" tidak diacak');
+const kunciAkhir = await kunciSesi(r.body.sesiId);
+j = await post(`/api/sesi/${r.body.sesiId}/jawab`, A.token, { pemainId: raka.id, nomor: 0, pilihan: kunciAkhir[0] });
+ok(j.body.benar && j.body.answer === kunciAkhir[0], 'jawaban di posisi baru dinilai benar', j.body);
+
+const urutBaru = [biasa(4), biasa(9), biasa(1)];
+const ubah = await call(`/api/admin/soal-pilihan/${acakP.id}`, A.token, { method: 'PUT', body: JSON.stringify({ title: 'Acak', kelas: 5, subject: 'Matematika', sourceText: '', questions: urutBaru, acakPilihan: true }) }, sesi);
+ok(ubah.status === 200, 'paket diubah (soal dipindah & ditambah)', ubah.status);
+r = await post('/api/soal/pilihan', A.token, { pemainId: raka.id, setId: acakP.id });
+const kUbah = await kunciSesi(r.body.sesiId);
+ok(kUbah[0] !== sebelumK[4] && kUbah[2] !== sebelumK[0], 'paket diubah: soal dicocokkan lewat teks, kunci tetap pindah', { kUbah, sebelumK });
+
+const mati = await call(`/api/admin/soal-pilihan/${acakP.id}`, A.token, { method: 'PUT', body: JSON.stringify({ title: 'Acak', kelas: 5, subject: 'Matematika', sourceText: '', questions: urutBaru, acakPilihan: false }) }, sesi);
+ok(mati.status === 200 && mati.body.paket.acakPilihan === false, 'saklar bisa dimatikan', mati.body?.paket?.acakPilihan);
+let tetap = true;
+for (let k = 0; k < 3; k++) {
+  r = await post('/api/soal/pilihan', A.token, { pemainId: raka.id, setId: acakP.id });
+  if (r.body.soal.some((x, i) => x.options.join() !== urutBaru[i].options.join())) tetap = false;
+}
+ok(tetap, 'saklar mati: urutan pilihan persis seperti diketik orang tua');
+const daftarAdmin = await call('/api/admin/soal-pilihan', A.token, {}, sesi);
+ok(daftarAdmin.body.paket.find((p) => p.id === acakP.id).acakPilihan === false, 'status saklar tersimpan');
+
 console.log(fail ? `\n${fail} GAGAL` : '\nSemua lulus');
 process.exit(fail ? 1 : 0);

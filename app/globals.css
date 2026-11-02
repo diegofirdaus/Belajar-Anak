@@ -631,6 +631,24 @@ textarea { min-height: 200px; resize: vertical; line-height: 1.45; }
 .pv-opt .k { flex: none; font-weight: 800; width: 22px; }
 .pv-note { font-size: .84rem; color: var(--muted); }
 .pv-note.warn { color: var(--fg); border: 1px solid var(--accent); padding: 4px 8px; border-radius: 8px; align-self: flex-start; font-weight: 700; }
+.saklar { display: flex; gap: 12px; align-items: flex-start; min-height: 44px; padding: 10px 0; cursor: pointer; font-weight: 400; }
+.saklar-teks { display: flex; flex-direction: column; gap: 2px; }
+/* Kotak input 48×44 (target sentuh); jalur & tombol digambar dengan ::before / ::after. */
+.saklar input {
+  appearance: none; flex: none; position: relative; width: 48px; height: 44px; margin: -8px 0; cursor: pointer;
+  border: 0; border-radius: 14px; background: transparent;
+}
+.saklar input::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 8px; height: 28px; box-sizing: border-box;
+  border-radius: 999px; border: 2px solid var(--field-line); background: var(--field-bg);
+}
+.saklar input::after {
+  content: ""; position: absolute; top: 13px; left: 5px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--field-line); transition: transform .15s;
+}
+.saklar input:checked::before { background: var(--good-text); border-color: var(--good-text); }
+.saklar input:checked::after { transform: translateX(20px); background: var(--on-good); }
+@media (prefers-reduced-motion: reduce) { .saklar input::after { transition: none; } }
 .danger-box { border-left: 6px solid var(--bad); padding-left: 12px; }
 .danger-box .row-btns { flex-direction: column; }
 
