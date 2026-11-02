@@ -3,7 +3,14 @@ import "server-only";
 import { randomInt } from "node:crypto";
 import { z } from "zod";
 import type { Soal } from "@/lib/soal";
-import { SOAL_PER_PAKET_MAKS, soalPilihanSchema, type SoalPilihan } from "@/lib/soalPilihan";
+import {
+  POIN_HURUF_MAKS,
+  POIN_PELENGKAP_MAKS,
+  POIN_WAJIB_MAKS,
+  SOAL_PER_PAKET_MAKS,
+  soalPilihanSchema,
+  type SoalPilihan,
+} from "@/lib/soalPilihan";
 
 const teks = z.string().transform((s) => s.trim()).pipe(z.string().min(1));
 
@@ -42,12 +49,35 @@ export function saringSoal(mentah: unknown, n: number): Soal[] | null {
   return valid.length >= Math.min(3, n) ? valid : null;
 }
 
+/**
+ * Satu soal dari AI (rapikan/baca foto) → bentuk `SoalPilihan`.
+ * Soal esai: kunci dikumpulkan di `esai`; poin wajib maks 2, pelengkap maks 3.
+ */
+function dariAi(item: unknown): unknown {
+  if (!item || typeof item !== "object") return item;
+  const { jenis, contohJawaban, poinWajib, poinPelengkap, ...x } = item as Record<string, unknown>;
+  const daftar = (v: unknown, n: number) =>
+    (Array.isArray(v) ? v : []).filter((t): t is string => typeof t === "string" && t.trim() !== "").slice(0, n);
+  if (jenis !== "esai") return x;
+  const contoh = typeof contohJawaban === "string" ? contohJawaban.trim() : "";
+  let wajib = daftar(poinWajib, POIN_WAJIB_MAKS);
+  if (!wajib.length && contoh) wajib = [contoh.slice(0, POIN_HURUF_MAKS)];
+  return {
+    ...x,
+    options: [],
+    answer: 0,
+    optionsAdded: false,
+    jenis: "esai",
+    esai: { contoh, wajib, pelengkap: daftar(poinPelengkap, POIN_PELENGKAP_MAKS) },
+  };
+}
+
 /** Hasil merapikan teks admin: buang item tidak valid, urutan pilihan dipertahankan (tidak diacak). */
 export function saringRapikan(mentah: unknown): SoalPilihan[] {
   if (!Array.isArray(mentah)) return [];
   const hasil: SoalPilihan[] = [];
   for (const item of mentah.slice(0, SOAL_PER_PAKET_MAKS)) {
-    const h = soalPilihanSchema.safeParse(item);
+    const h = soalPilihanSchema.safeParse(dariAi(item));
     if (h.success) hasil.push(h.data);
   }
   return hasil;

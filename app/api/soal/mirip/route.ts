@@ -29,7 +29,14 @@ export function POST(req: Request) {
     try {
       const hasil = await mintaJson({
         model: MODEL_SOAL(),
-        prompt: promptSoalMirip({ kelas: pemain.kelas, mapel: paket.subject, judul: paket.title, n, contoh: paket.questions }),
+        // Soal mirip selalu pilihan ganda; contoh pilihan ganda didahulukan, soal esai sesudahnya.
+        prompt: promptSoalMirip({
+          kelas: pemain.kelas,
+          mapel: paket.subject,
+          judul: paket.title,
+          n,
+          contoh: [...paket.questions.filter((q) => q.options.length), ...paket.questions.filter((q) => !q.options.length)],
+        }),
         skema: SKEMA_PAKET_SOAL,
       });
       const soal = saringSoal((hasil.data as { soal?: unknown } | null)?.soal, n);

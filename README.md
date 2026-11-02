@@ -48,8 +48,10 @@ Opsional (punya nilai bawaan):
 |---|---|---|
 | `AI_LIMIT_PER_PLAYER` / `AI_LIMIT_PER_FAMILY` | 20 / 60 | Jatah paket soal AI per anak / per keluarga per hari (WIB) |
 | `AI_LIMIT_RAPIKAN` | 30 | Jatah "Rapikan soal" + baca foto per keluarga per hari |
+| `AI_LIMIT_ESAI` | 100 | Pemeriksaan jawaban esai per anak per hari |
 | `AI_MODEL_SOAL` | `claude-sonnet-5-5` | Model pembuat soal & soal mirip |
 | `AI_MODEL_RAPIKAN` | `claude-haiku-5-5` | Model merapikan teks soal admin |
+| `AI_MODEL_ESAI` | `claude-haiku-5-5` | Model memeriksa jawaban esai per poin |
 | `AI_MODEL_BACA_FOTO` | `claude-sonnet-5-5` | Model membaca foto soal |
 
 ## Firebase
@@ -65,10 +67,10 @@ Opsional (punya nilai bawaan):
 families/{uid}                     createdAt, adminPinHash (scrypt), pinGagal, pinKunciSampai
 families/{uid}/players/{id}        name, kelas, theme, academicYear, rewards, createdAt
 families/{uid}/players/{id}/sesi/{sesiId}       paket soal lengkap dengan kunci (tidak pernah dikirim ke browser sebelum dijawab), jawaban
-families/{uid}/players/{id}/attempts/{sesiId}   riwayat latihan selesai: mapel, topik, level, sumber, skor, jawaban per soal
+families/{uid}/players/{id}/attempts/{sesiId}   riwayat latihan selesai: mapel, topik, level, sumber, skor, jawaban per soal (esai: teks anak, hasil per poin, hadiah, koreksi)
 families/{uid}/players/{id}/topikStat/{hash}    statistik topik per level (best, last, tries) untuk saran
 families/{uid}/soalPilihan/{id}                 soal pilihan orang tua (judul, kelas, mapel, teks asli, soal, saklar acak pilihan)
 families/{uid}/adminSesi/{sha256}               sesi mode admin (60 menit)
-families/{uid}/pemakaian/{YYYY-MM-DD}           jatah AI harian (WIB): total, perPemain, rapikan
+families/{uid}/pemakaian/{YYYY-MM-DD}           jatah AI harian (WIB): total, perPemain, rapikan, esai.{pemainId}
 families/{uid}/logAi/{id}                       model, token masuk/keluar, hasil per permintaan AI (tanpa isi foto)
 ```

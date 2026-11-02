@@ -11,6 +11,8 @@ const angka = (v: string | undefined, bawaan: number) => {
 export const BATAS_PER_PEMAIN = () => angka(process.env.AI_LIMIT_PER_PLAYER, 20);
 export const BATAS_PER_KELUARGA = () => angka(process.env.AI_LIMIT_PER_FAMILY, 60);
 export const BATAS_RAPIKAN = () => angka(process.env.AI_LIMIT_RAPIKAN, 30);
+/** Pemeriksaan jawaban esai per anak per hari (terpisah dari jatah membuat soal). */
+export const BATAS_ESAI = () => angka(process.env.AI_LIMIT_ESAI, 100);
 
 /** Tanggal hari ini di Indonesia (WIB), dipakai sebagai kunci jatah harian. */
 export function hariIni(d = new Date()): string {
@@ -53,6 +55,23 @@ export async function kembalikanJatahRapikan(familyId: string, tanggal: string):
   await dokHari(familyId, tanggal).set({ rapikan: FieldValue.increment(-1) }, { merge: true });
 }
 
+/** Jatah memeriksa esai per anak per hari (`esai.{pemainId}`), dalam transaksi. */
+export async function ambilJatahEsai(familyId: string, pemainId: string): Promise<{ tanggal: string }> {
+  const tanggal = hariIni();
+  const ref = dokHari(familyId, tanggal);
+  await db().runTransaction(async (tx) => {
+    const d = (await tx.get(ref)).data() ?? {};
+    if ((((d.esai as Record<string, number> | undefined) ?? {})[pemainId] ?? 0) >= BATAS_ESAI())
+      throw new ApiError("jatah_habis", "Jatah memeriksa jawaban esai hari ini sudah habis. Besok bisa lagi, ya!");
+    tx.set(ref, { esai: { [pemainId]: FieldValue.increment(1) } }, { merge: true });
+  });
+  return { tanggal };
+}
+
+export async function kembalikanJatahEsai(familyId: string, pemainId: string, tanggal: string): Promise<void> {
+  await dokHari(familyId, tanggal).set({ esai: { [pemainId]: FieldValue.increment(-1) } }, { merge: true });
+}
+
 /** Kembalikan jatah kalau soal gagal dibuat. */
 export async function kembalikanJatah(familyId: string, pemainId: string, tanggal: string): Promise<void> {
   await dokHari(familyId, tanggal).set(
@@ -65,7 +84,7 @@ export async function kembalikanJatah(familyId: string, pemainId: string, tangga
 export async function catatAi(
   familyId: string,
   log: {
-    jenis: "soal_baru" | "soal_mirip" | "rapikan" | "baca_foto";
+    jenis: "soal_baru" | "soal_mirip" | "rapikan" | "baca_foto" | "periksa_esai";
     pemainId?: string;
     model: string;
     hasil: string;

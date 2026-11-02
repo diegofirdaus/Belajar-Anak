@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { api, apiMessage } from "@/lib/api";
+import { useEffect, useId, useRef, useState } from "react";
+import { Pipo } from "@/components/Pipo";
+import { ApiFailure, api, apiMessage } from "@/lib/api";
+import { bisaDitambah } from "@/lib/esai";
 import { KALIMAT_BENAR, labelLevel, teksHadiahSatu } from "@/lib/latihan";
 import type { Rewards } from "@/lib/rewards";
 import type { HasilJawab, PaketSesi } from "@/lib/soal";
+import { ESAI_JAWABAN_MAKS } from "@/lib/soalPilihan";
 import type { WorldId } from "@/lib/worlds";
 import { HudDunia } from "./HudDunia";
 
@@ -46,6 +49,8 @@ export function Mengerjakan({
   const [memeriksa, setMemeriksa] = useState<number | null>(null);
   const [galat, setGalat] = useState<string | null>(null);
   const [kena, setKena] = useState(0);
+  const [teks, setTeks] = useState("");
+  const idEsai = useId();
   const fb = useRef<HTMLDivElement>(null);
   const teksSoal = useRef<HTMLParagraphElement>(null);
 
@@ -66,16 +71,22 @@ export function Mengerjakan({
 
   async function jawab(k: number) {
     if (h || memeriksa !== null) return;
+    const esai = soal.jenis === "esai";
+    if (esai && !teks.trim()) return setGalat("Tulis dulu jawabanmu, ya.");
     setMemeriksa(k);
     setGalat(null);
     try {
-      const r = await api.jawab(paket.sesiId, { pemainId, nomor: i, pilihan: k });
+      const r = await api.jawab(paket.sesiId, esai ? { pemainId, nomor: i, teks } : { pemainId, nomor: i, pilihan: k });
       setJudul(r.benar ? acak(KALIMAT_BENAR[dunia]) : `Belum tepat, ${nama}. Tidak apa-apa!`);
       setHasil((lama) => lama.map((x, j) => (j === i ? r : x)));
       onRewards(r.rewards);
       if (r.benar && dunia === "pahlawan") setKena((x) => x + 1);
     } catch (e) {
-      setGalat(apiMessage(e));
+      const code = e instanceof ApiFailure ? e.code : "";
+      if (esai && code === "ai_belum_siap") setGalat("Pipo belum bisa memeriksa jawaban esai sekarang. Coba lagi nanti, atau minta orang tua mengecek.");
+      else if (esai && (code === "json_rusak" || code === "gangguan" || code === "jaringan"))
+        setGalat("Pipo belum selesai memeriksa. Tekan Periksa sekali lagi.");
+      else setGalat(apiMessage(e));
     } finally {
       setMemeriksa(null);
     }
@@ -85,6 +96,7 @@ export function Mengerjakan({
     if (!terakhir) {
       setI(i + 1);
       setGalat(null);
+      setTeks("");
       window.scrollTo(0, 0);
       requestAnimationFrame(() => teksSoal.current?.focus({ preventScroll: true }));
       return;
@@ -115,25 +127,55 @@ export function Mengerjakan({
         <p className="qtext" ref={teksSoal} tabIndex={-1}>
           {soal.q}
         </p>
-        <div className="opts">
-          {soal.options.map((o, k) => {
-            const kelas = h ? (k === h.answer ? "opt right" : k === h.pilihan ? "opt wrong" : "opt") : "opt";
-            return (
-              <button
-                key={`${i}-${k}`}
-                type="button"
-                className={kelas}
-                disabled={Boolean(h) || memeriksa !== null}
-                aria-busy={memeriksa === k || undefined}
-                onClick={() => jawab(k)}
-              >
-                <span className="k">{HURUF[k]}</span>
-                <span>{o}</span>
+        {soal.jenis === "esai" ? (
+          <div className="esai-jawab">
+            <label htmlFor={`${idEsai}-jawab`}>Jawabanmu</label>
+            <textarea
+              id={`${idEsai}-jawab`}
+              maxLength={ESAI_JAWABAN_MAKS}
+              value={h?.esai?.teks ?? teks}
+              disabled={Boolean(h) || memeriksa !== null}
+              placeholder="Tulis jawabanmu dengan kalimatmu sendiri."
+              aria-describedby={`${idEsai}-sisa`}
+              onChange={(e) => setTeks(e.target.value)}
+            />
+            <span id={`${idEsai}-sisa`} className="muted small num">
+              {(h?.esai?.teks ?? teks).length}/{ESAI_JAWABAN_MAKS} huruf
+            </span>
+            {!h && (
+              <button type="button" className="btn" disabled={memeriksa !== null} onClick={() => jawab(0)}>
+                {memeriksa !== null ? "Memeriksa…" : "Periksa"}
               </button>
-            );
-          })}
-        </div>
-        {memeriksa !== null && <p className="muted small">Memeriksa jawaban…</p>}
+            )}
+          </div>
+        ) : (
+          <div className="opts">
+            {soal.options.map((o, k) => {
+              const kelas = h ? (k === h.answer ? "opt right" : k === h.pilihan ? "opt wrong" : "opt") : "opt";
+              return (
+                <button
+                  key={`${i}-${k}`}
+                  type="button"
+                  className={kelas}
+                  disabled={Boolean(h) || memeriksa !== null}
+                  aria-busy={memeriksa === k || undefined}
+                  onClick={() => jawab(k)}
+                >
+                  <span className="k">{HURUF[k]}</span>
+                  <span>{o}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {memeriksa !== null &&
+          (soal.jenis === "esai" ? (
+            <p className="pipo-periksa" role="status">
+              <Pipo size="sm" /> Pipo sedang memeriksa jawabanmu…
+            </p>
+          ) : (
+            <p className="muted small">Memeriksa jawaban…</p>
+          ))}
         {galat && (
           <p className="form-msg" role="alert">
             {galat}
@@ -149,9 +191,30 @@ export function Mengerjakan({
               {teksHadiahSatu(h.hadiah)}
             </p>
           )}
-          <p className="key">
-            Jawaban yang benar: {HURUF[h.answer]}. {soal.options[h.answer]}
-          </p>
+          {h.esai ? (
+            <>
+              <ul className="esai-hasil">
+                {h.esai.poin
+                  .filter((p) => p.wajib)
+                  .map((p, k) => (
+                    <li key={k} className={p.ada ? "ada" : "belum"}>
+                      <span aria-hidden="true">{p.ada ? "✓" : "✗"}</span> {p.ada ? p.poin : `Belum ada: ${p.poin}`}
+                    </li>
+                  ))}
+              </ul>
+              {h.esai.keliru && <p>Ada yang keliru: {h.esai.keliru}</p>}
+              {bisaDitambah(h.esai).length > 0 && <p className="muted">Bisa ditambah: {bisaDitambah(h.esai).join("; ")}.</p>}
+              {h.esai.contoh && (
+                <p className="key">
+                  Contoh jawaban: <span className="esai-contoh-teks">{h.esai.contoh}</span>
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="key">
+              Jawaban yang benar: {HURUF[h.answer]}. {soal.options[h.answer]}
+            </p>
+          )}
           {h.explain && <p>{h.explain}</p>}
           <button type="button" className="btn" onClick={lanjut}>
             {terakhir ? "Lihat hasil" : "Soal berikutnya"}

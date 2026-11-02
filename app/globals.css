@@ -315,6 +315,15 @@ textarea { min-height: 200px; resize: vertical; line-height: 1.45; }
 .qtop .tag { overflow-wrap: anywhere; text-transform: none; }
 .qcount { font-weight: 700; }
 .qtext { overflow-wrap: anywhere; }
+.esai-jawab { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.esai-jawab textarea { min-height: 140px; font-size: 1.05rem; }
+.esai-jawab textarea:disabled { opacity: 1; color: var(--fg); background: var(--soft); }
+.esai-jawab .num { align-self: flex-end; }
+.pipo-periksa { display: flex; align-items: center; gap: 10px; font-weight: 700; margin-top: 10px; }
+.esai-hasil { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.esai-hasil .ada { color: var(--good-text); font-weight: 700; }
+.esai-hasil .belum { color: var(--bad); font-weight: 700; }
+.esai-contoh-teks { font-weight: 400; }
 .qtext:focus { outline: none; }
 .qtext:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .boss-row { display: flex; justify-content: space-between; gap: 8px; font-size: .82rem; font-weight: 700; font-family: var(--display); text-transform: uppercase; letter-spacing: .05em; }
@@ -649,6 +658,13 @@ textarea { min-height: 200px; resize: vertical; line-height: 1.45; }
 .saklar input:checked::before { background: var(--good-text); border-color: var(--good-text); }
 .saklar input:checked::after { transform: translateX(20px); background: var(--on-good); }
 @media (prefers-reduced-motion: reduce) { .saklar input::after { transition: none; } }
+.tag-esai { align-self: flex-start; font-size: .8rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--soft); }
+.esai-kunci { display: flex; flex-direction: column; gap: 10px; }
+textarea.esai-contoh { min-height: 88px; }
+.esai-poin { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.esai-poin legend { font-weight: 700; font-size: .9rem; margin-bottom: 4px; }
+.esai-baris { display: flex; gap: 8px; align-items: center; }
+.esai-baris .input { flex: 1; min-width: 0; }
 .danger-box { border-left: 6px solid var(--bad); padding-left: 12px; }
 .danger-box .row-btns { flex-direction: column; }
 
@@ -679,6 +695,9 @@ textarea { min-height: 200px; resize: vertical; line-height: 1.45; }
 .hist-btn .hist-score { margin-left: auto; }
 .hist-detail { padding-top: 10px; }
 .pv-q.salah { border-color: var(--bad); }
+.esai-kutip { margin: 0; padding: 8px 10px; border-left: 3px solid var(--line); background: var(--soft); border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.esai-poin-hasil { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.pv-q .btn.small { align-self: flex-start; }
 span.chip { min-height: 0; padding: 5px 10px; display: inline-block; }
 
 /* ---------- Dashboard progres v2 ---------- */
