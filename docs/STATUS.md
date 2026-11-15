@@ -157,7 +157,7 @@ Sesuai rencana yang disepakati (hanya soal pilihan orang tua; dua tingkat benar/
 - Uji: `gambar-test.ts` (kotak AI, geser, tarik sudut, skema), `api14-test.mjs` (kotak dari baca foto, validasi, klaim/milik paket lain, akses keluarga, bersihkan yatim & paket dihapus), `gambar-ui-test.js` (usulan potongan, seret & tarik sudut, keyboard, isi potongan, simpan, paket lama, anak & perbesar, axe). `foto-ui-test.js` disesuaikan (soal bergambar kini langsung membuka alat potong).
 - Dicoba pemilik di preview (iPad, Claude asli, paket/pemain percobaan): "udah pas".
 
-## Upload PDF & Word untuk soal pilihan — SUDAH DIBANGUN, belum dicoba pemilik di preview
+## Upload PDF & Word untuk soal pilihan — SELESAI, sudah dicoba pemilik di preview (15 Nov 2026), dirilis lewat PR ke main
 
 - Tombol **Foto / upload soal** kini menerima foto (maks 5), **satu PDF**, atau **satu file Word (.docx)**. Kalau dokumen dicampur file lain, hanya satu dokumen yang dibaca (ada pemberitahuan). `.doc` lama ditolak dengan pesan "simpan ulang sebagai .docx atau PDF".
 - Tanpa pustaka tambahan (memasang paket npm baru tidak diizinkan di sesi pengerjaan):
@@ -165,7 +165,7 @@ Sesuai rencana yang disepakati (hanya soal pilihan orang tua; dua tingkat benar/
   - **Word (.docx)** dibaca **di HP** (`lib/docx.ts`: ZIP dibuka dengan `DecompressionStream`, XML dengan `DOMParser`): teks per paragraf, penomoran otomatis Word ditulis ulang dari `numbering.xml` (1., A., a., i. …), salinan cadangan kotak teks dilewati. File tidak dikirim; teksnya masuk ke kolom Soal lalu langsung **Rapikan soal** (AI, atau pembaca manual kalau AI tidak ada). Gambar di dalam Word tidak ikut (sarankan simpan sebagai PDF/foto kalau soalnya bergambar). Teks dipotong di 20.000 karakter.
   - Tanpa AI, tombol menjadi **"Upload file Word (.docx)"** (hanya .docx).
 - Uji: `api15-test.mjs` (validasi PDF, blok dokumen, prompt PDF, tanpa kotak, log & jatah), `dokumen-ui-test.js` (.docx buatan dengan penomoran otomatis & kotak teks, .doc, Word rusak, PDF + foto sekaligus, PDF terlalu besar/palsu, mode tanpa AI). `foto-ui-test.js` disesuaikan dengan keterangan baru.
-- **Perlu dicoba pemilik di preview**: PDF soal asli (teks & hasil scan) dan file Word asli dari sekolah/guru.
+- Dicoba pemilik di preview dengan file asli: "udah bisa baca file nya".
 
 ## Perbaikan login di Safari iPhone (setelah rilis)
 
