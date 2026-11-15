@@ -177,6 +177,12 @@ export const FOTO_MAKS = 5;
 export const FOTO_BASE64_MAKS = 1_600_000;
 export const FOTO_TOTAL_MAKS = 4_200_000;
 
+/** PDF soal (dibaca langsung oleh Claude). Batas base64 mengikuti batas kiriman Vercel (±4,5 MB) → PDF ±3 MB. */
+export const PDF_BASE64_MAKS = 4_200_000;
+
+const base64 = /^[A-Za-z0-9+/]+={0,2}$/;
+
+/** Baca foto (maks 5) ATAU satu PDF. Foto/PDF tidak disimpan. */
 export const bacaFotoSchema = z
   .object({
     kelas: z.number().int().min(1).max(12),
@@ -186,12 +192,26 @@ export const bacaFotoSchema = z
         z
           .object({
             media_type: z.enum(["image/jpeg", "image/png", "image/webp"]),
-            data: z.string().min(100).max(FOTO_BASE64_MAKS).regex(/^[A-Za-z0-9+/]+={0,2}$/),
+            data: z.string().min(100).max(FOTO_BASE64_MAKS).regex(base64),
           })
           .strict(),
       )
       .min(1, "Pilih foto soalnya dulu, ya.")
       .max(FOTO_MAKS, `Maksimal ${FOTO_MAKS} foto sekali unggah.`)
-      .refine((g) => g.reduce((a, x) => a + x.data.length, 0) <= FOTO_TOTAL_MAKS, "Foto terlalu besar. Coba kirim lebih sedikit foto sekaligus."),
+      .refine((g) => g.reduce((a, x) => a + x.data.length, 0) <= FOTO_TOTAL_MAKS, "Foto terlalu besar. Coba kirim lebih sedikit foto sekaligus.")
+      .optional(),
+    pdf: z
+      .object({
+        data: z
+          .string()
+          .min(100)
+          .max(PDF_BASE64_MAKS, "PDF terlalu besar (maksimal ±3 MB).")
+          .regex(base64)
+          // File PDF selalu diawali "%PDF" (base64 "JVBERi").
+          .refine((d) => d.startsWith("JVBERi"), "File itu bukan PDF."),
+      })
+      .strict()
+      .optional(),
   })
-  .strict();
+  .strict()
+  .refine((b) => Boolean(b.gambar) !== Boolean(b.pdf), "Pilih foto soalnya dulu, ya.");

@@ -157,6 +157,16 @@ Sesuai rencana yang disepakati (hanya soal pilihan orang tua; dua tingkat benar/
 - Uji: `gambar-test.ts` (kotak AI, geser, tarik sudut, skema), `api14-test.mjs` (kotak dari baca foto, validasi, klaim/milik paket lain, akses keluarga, bersihkan yatim & paket dihapus), `gambar-ui-test.js` (usulan potongan, seret & tarik sudut, keyboard, isi potongan, simpan, paket lama, anak & perbesar, axe). `foto-ui-test.js` disesuaikan (soal bergambar kini langsung membuka alat potong).
 - Dicoba pemilik di preview (iPad, Claude asli, paket/pemain percobaan): "udah pas".
 
+## Upload PDF & Word untuk soal pilihan — SUDAH DIBANGUN, belum dicoba pemilik di preview
+
+- Tombol **Foto / upload soal** kini menerima foto (maks 5), **satu PDF**, atau **satu file Word (.docx)**. Kalau dokumen dicampur file lain, hanya satu dokumen yang dibaca (ada pemberitahuan). `.doc` lama ditolak dengan pesan "simpan ulang sebagai .docx atau PDF".
+- Tanpa pustaka tambahan (memasang paket npm baru tidak diizinkan di sesi pengerjaan):
+  - **PDF** dikirim utuh ke Claude sebagai blok `document` (base64) lewat `POST /api/admin/baca-foto {kelas, mapel, pdf: {data}}` — model & jatah sama dengan baca foto, log `baca_pdf`, prompt khusus PDF (`promptBacaFoto({pdf: true})`). Maks base64 4.200.000 (±3 MB, batas kiriman Vercel); dicek di HP sebelum dikirim. PDF tidak disimpan. Karena PDF tidak dirender di HP, **tidak ada usulan potongan gambar**: soal bergambar diberi catatan, gambarnya bisa ditambahkan lewat "+ Tambah gambar dari foto" (mis. tangkapan layar).
+  - **Word (.docx)** dibaca **di HP** (`lib/docx.ts`: ZIP dibuka dengan `DecompressionStream`, XML dengan `DOMParser`): teks per paragraf, penomoran otomatis Word ditulis ulang dari `numbering.xml` (1., A., a., i. …), salinan cadangan kotak teks dilewati. File tidak dikirim; teksnya masuk ke kolom Soal lalu langsung **Rapikan soal** (AI, atau pembaca manual kalau AI tidak ada). Gambar di dalam Word tidak ikut (sarankan simpan sebagai PDF/foto kalau soalnya bergambar). Teks dipotong di 20.000 karakter.
+  - Tanpa AI, tombol menjadi **"Upload file Word (.docx)"** (hanya .docx).
+- Uji: `api15-test.mjs` (validasi PDF, blok dokumen, prompt PDF, tanpa kotak, log & jatah), `dokumen-ui-test.js` (.docx buatan dengan penomoran otomatis & kotak teks, .doc, Word rusak, PDF + foto sekaligus, PDF terlalu besar/palsu, mode tanpa AI). `foto-ui-test.js` disesuaikan dengan keterangan baru.
+- **Perlu dicoba pemilik di preview**: PDF soal asli (teks & hasil scan) dan file Word asli dari sekolah/guru.
+
 ## Perbaikan login di Safari iPhone (setelah rilis)
 
 - Gejala: di HP pemilik muncul "Unable to process request due to missing initial state" di `markas-latihan.firebaseapp.com`. Pop-up login diblokir → app beralih ke `signInWithRedirect` → Safari memisahkan penyimpanan antar-situs, jadi redirect ke domain lain gagal.
@@ -193,6 +203,7 @@ node scripts/uji/api11-test.mjs                     # dashboard progres orang tu
 node scripts/uji/api12-test.mjs /tmp/mock.log       # baca foto soal
 node scripts/uji/api13-test.mjs /tmp/mock.log       # soal esai: rapikan, periksa per poin, jatah, koreksi orang tua
 node scripts/uji/api14-test.mjs /tmp/mock.log       # gambar soal: kotak usulan, simpan potongan, klaim & bersihkan
+node scripts/uji/api15-test.mjs /tmp/mock.log       # baca PDF soal
 # (api8-test.mjs reset-lama: jalankan server dengan ADMIN_LOGIN_ULANG_DETIK=1)
 node scripts/uji/markas-test.js /tmp/shots          # Playwright, layar 390px
 node scripts/uji/latihan-ui-test.js /tmp/shots      # Playwright: memuat, HUD 4 dunia, hasil, saran
@@ -203,6 +214,7 @@ node scripts/uji/progres-ui-test.js /tmp/shots      # Playwright: dashboard prog
 node scripts/uji/foto-ui-test.js /tmp/shots /tmp/mock.log # Playwright: foto / upload soal
 node scripts/uji/esai-ui-test.js /tmp/shots         # Playwright: soal esai (anak, dashboard, editor) + axe
 node scripts/uji/gambar-ui-test.js /tmp/shots       # Playwright: potong gambar (seret, sudut, keyboard), anak & perbesar + axe
+node scripts/uji/dokumen-ui-test.js /tmp/shots /tmp/mock.log # Playwright: upload PDF & Word (.docx)
 node scripts/uji/a11y-test.js /tmp/shots           # Playwright + axe-core: aksesibilitas semua layar
 node scripts/uji/kontras-test.mjs                   # kontras token 6 tema (tanpa server)
 node scripts/uji/akhir-test.js                      # uji akhir brief 15 (pembuka, SMP→SMA, kunci API di jaringan)
