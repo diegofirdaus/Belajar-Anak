@@ -43,8 +43,8 @@ const terakhir = () => { const b = fs.readFileSync(LOG, 'utf8').trim().split('\n
   await p.getByRole('button', { name: '+ Tambah soal pilihan' }).click();
   const tombol = p.locator('label.foto-btn');
   ok(await tombol.isVisible() && (await tombol.innerText()).includes('Foto / upload soal'), 'tombol Foto / upload soal');
-  ok(await p.getByText('Foto hanya dibaca untuk mengambil soal, lalu dibuang (tidak disimpan).', { exact: false }).isVisible(), 'catatan privasi foto');
-  ok(await p.locator('input[type=file]').getAttribute('accept') === 'image/*' && await p.locator('input[type=file]').getAttribute('multiple') !== null, 'input foto: gambar, bisa banyak');
+  ok(await p.getByText('File hanya dibaca untuk mengambil soal, lalu dibuang (tidak disimpan). Hindari memotret nama', { exact: false }).isVisible(), 'catatan privasi foto/file');
+  ok((await p.locator('input[type=file]').getAttribute('accept')).startsWith('image/*,') && await p.locator('input[type=file]').getAttribute('multiple') !== null, 'input foto: gambar (juga PDF/Word), bisa banyak');
   ok(Math.round((await tombol.boundingBox()).height) >= 44, 'tombol foto ≥ 44px');
   await p.screenshot({ path: `${out}/t14-foto-tombol.png`, fullPage: true });
 
@@ -84,7 +84,7 @@ const terakhir = () => { const b = fs.readFileSync(LOG, 'utf8').trim().split('\n
 
   // Bukan foto
   await p.locator('input[type=file]').setInputFiles([{ name: 'catatan.txt', mimeType: 'text/plain', buffer: Buffer.from('halo') }]);
-  ok((await p.locator('.form-msg').innerText()) === 'File itu bukan foto. Pilih foto soal, ya.', 'file bukan foto ditolak');
+  ok((await p.locator('.form-msg').innerText()) === 'File itu bukan foto, PDF, atau Word. Pilih file soal, ya.', 'file bukan foto/PDF/Word ditolak');
 
   await p.setViewportSize({ width: 360, height: 780 });
   ok((await p.evaluate(() => document.documentElement.scrollWidth)) <= 360, '360px tanpa gulir ke samping');

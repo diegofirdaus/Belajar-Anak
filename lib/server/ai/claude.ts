@@ -45,17 +45,18 @@ export async function mintaJson(p: {
   skema: Record<string, unknown>;
   /** Foto yang ikut dibaca (base64). Diletakkan sebelum teks perintah. */
   gambar?: GambarMasuk[];
+  /** Satu PDF (base64) yang ikut dibaca. Diletakkan sebelum teks perintah. */
+  pdf?: string;
   /** Batas waktu khusus (ms), mis. untuk membaca beberapa foto. */
   waktuMaks?: number;
 }): Promise<HasilJson> {
   const c = claude();
   let res: Anthropic.Beta.BetaMessage;
-  const content: Anthropic.Beta.BetaContentBlockParam[] | string = p.gambar?.length
-    ? [
-        ...p.gambar.map((g) => ({ type: "image" as const, source: { type: "base64" as const, media_type: g.media_type, data: g.data } })),
-        { type: "text" as const, text: p.prompt },
-      ]
-    : p.prompt;
+  const lampiran: Anthropic.Beta.BetaContentBlockParam[] = [
+    ...(p.gambar ?? []).map((g) => ({ type: "image" as const, source: { type: "base64" as const, media_type: g.media_type, data: g.data } })),
+    ...(p.pdf ? [{ type: "document" as const, source: { type: "base64" as const, media_type: "application/pdf" as const, data: p.pdf } }] : []),
+  ];
+  const content: Anthropic.Beta.BetaContentBlockParam[] | string = lampiran.length ? [...lampiran, { type: "text" as const, text: p.prompt }] : p.prompt;
   try {
     res = await c.beta.messages.create(
       {

@@ -14,7 +14,7 @@ http.createServer((req, res) => {
     // Konten bisa berupa teks atau daftar blok (foto + teks). Foto tidak dicatat utuh di log.
     const prompt = typeof isi === 'string' ? isi : isi.filter((x) => x.type === 'text').map((x) => x.text).join('\n');
     const foto = typeof isi === 'string' ? [] : isi.filter((x) => x.type === 'image');
-    const dicatat = typeof isi === 'string' ? b : { ...b, messages: [{ ...b.messages[0], content: isi.map((x) => (x.type === 'image' ? { type: 'image', media_type: x.source.media_type, panjang: x.source.data.length } : x)) }] };
+    const dicatat = typeof isi === 'string' ? b : { ...b, messages: [{ ...b.messages[0], content: isi.map((x) => (x.type === 'image' || x.type === 'document' ? { type: x.type, media_type: x.source.media_type, panjang: x.source.data.length } : x)) }] };
     fs.appendFileSync(LOG, JSON.stringify({ path: req.url, headers: { beta: req.headers['anthropic-beta'] ?? null, key: req.headers['x-api-key'] ? 'ada' : null }, body: dicatat }) + '\n');
     const n = Number(/Buat (\d+) soal/.exec(prompt)?.[1] ?? 5);
     const kirim = (status, data) => { res.writeHead(status, { 'content-type': 'application/json', 'request-id': 'req_tiruan' }); res.end(JSON.stringify(data)); };
@@ -53,6 +53,16 @@ http.createServer((req, res) => {
       { q: 'Kunci di luar rentang?', options: ['a', 'b', 'c', 'd'], answer: 7, explain: 'x' }, soal(2),
       { q: 'Pilihan kembar?', options: ['a', 'A', 'c', 'd'], answer: 0, explain: 'x' }, soal(3),
     ] }));
+    if (prompt.includes('Dokumen PDF di atas')) {
+      const dok = isi.filter((x) => x.type === 'document');
+      return pesan(JSON.stringify({
+        teks: `1. Ibu kota Jepang adalah...\nA. Tokyo\nB. Osaka\nKunci: A\n\n2. Lihat grafik. Bulan paling panas?\n\n(${dok.length} PDF)`,
+        soal: [
+          { jenis: 'pilihan', q: 'Ibu kota Jepang adalah...', options: ['Tokyo', 'Osaka', 'Kyoto', 'Nagoya'], answer: 0, explain: 'Tokyo ibu kota Jepang.', keyGuessed: false, optionsAdded: true, perluGambar: false, gambar: { foto: 0, x1: 0, y1: 0, x2: 0, y2: 0 }, contohJawaban: '', poinWajib: [], poinPelengkap: [] },
+          { jenis: 'pilihan', q: 'Lihat grafik. Bulan paling panas?', options: ['Mei', 'Juni', 'Juli', 'Agustus'], answer: 2, explain: '', keyGuessed: true, optionsAdded: true, perluGambar: true, gambar: { foto: 1, x1: 100, y1: 100, x2: 500, y2: 500 }, contohJawaban: '', poinWajib: [], poinPelengkap: [] },
+        ],
+      }));
+    }
     if (prompt.includes('difoto orang tua')) {
       if (prompt.includes('mata pelajaran') === false) return pesan(JSON.stringify({ teks: '', soal: [] }));
       return pesan(JSON.stringify({

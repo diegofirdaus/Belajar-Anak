@@ -12,8 +12,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 /**
- * Membaca foto soal (maks 5) menjadi teks soal + soal terstruktur untuk editor soal pilihan.
- * Foto hanya diteruskan ke Claude lalu dibuang: tidak disimpan dan tidak dicatat.
+ * Membaca foto soal (maks 5) atau satu PDF menjadi teks soal + soal terstruktur untuk editor soal pilihan.
+ * Foto/PDF hanya diteruskan ke Claude lalu dibuang: tidak disimpan dan tidak dicatat.
  */
 export function POST(req: Request) {
   return handle(async () => {
@@ -29,23 +29,25 @@ export function POST(req: Request) {
     try {
       const hasil = await mintaJson({
         model: MODEL_BACA_FOTO(),
-        prompt: promptBacaFoto({ kelas: p.kelas, mapel: p.mapel, jumlah: p.gambar.length }),
+        prompt: promptBacaFoto({ kelas: p.kelas, mapel: p.mapel, jumlah: p.gambar?.length ?? 1, pdf: Boolean(p.pdf) }),
         skema: SKEMA_BACA_FOTO,
         gambar: p.gambar,
+        pdf: p.pdf?.data,
         waktuMaks: 100_000,
       });
       const data = (hasil.data ?? {}) as { teks?: unknown; soal?: unknown };
-      const hasilSoal = saringDenganKotak(data.soal, p.gambar.length);
+      // PDF: tidak ada foto di HP untuk dipotong, jadi tanpa usulan kotak.
+      const hasilSoal = saringDenganKotak(data.soal, p.gambar?.length ?? 0);
       const soal = hasilSoal.map((x) => x.soal);
       const teks = typeof data.teks === "string" ? data.teks.trim().slice(0, TEKS_ADMIN_MAKS) : "";
-      await catatAi(familyId, { jenis: "baca_foto", model: hasil.model, hasil: soal.length ? "ok" : "kurang_lengkap", pemakaian: hasil.pemakaian });
-      if (!soal.length) throw new ApiError("kurang_lengkap", "Tidak ada soal yang terbaca dari foto.");
+      await catatAi(familyId, { jenis: p.pdf ? "baca_pdf" : "baca_foto", model: hasil.model, hasil: soal.length ? "ok" : "kurang_lengkap", pemakaian: hasil.pemakaian });
+      if (!soal.length) throw new ApiError("kurang_lengkap", `Tidak ada soal yang terbaca dari ${p.pdf ? "PDF" : "foto"}.`);
       // Usulan kotak gambar per soal (sejajar dengan `soal`) untuk dipotong di browser dari foto yang masih ada di HP.
       return json({ teks, soal, kotak: hasilSoal.map((x) => x.kotak) });
     } catch (e) {
       await kembalikanJatahRapikan(familyId, tanggal);
       if (e instanceof ApiError && e.ai) {
-        await catatAi(familyId, { jenis: "baca_foto", model: e.ai.model, hasil: e.code, pemakaian: e.ai.pemakaian });
+        await catatAi(familyId, { jenis: p.pdf ? "baca_pdf" : "baca_foto", model: e.ai.model, hasil: e.code, pemakaian: e.ai.pemakaian });
       }
       throw e;
     }

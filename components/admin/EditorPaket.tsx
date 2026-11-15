@@ -5,6 +5,7 @@ import { useToast } from "@/components/Toast";
 import { api, apiMessage, ApiFailure } from "@/lib/api";
 import { GambarSoal } from "@/components/GambarSoal";
 import { merujukPilihanLain } from "@/lib/acakPilihan";
+import { bacaDocx, keBase64 } from "@/lib/docx";
 import { siapkanFoto } from "@/lib/foto";
 import { kotakTengah, type Kotak } from "@/lib/gambarSoal";
 import { PotongGambar } from "./PotongGambar";
@@ -12,6 +13,7 @@ import { JENJANG_INFO, MAPEL, jenjangOf, kelasInJenjang, kelasShort, type Jenjan
 import {
   FOTO_MAKS,
   JUDUL_MAKS,
+  PDF_BASE64_MAKS,
   POIN_HURUF_MAKS,
   POIN_PELENGKAP_MAKS,
   POIN_WAJIB_MAKS,
@@ -24,6 +26,18 @@ import {
 } from "@/lib/soalPilihan";
 
 const HURUF = "ABCD";
+const TERIMA_AI = "image/*,application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.doc";
+const TERIMA_TANPA_AI = ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.doc";
+const jenisFile = (f: File) =>
+  f.type === "application/pdf" || /\.pdf$/i.test(f.name)
+    ? "pdf"
+    : /\.docx$/i.test(f.name) || f.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ? "docx"
+      : /\.doc$/i.test(f.name) || f.type === "application/msword"
+        ? "doc"
+        : f.type.startsWith("image/") || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name)
+          ? "foto"
+          : "lain";
 
 /** Soal di editor + data sementara gambar (tidak ikut disimpan di paket). */
 type SoalEditor = SoalPilihan & {
@@ -83,7 +97,8 @@ export function EditorPaket({
   const [menyimpan, setMenyimpan] = useState(false);
   const [pakaiAi, setPakaiAi] = useState(aiTersedia);
   const kartuCek = useRef<HTMLDivElement>(null);
-  const [membacaFoto, setMembacaFoto] = useState<number | null>(null);
+  /** Teks status saat membaca foto/PDF/Word, atau null. */
+  const [membaca, setMembaca] = useState<string | null>(null);
 
   const jenjang = jenjangOf(kelas);
   const daftarMapel = MAPEL[jenjang];
@@ -97,8 +112,8 @@ export function EditorPaket({
     requestAnimationFrame(() => kartuCek.current?.scrollIntoView({ behavior: kurangiGerak() ? "auto" : "smooth", block: "start" }));
   }
 
-  function bacaTanpaAi(awalan = "") {
-    const r = bacaManual(teks);
+  function bacaTanpaAi(awalan = "", teksDipakai: string = teks) {
+    const r = bacaManual(teksDipakai);
     setSoal(r.soal);
     setTeksBerubah(false);
     const pesan = r.galat.slice(0, 4).join(" ");
@@ -107,14 +122,61 @@ export function EditorPaket({
     if (r.soal.length) tampilkanCek();
   }
 
-  /** Foto/upload soal: dibaca AI, hasilnya ditambahkan ke teks dan ke kartu cek. Foto tidak disimpan. */
-  async function bacaFoto(daftar: FileList | null) {
+  /** Upload soal: foto (maks 5), satu PDF, atau satu file Word (.docx). File tidak disimpan. */
+  async function unggah(daftar: FileList | null) {
     if (!daftar?.length) return;
-    const semua = [...daftar].filter((f) => f.type.startsWith("image/") || /\.(heic|heif|jpe?g|png|webp)$/i.test(f.name));
-    if (!semua.length) return setGalat("File itu bukan foto. Pilih foto soal, ya.");
+    const semua = [...daftar];
+    const dokumen = semua.find((f) => ["pdf", "docx", "doc"].includes(jenisFile(f)));
+    if (dokumen) {
+      const lain = semua.length - 1;
+      const catatan = lain ? `Satu file dibaca sekali unggah; ${lain} file lainnya tidak dibaca.` : "";
+      const jenis = jenisFile(dokumen);
+      if (jenis === "doc") return setGalat("File Word lama (.doc) belum bisa dibaca. Simpan ulang sebagai .docx atau PDF di Word, lalu unggah lagi.");
+      return jenis === "pdf" ? bacaPdf(dokumen, catatan) : bacaWord(dokumen, catatan);
+    }
+    if (!pakaiAi) return setGalat("Tanpa AI, hanya file Word (.docx) yang bisa dibaca.");
+    const fotoSaja = semua.filter((f) => jenisFile(f) === "foto");
+    if (!fotoSaja.length) return setGalat("File itu bukan foto, PDF, atau Word. Pilih file soal, ya.");
+    return bacaFoto(fotoSaja);
+  }
+
+  /** Hasil baca foto/PDF: teks masuk ke kolom Soal, soal ke kartu "Cek dulu". */
+  function terapkanBacaan(hasil: { teks: string; soal: SoalPilihan[] }, soalBaru: SoalEditor[], sumber: string, catatanAwal: string[]) {
+    const kosong = !teks.trim();
+    setTeks((t) => (kosong ? hasil.teks : `${t.trimEnd()}\n\n${hasil.teks}`));
+    if (kosong || !teksBerubah) {
+      // Soal yang sudah dirapikan tetap; soal baru ditambahkan di belakang.
+      setSoal((lama) => [...(kosong ? [] : lama), ...soalBaru]);
+      setTeksBerubah(false);
+    } else {
+      setTeksBerubah(true);
+    }
+    const catatan = [...catatanAwal];
+    if (!kosong && teksBerubah) catatan.push(`Teks dari ${sumber} sudah ditambahkan. Tekan "Rapikan soal" supaya soal yang Anda ketik ikut dirapikan.`);
+    setGalat(catatan.join(" ") || null);
+    toast(`${hasil.soal.length} soal terbaca dari ${sumber}.`);
+    if (kosong || !teksBerubah) tampilkanCek();
+  }
+
+  function galatBaca(e: unknown, sumber: "foto" | "PDF") {
+    const code = e instanceof ApiFailure ? e.code : "";
+    if (code === "admin_perlu") return onSesiHabis();
+    if (code === "ai_belum_siap") {
+      setPakaiAi(false);
+      setGalat(`Membaca ${sumber} butuh AI, dan AI sedang tidak tersedia. Ketik soalnya, atau unggah file Word (.docx).`);
+    } else if (code === "kurang_lengkap")
+      setGalat(sumber === "foto" ? "Tidak ada soal yang terbaca dari foto. Coba foto lebih dekat dan terang, satu halaman per foto." : "Tidak ada soal yang terbaca dari PDF itu.");
+    else if (code === "ditolak") setGalat(`${sumber === "foto" ? "Foto" : "PDF"} itu tidak bisa diproses. Coba halaman soal yang lain.`);
+    else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid") setGalat(apiMessage(e));
+    else if (!(e instanceof ApiFailure)) setGalat(e instanceof Error ? e.message : "File tidak bisa dibuka.");
+    else setGalat(`${sumber === "foto" ? "Foto" : "PDF"} belum berhasil dibaca. Coba sekali lagi.`);
+  }
+
+  /** Foto: dibaca AI; foto disimpan di memori untuk memotong gambar soal, tidak disimpan di server. */
+  async function bacaFoto(semua: File[]) {
     const files = semua.slice(0, FOTO_MAKS);
     setGalat(null);
-    setMembacaFoto(files.length);
+    setMembaca(`Membaca ${files.length} foto…`);
     try {
       const gambar = await siapkanFoto(files);
       const hasil = await api.bacaFoto(sesi, { kelas, mapel: mapelAktif, gambar });
@@ -124,44 +186,64 @@ export function EditorPaket({
         const k = hasil.kotak?.[i];
         return k ? { ...q, kotakUsulan: { ...k, foto: k.foto + awalFoto }, potongTerbuka: true } : q;
       });
-      const kosong = !teks.trim();
-      setTeks((t) => (kosong ? hasil.teks : `${t.trimEnd()}\n\n${hasil.teks}`));
-      if (kosong || !teksBerubah) {
-        // Soal yang sudah dirapikan tetap; soal dari foto ditambahkan di belakang.
-        setSoal((lama) => [...(kosong ? [] : lama), ...soalFoto]);
-        setTeksBerubah(false);
-      } else {
-        setTeksBerubah(true);
-      }
-      const catatan: string[] = [];
-      if (semua.length > FOTO_MAKS) catatan.push(`Maksimal ${FOTO_MAKS} foto sekali unggah; ${semua.length - FOTO_MAKS} foto lainnya tidak dibaca.`);
-      if (!kosong && teksBerubah) catatan.push('Teks dari foto sudah ditambahkan. Tekan "Rapikan soal" supaya soal yang Anda ketik ikut dirapikan.');
-      setGalat(catatan.join(" ") || null);
-      toast(`${hasil.soal.length} soal terbaca dari ${files.length} foto.`);
-      if (kosong || !teksBerubah) tampilkanCek();
+      const catatan = semua.length > FOTO_MAKS ? [`Maksimal ${FOTO_MAKS} foto sekali unggah; ${semua.length - FOTO_MAKS} foto lainnya tidak dibaca.`] : [];
+      terapkanBacaan(hasil, soalFoto, `${files.length} foto`, catatan);
     } catch (e) {
-      const code = e instanceof ApiFailure ? e.code : "";
-      if (code === "admin_perlu") return onSesiHabis();
-      if (code === "ai_belum_siap") {
-        setPakaiAi(false);
-        setGalat("Membaca foto butuh AI, dan AI sedang tidak tersedia. Ketik soalnya saja, ya.");
-      } else if (code === "kurang_lengkap") setGalat("Tidak ada soal yang terbaca dari foto. Coba foto lebih dekat dan terang, satu halaman per foto.");
-      else if (code === "ditolak") setGalat("Foto itu tidak bisa diproses. Coba foto halaman soal yang lain.");
-      else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid") setGalat(apiMessage(e));
-      else if (!(e instanceof ApiFailure)) setGalat(e instanceof Error ? e.message : "Foto tidak bisa dibuka.");
-      else setGalat("Foto belum berhasil dibaca. Coba sekali lagi.");
+      galatBaca(e, "foto");
     } finally {
-      setMembacaFoto(null);
+      setMembaca(null);
     }
   }
 
-  async function rapikan() {
-    if (!teks.trim()) return setGalat("Ketik atau tempel soalnya dulu, ya.");
+  /** PDF: dikirim utuh ke AI (maks ±3 MB) lalu dibuang. Gambar soal bisa ditambahkan dari foto/tangkapan layar. */
+  async function bacaPdf(file: File, catatanAwal: string) {
+    if (!pakaiAi) return setGalat("Membaca PDF butuh AI, dan AI sedang tidak tersedia. Unggah file Word (.docx), atau ketik soalnya.");
     setGalat(null);
-    if (!pakaiAi) return bacaTanpaAi();
+    setMembaca("Membaca PDF…");
+    try {
+      const data = await keBase64(file);
+      if (data.length > PDF_BASE64_MAKS)
+        return setGalat("PDF terlalu besar (maksimal ±3 MB). Simpan ulang hanya halaman soalnya, atau foto halamannya.");
+      if (!data.startsWith("JVBERi")) return setGalat("File itu bukan PDF yang bisa dibaca.");
+      const hasil = await api.bacaFoto(sesi, { kelas, mapel: mapelAktif, pdf: { data } });
+      const catatan = catatanAwal ? [catatanAwal] : [];
+      if (hasil.soal.some((q) => q.perluGambar))
+        catatan.push('Ada soal yang butuh gambar: tambahkan gambarnya lewat "+ Tambah gambar dari foto" (bisa dari tangkapan layar PDF).');
+      terapkanBacaan(hasil, hasil.soal, "PDF", catatan);
+    } catch (e) {
+      galatBaca(e, "PDF");
+    } finally {
+      setMembaca(null);
+    }
+  }
+
+  /** Word (.docx): teksnya diambil di HP (file tidak dikirim), dimasukkan ke kolom Soal, lalu dirapikan. */
+  async function bacaWord(file: File, catatanAwal: string) {
+    setGalat(null);
+    setMembaca("Membaca file Word…");
+    let isi: string;
+    try {
+      isi = await bacaDocx(file);
+    } catch (e) {
+      setMembaca(null);
+      return setGalat(e instanceof Error ? e.message : "File Word tidak bisa dibuka.");
+    }
+    setMembaca(null);
+    if (!isi.trim()) return setGalat("File Word itu tidak berisi teks. Kalau soalnya berupa gambar, simpan sebagai PDF atau foto halamannya.");
+    const gabung = (teks.trim() ? `${teks.trimEnd()}\n\n${isi}` : isi).slice(0, TEKS_ADMIN_MAKS);
+    setTeks(gabung);
+    const terpotong = (teks.trim() ? teks.trimEnd().length + 2 : 0) + isi.length > TEKS_ADMIN_MAKS;
+    const catatan = [catatanAwal, terpotong ? "Teks terlalu panjang; hanya 20.000 karakter pertama yang dipakai." : ""].filter(Boolean).join(" ");
+    await rapikan(gabung, catatan);
+  }
+
+  async function rapikan(teksDipakai: string = teks, catatan = "") {
+    if (!teksDipakai.trim()) return setGalat("Ketik atau tempel soalnya dulu, ya.");
+    setGalat(catatan || null);
+    if (!pakaiAi) return bacaTanpaAi(catatan ? `${catatan} ` : "", teksDipakai);
     setMerapikan(true);
     try {
-      const hasil = await api.rapikan(sesi, { kelas, mapel: mapelAktif, teks });
+      const hasil = await api.rapikan(sesi, { kelas, mapel: mapelAktif, teks: teksDipakai });
       // Gambar yang sudah dipotong/diusulkan tetap menempel pada soal dengan teks yang sama.
       setSoal((lama) =>
         hasil.map((q): SoalEditor => {
@@ -176,7 +258,7 @@ export function EditorPaket({
       if (code === "admin_perlu") return onSesiHabis();
       if (code === "ai_belum_siap") {
         setPakaiAi(false);
-        bacaTanpaAi('AI belum bisa dipakai, jadi soal dibaca dari format nomor, pilihan, dan "Kunci: ...". ');
+        bacaTanpaAi('AI belum bisa dipakai, jadi soal dibaca dari format nomor, pilihan, dan "Kunci: ...". ', teksDipakai);
       } else if (code === "ditolak") setGalat("Teks itu tidak bisa diproses. Coba periksa isinya.");
       else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid") setGalat(apiMessage(e));
       else setGalat('Soal belum berhasil dirapikan. Tekan "Rapikan soal" sekali lagi.');
@@ -325,41 +407,40 @@ export function EditorPaket({
               : 'Tulis setiap soal dengan nomor, pilihan A sampai D, dan baris "Kunci: ..." supaya bisa dibaca.'}
           </span>
         </div>
-        {pakaiAi && (
-          <div className="foto-soal">
-            <input
-              id={`${id}-foto`}
-              className="sr-only"
-              type="file"
-              accept="image/*"
-              multiple
-              disabled={membacaFoto !== null || merapikan}
-              onChange={(e) => {
-                const f = e.target.files;
-                void bacaFoto(f).finally(() => {
-                  e.target.value = "";
-                });
-              }}
-            />
-            <label htmlFor={`${id}-foto`} className={membacaFoto !== null ? "btn ghost foto-btn sibuk" : "btn ghost foto-btn"} aria-disabled={membacaFoto !== null || undefined}>
-              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
-                <circle cx="12" cy="13" r="3.5" />
-              </svg>
-              {membacaFoto !== null ? `Membaca ${membacaFoto} foto…` : "Foto / upload soal"}
-            </label>
-            <span className="pv-note">
-              Maksimal {FOTO_MAKS} foto sekali unggah. Foto hanya dibaca untuk mengambil soal, lalu dibuang (tidak disimpan). Hindari memotret nama,
-              nama sekolah, atau wajah anak.
-            </span>
-          </div>
-        )}
+        <div className="foto-soal">
+          <input
+            id={`${id}-foto`}
+            className="sr-only"
+            type="file"
+            accept={pakaiAi ? TERIMA_AI : TERIMA_TANPA_AI}
+            multiple={pakaiAi}
+            disabled={membaca !== null || merapikan}
+            onChange={(e) => {
+              const f = e.target.files;
+              void unggah(f).finally(() => {
+                e.target.value = "";
+              });
+            }}
+          />
+          <label htmlFor={`${id}-foto`} className={membaca !== null ? "btn ghost foto-btn sibuk" : "btn ghost foto-btn"} aria-disabled={membaca !== null || undefined}>
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+              <circle cx="12" cy="13" r="3.5" />
+            </svg>
+            {membaca ?? (pakaiAi ? "Foto / upload soal" : "Upload file Word (.docx)")}
+          </label>
+          <span className="pv-note">
+            {pakaiAi
+              ? `Bisa foto (maksimal ${FOTO_MAKS} sekali unggah), satu PDF (maksimal ±3 MB), atau satu file Word (.docx). File hanya dibaca untuk mengambil soal, lalu dibuang (tidak disimpan). Hindari memotret nama, nama sekolah, atau wajah anak.`
+              : "Teks soal di file Word (.docx) diambil di HP ini, lalu dibaca dari format nomor, pilihan, dan \"Kunci: ...\"."}
+          </span>
+        </div>
         {galat && (
           <p className="form-msg" role="alert">
             {galat}
           </p>
         )}
-        <button className="btn" type="button" onClick={rapikan} disabled={merapikan || membacaFoto !== null}>
+        <button className="btn" type="button" onClick={() => rapikan()} disabled={merapikan || membaca !== null}>
           {merapikan ? "Merapikan soal…" : "Rapikan soal"}
         </button>
       </div>
