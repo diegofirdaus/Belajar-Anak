@@ -55,6 +55,10 @@ r = await post('/api/soal', A.token, { pemainId: raka.id, mapel: 'Bahasa Indones
 b = terakhir();
 ok(r.status === 201 && !prompt(b).includes('KSN') && prompt(b).includes('tantangan') && b.model === 'claude-opus-5-5', 'Bahasa Indonesia: Soal Tantangan (bukan KSN), tetap Opus');
 
+r = await post('/api/soal', A.token, { pemainId: nadia.id, mapel: 'Bahasa Inggris', topik: '', level: 'olimpiade', n: 5 });
+b = terakhir();
+ok(r.status === 201 && prompt(b).includes('olimpiade Bahasa Inggris tingkat SMA') && prompt(b).includes('ditulis dalam bahasa Inggris') && !prompt(b).includes('KSN'), 'Bahasa Inggris: olimpiade Bahasa Inggris, soal berbahasa Inggris');
+
 // Validasi
 r = await post('/api/soal', A.token, { pemainId: raka.id, mapel: 'Matematika', topik: 'pecahan', level: 'olimpiade', n: 10 });
 ok(r.status === 400 && r.body.error === 'tidak_valid', 'olimpiade 10 soal ditolak');

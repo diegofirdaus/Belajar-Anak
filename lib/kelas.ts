@@ -8,12 +8,15 @@ export const LEVELS: Level[] = ["mudah", "sedang", "sulit", "olimpiade"];
  * tampil sebagai "Olimpiade"; untuk mapel lain sebagai "Soal Tantangan" (versi tersulit mapel itu).
  */
 export const MAPEL_OLIMPIADE: Record<Jenjang, string[]> = {
-  SD: ["Matematika", "IPAS"],
-  SMP: ["Matematika", "IPA", "IPS", "Informatika"],
-  SMA: ["Matematika", "Fisika", "Kimia", "Biologi", "Ekonomi", "Geografi", "Informatika"],
+  SD: ["Matematika", "IPAS", "Bahasa Inggris"],
+  SMP: ["Matematika", "IPA", "IPS", "Informatika", "Bahasa Inggris"],
+  SMA: ["Matematika", "Fisika", "Kimia", "Biologi", "Ekonomi", "Geografi", "Informatika", "Bahasa Inggris"],
 };
 /** Nama kompetisi resmi per jenjang. */
 export const NAMA_KOMPETISI: Record<Jenjang, string> = { SD: "KSN SD", SMP: "OSN SMP", SMA: "OSN SMA" };
+/** Nama kompetisi untuk satu mapel: Bahasa Inggris tidak ada di KSN/OSN, tapi olimpiadenya banyak diadakan. */
+export const namaKompetisi = (mapel: string, kelas: number) =>
+  mapel === "Bahasa Inggris" ? `olimpiade Bahasa Inggris tingkat ${jenjangOf(kelas)}` : NAMA_KOMPETISI[jenjangOf(kelas)];
 
 /** Apakah mapel ini punya olimpiade resmi (cukup dari nama mapel; nama mapel unik antarjenjang). */
 export const mapelOlimpiade = (mapel: string, kelas?: number) =>

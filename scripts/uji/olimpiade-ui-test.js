@@ -35,6 +35,8 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   ok(await p.getByLabel('Materi (boleh dikosongkan)').isVisible(), 'tantangan: label materi boleh kosong');
   ok((await p.getByText('Jumlah soal').count()) === 0, 'tantangan: pilihan jumlah soal disembunyikan');
   ok(await p.locator('#form-soal .note').innerText().then((t) => t.includes('versi paling sulit untuk Bahasa Indonesia')), 'tantangan: keterangan');
+  await p.getByLabel('Mata pelajaran').selectOption('Bahasa Inggris');
+  ok(await seg('🏆 Olimpiade').isVisible() && await p.locator('#form-soal .note').innerText().then((t) => t.includes('olimpiade Bahasa Inggris tingkat SD')), 'Bahasa Inggris SD: Olimpiade + keterangan');
   await p.getByLabel('Mata pelajaran').selectOption('Matematika');
   ok(await p.locator('#form-soal .note').innerText().then((t) => t.includes('KSN SD')), 'olimpiade Matematika: keterangan KSN SD');
   ok(await p.evaluate(() => document.documentElement.scrollWidth) <= 390, 'tanpa geser horizontal');

@@ -2,7 +2,7 @@
 
 import { useId, type FormEvent } from "react";
 import { Segment } from "@/components/Segment";
-import { MAPEL, NAMA_KOMPETISI, TOPIC_PLACEHOLDER, jenjangOf, mapelOlimpiade, type Level } from "@/lib/kelas";
+import { MAPEL, TOPIC_PLACEHOLDER, jenjangOf, mapelOlimpiade, namaKompetisi, type Level } from "@/lib/kelas";
 import { SOAL_OLIMPIADE } from "@/lib/soal";
 import type { Player } from "@/lib/player";
 import type { PaketRingkas } from "@/lib/soalPilihan";
@@ -132,7 +132,7 @@ export function FormSoal({
         {modePuncak && (
           <p className="note">
             {resmi
-              ? `${SOAL_OLIMPIADE} soal bergaya ${NAMA_KOMPETISI[j]} (seleksi sekolah sampai kabupaten). `
+              ? `${SOAL_OLIMPIADE} soal bergaya ${namaKompetisi(mapel, pemain.kelas)} (seleksi sekolah sampai kabupaten). `
               : `${SOAL_OLIMPIADE} soal penalaran tingkat tinggi, versi paling sulit untuk ${mapel}. `}
             Membuatnya butuh sekitar 1–2 menit. Setiap jawaban benar memberi hadiah paling besar.
           </p>
