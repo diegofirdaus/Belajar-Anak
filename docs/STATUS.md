@@ -185,6 +185,13 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
 - Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 5/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
+## Upgrade keamanan Next.js — SELESAI, sudah dicoba pemilik di preview (login iPhone aman), dirilis lewat PR ke main
+
+- `next` dan `eslint-config-next` 16.4.3 → **16.4.6** (perbaikan GHSA-mfr8-8qww-v76h & GHSA-vc7v-qv4w-wrv8, kebocoran cache `'use cache'`; app ini tidak memakai `'use cache'`, jadi sebenarnya tidak terdampak). `npm audit fix` (tanpa `--force`) juga menaikkan `fast-xml-parser` 5.11.2 → 5.12.1 dan `firebase` 13.1.0 → 13.4.0 (minor).
+- Semua uji unit, API (api–api16), dan UI dijalankan ulang di emulator: lulus. Build produksi tidak lagi menampilkan peringatan keamanan.
+- Sisa `npm audit` yang sengaja dibiarkan: `@grpc/grpc-js` (lewat `@firebase/firestore`) dan `uuid` (lewat `firebase-admin`/`gaxios`). Perbaikannya butuh `--force` yang memasang versi major lain (firebase 9 / firebase-admin 14) dan merusak. Celahnya mengenai server gRPC dan pemakaian `uuid` dengan buffer, yang tidak dipakai app ini. Tunggu rilis firebase/firebase-admin berikutnya.
+- Perlu dicoba di preview: **login Google dari iPhone** (karena firebase ikut naik), membuat soal, dan mode admin.
+
 ## Perbaikan login di Safari iPhone (setelah rilis)
 
 - Gejala: di HP pemilik muncul "Unable to process request due to missing initial state" di `markas-latihan.firebaseapp.com`. Pop-up login diblokir → app beralih ke `signInWithRedirect` → Safari memisahkan penyimpanan antar-situs, jadi redirect ke domain lain gagal.
