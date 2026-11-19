@@ -60,7 +60,7 @@ function KartuBlok({ r }: { r: Rewards["blok"] }) {
           </div>
         ))}
       </div>
-      <p className="muted rule">Level mudah memberi kayu, sedang memberi batu, sulit memberi permata.</p>
+      <p className="muted rule">Level mudah memberi kayu, sedang memberi batu, sulit memberi permata, olimpiade 2 permata.</p>
     </section>
   );
 }
@@ -155,7 +155,7 @@ function KartuPahlawan({ r }: { r: Rewards["pahlawan"] }) {
         </span>
       </div>
       <p className="muted rule">
-        Jawaban benar memberi XP: mudah 10, sedang 20, sulit 30. Kalahkan boss untuk bonus {BONUS_BOSS} XP.
+        Jawaban benar memberi XP: mudah 10, sedang 20, sulit 30, olimpiade 50. Kalahkan boss untuk bonus {BONUS_BOSS} XP.
       </p>
     </section>
   );
@@ -185,7 +185,7 @@ function KartuAntariksa({ liter }: { liter: number }) {
         {p.berikut ? `${p.kurang} liter lagi untuk terbang ke ${p.berikut.nama}.` : "Kamu sudah sampai ujung tata surya. Kapten hebat!"}
       </p>
       <p className="fact">{p.kini.fakta}</p>
-      <p className="muted rule">Jawaban benar mengisi bahan bakar: mudah 10, sedang 20, sulit 30 liter.</p>
+      <p className="muted rule">Jawaban benar mengisi bahan bakar: mudah 10, sedang 20, sulit 30, olimpiade 50 liter.</p>
     </section>
   );
 }
@@ -330,7 +330,7 @@ function KartuDino({ r }: { r: Rewards["dino"] }) {
           <p className="muted small">Belum ada kerangka. Kumpulkan 8 tulang untuk kerangka pertamamu!</p>
         )}
       </div>
-      <p className="muted rule">Jawaban benar memberi tulang: mudah 1, sedang 2, sulit 3.</p>
+      <p className="muted rule">Jawaban benar memberi tulang: mudah 1, sedang 2, sulit 3, olimpiade 4.</p>
     </section>
   );
 }

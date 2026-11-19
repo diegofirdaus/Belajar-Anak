@@ -2,17 +2,24 @@
 
 import { useId, type FormEvent } from "react";
 import { Segment } from "@/components/Segment";
-import { MAPEL, TOPIC_PLACEHOLDER, jenjangOf, type Level } from "@/lib/kelas";
+import { MAPEL, TOPIC_PLACEHOLDER, jenjangOf, mapelOlimpiade, namaKompetisi, type Level } from "@/lib/kelas";
+import { SOAL_OLIMPIADE } from "@/lib/soal";
 import type { Player } from "@/lib/player";
 import type { PaketRingkas } from "@/lib/soalPilihan";
 import { WORLDS } from "@/lib/worlds";
 
 type LevelForm = Level | "pilihan";
-const LEVEL_OPSI: { value: LevelForm; label: string; wide?: boolean }[] = [
+const LEVEL_DASAR: { value: LevelForm; label: string; wide?: boolean }[] = [
   { value: "mudah", label: "Mudah" },
   { value: "sedang", label: "Sedang" },
   { value: "sulit", label: "Sulit" },
 ];
+/** Level tertinggi: "Olimpiade" untuk mapel yang punya KSN/OSN, "Soal Tantangan" untuk mapel lain. */
+const opsiPuncak = (mapel: string, kelas: number) => ({
+  value: "olimpiade" as const,
+  label: mapelOlimpiade(mapel, kelas) ? "🏆 Olimpiade" : "⚡ Soal Tantangan",
+  wide: true,
+});
 const OPSI_PILIHAN = { value: "pilihan" as const, label: "★ Soal pilihan", wide: true };
 
 export type NilaiForm = { mapel: string; topik: string; level: LevelForm; jumlah: "5" | "10" };
@@ -69,18 +76,21 @@ export function FormSoal({
   // Kalau paket terakhir dihapus orang tua, kembali ke level mudah.
   const level: LevelForm = nilai.level === "pilihan" && !adaPilihan ? "mudah" : nilai.level;
   const modePilihan = level === "pilihan";
+  const modePuncak = level === "olimpiade";
+  const resmi = mapelOlimpiade(mapel, pemain.kelas);
+  const opsiLevel = [...LEVEL_DASAR, opsiPuncak(mapel, pemain.kelas), ...(adaPilihan ? [OPSI_PILIHAN] : [])];
   const paketMapel = paketPilihan.filter((p) => p.subject === mapel);
   const mapelLain = [...new Set(paketPilihan.map((p) => p.subject))].filter((m) => m !== mapel);
 
   function kirim(e: FormEvent) {
     e.preventDefault();
     if (modePilihan) return;
-    if (!nilai.topik.trim()) {
+    if (!modePuncak && !nilai.topik.trim()) {
       onGalat('Tulis dulu materi yang mau dilatih, misalnya "pecahan" atau "gaya dan gerak".');
       return;
     }
     onGalat(null);
-    onKirim({ ...nilai, mapel, level });
+    onKirim({ ...nilai, mapel, level, jumlah: modePuncak ? (String(SOAL_OLIMPIADE) as NilaiForm["jumlah"]) : nilai.jumlah });
   }
 
   return (
@@ -97,13 +107,13 @@ export function FormSoal({
         </div>
         {!modePilihan && (
           <div className="field">
-            <label htmlFor={`${id}-topik`}>Materi atau tema</label>
+            <label htmlFor={`${id}-topik`}>{modePuncak ? "Materi (boleh dikosongkan)" : "Materi atau tema"}</label>
             <input
               id={`${id}-topik`}
               className="input"
               type="text"
               maxLength={120}
-              placeholder={TOPIC_PLACEHOLDER[j]}
+              placeholder={modePuncak ? "Kosongkan untuk materi campuran" : TOPIC_PLACEHOLDER[j]}
               value={nilai.topik}
               onChange={(e) => ubah({ topik: e.target.value })}
               enterKeyHint="go"
@@ -112,14 +122,22 @@ export function FormSoal({
         )}
         <Segment
           label="Level"
-          options={adaPilihan ? [...LEVEL_OPSI, OPSI_PILIHAN] : LEVEL_OPSI}
+          options={opsiLevel}
           value={level}
           onChange={(l) => {
             ubah({ level: l });
             onGalat(null);
           }}
         />
-        {!modePilihan && (
+        {modePuncak && (
+          <p className="note">
+            {resmi
+              ? `${SOAL_OLIMPIADE} soal bergaya ${namaKompetisi(mapel, pemain.kelas)} (seleksi sekolah sampai kabupaten): separuh gaya soal lomba, separuh soal penalaran yang lebih sulit. `
+              : `${SOAL_OLIMPIADE} soal versi paling sulit untuk ${mapel}: separuh gaya soal lomba, separuh soal penalaran tingkat tinggi. `}
+            Membuatnya butuh sekitar 1–2 menit. Setiap jawaban benar memberi hadiah paling besar.
+          </p>
+        )}
+        {!modePilihan && !modePuncak && (
           <Segment
             label="Jumlah soal"
             columns={2}

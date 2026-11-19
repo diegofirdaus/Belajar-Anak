@@ -13,6 +13,8 @@ export const BATAS_PER_KELUARGA = () => angka(process.env.AI_LIMIT_PER_FAMILY, 6
 export const BATAS_RAPIKAN = () => angka(process.env.AI_LIMIT_RAPIKAN, 30);
 /** Pemeriksaan jawaban esai per anak per hari (terpisah dari jatah membuat soal). */
 export const BATAS_ESAI = () => angka(process.env.AI_LIMIT_ESAI, 100);
+/** Paket olimpiade/tantangan (model paling mahal) per anak per hari; ikut dihitung di jatah biasa juga. */
+export const BATAS_OLIMPIADE = () => angka(process.env.AI_LIMIT_OLIMPIADE, 5);
 
 /** Tanggal hari ini di Indonesia (WIB), dipakai sebagai kunci jatah harian. */
 export function hariIni(d = new Date()): string {
@@ -26,7 +28,7 @@ const dokHari = (familyId: string, tanggal = hariIni()) =>
  * Ambil satu jatah paket soal AI. Cek dan tambah dalam satu transaksi,
  * jadi ketukan beruntun tidak bisa melewati batas.
  */
-export async function ambilJatah(familyId: string, pemainId: string): Promise<{ tanggal: string }> {
+export async function ambilJatah(familyId: string, pemainId: string, olimpiade = false): Promise<{ tanggal: string }> {
   const tanggal = hariIni();
   const ref = dokHari(familyId, tanggal);
   await db().runTransaction(async (tx) => {
@@ -34,7 +36,17 @@ export async function ambilJatah(familyId: string, pemainId: string): Promise<{ 
     const total = (d.total as number | undefined) ?? 0;
     const milikPemain = ((d.perPemain as Record<string, number> | undefined) ?? {})[pemainId] ?? 0;
     if (milikPemain >= BATAS_PER_PEMAIN() || total >= BATAS_PER_KELUARGA()) throw new ApiError("jatah_habis");
-    tx.set(ref, { total: FieldValue.increment(1), perPemain: { [pemainId]: FieldValue.increment(1) } }, { merge: true });
+    if (olimpiade && (((d.olimpiade as Record<string, number> | undefined) ?? {})[pemainId] ?? 0) >= BATAS_OLIMPIADE())
+      throw new ApiError("jatah_habis", `Jatah soal level tertinggi hari ini (${BATAS_OLIMPIADE()} paket) sudah habis. Besok bisa lagi, atau coba level sulit dulu.`);
+    tx.set(
+      ref,
+      {
+        total: FieldValue.increment(1),
+        perPemain: { [pemainId]: FieldValue.increment(1) },
+        ...(olimpiade ? { olimpiade: { [pemainId]: FieldValue.increment(1) } } : {}),
+      },
+      { merge: true },
+    );
   });
   return { tanggal };
 }
@@ -73,9 +85,13 @@ export async function kembalikanJatahEsai(familyId: string, pemainId: string, ta
 }
 
 /** Kembalikan jatah kalau soal gagal dibuat. */
-export async function kembalikanJatah(familyId: string, pemainId: string, tanggal: string): Promise<void> {
+export async function kembalikanJatah(familyId: string, pemainId: string, tanggal: string, olimpiade = false): Promise<void> {
   await dokHari(familyId, tanggal).set(
-    { total: FieldValue.increment(-1), perPemain: { [pemainId]: FieldValue.increment(-1) } },
+    {
+      total: FieldValue.increment(-1),
+      perPemain: { [pemainId]: FieldValue.increment(-1) },
+      ...(olimpiade ? { olimpiade: { [pemainId]: FieldValue.increment(-1) } } : {}),
+    },
     { merge: true },
   );
 }

@@ -18,7 +18,7 @@ export function Riwayat({ daftar }: { daftar: BarisRiwayat[] | null }) {
               <div className="hist-main">
                 <b>{r.topik}</b>
                 <span className="muted small">
-                  {r.mapel} · {labelLevel(r.level)} · {tanggalPendek(r.waktu)}
+                  {r.mapel} · {labelLevel(r.level, r.mapel)} · {tanggalPendek(r.waktu)}
                 </span>
               </div>
               <span className="hist-score num" aria-label={`${r.benar} dari ${r.n} benar`}>

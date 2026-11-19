@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { LEVELS, nextLevel, type Level } from "@/lib/kelas";
+import { LEVELS, namaLevel, nextLevel, type Level } from "@/lib/kelas";
 import { labelLevel, persen, pesanHasil, ringkasHasil } from "@/lib/latihan";
 import type { Rewards } from "@/lib/rewards";
 import type { PaketSesi } from "@/lib/soal";
@@ -58,11 +58,11 @@ export function Hasil({
           {benar}/{n}
         </p>
         <p className="muted">
-          {pct}% benar · {paket.topik} · {paket.level === "pilihan" ? "soal pilihan" : `level ${labelLevel(paket.level)}`}
+          {pct}% benar · {paket.topik} · {paket.level === "pilihan" ? "soal pilihan" : `level ${labelLevel(paket.level, paket.mapel)}`}
         </p>
         {r.hadiah && <p className="reward-pop">{r.hadiah}</p>}
         {r.tambahan && <p className="extra">{r.tambahan}</p>}
-        <p>{pesanHasil(nama, paket.level, benar, n)}</p>
+        <p>{pesanHasil(nama, paket.level, benar, n, paket.mapel)}</p>
       </section>
 
       <div className="res-actions">
@@ -70,7 +70,7 @@ export function Hasil({
           <>
             {bisaNaik && (
               <button type="button" className="btn" onClick={() => onLevelBerikut(berikut)}>
-                Coba level {berikut}
+                Coba level {namaLevel(berikut, paket.mapel)}
               </button>
             )}
             <button type="button" className={bisaNaik ? "btn ghost" : "btn"} onClick={onSoalBaru}>

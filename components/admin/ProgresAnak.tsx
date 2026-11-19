@@ -5,7 +5,7 @@ import { api, apiMessage, ApiFailure } from "@/lib/api";
 import type { DetailSoal } from "@/lib/esai";
 import { getDevicePlayer } from "@/lib/device";
 import { kelasShort } from "@/lib/kelas";
-import { labelLevel, tanggalPendek, type Riwayat } from "@/lib/latihan";
+import { labelLevel, labelLevel as labelLevelLatihan, tanggalPendek, type Riwayat } from "@/lib/latihan";
 import {
   aktivitas,
   bandingBulan,
@@ -183,7 +183,13 @@ function KartuAktivitas({ riwayat }: { riwayat: Riwayat[] }) {
 
 /* ---------- Tren nilai per mapel ---------- */
 
-const WARNA_LEVEL: Record<string, string> = { mudah: "transparent", sedang: "var(--band-sedang)", sulit: "var(--band-sulit)" };
+const WARNA_LEVEL: Record<string, string> = {
+  mudah: "transparent",
+  sedang: "var(--band-sedang)",
+  sulit: "var(--band-sulit)",
+  olimpiade: "var(--band-olimpiade)",
+};
+const NAMA_WARNA: Record<string, string> = { sedang: "kuning: sedang", sulit: "jingga: sulit", olimpiade: "ungu: olimpiade/tantangan" };
 
 function KartuTren({ riwayat }: { riwayat: Riwayat[] }) {
   const id = useId();
@@ -227,7 +233,7 @@ function KartuTren({ riwayat }: { riwayat: Riwayat[] }) {
           Area berwarna = level yang lebih sulit (
           {levelDipakai
             .filter((l) => l !== "mudah")
-            .map((l) => (l === "sedang" ? "kuning: sedang" : "jingga: sulit"))
+            .map((l) => NAMA_WARNA[l])
             .join(", ")}
           ). Nilai yang sedikit turun setelah naik level itu wajar, karena soalnya lebih sulit.
         </p>
@@ -266,7 +272,7 @@ function GrafikTren({ titik, mapel }: { titik: TitikTren[]; mapel: string }) {
     if (t.level) sebelum = t.level;
   });
 
-  const ringkasan = titik.map((t) => `${t.label === "Ini" ? "7 hari terakhir" : `pekan ${t.label}`}: ${t.pct === null ? "tidak latihan" : `${t.pct}%${t.level ? ` (level ${t.level})` : ""}`}`).join("; ");
+  const ringkasan = titik.map((t) => `${t.label === "Ini" ? "7 hari terakhir" : `pekan ${t.label}`}: ${t.pct === null ? "tidak latihan" : `${t.pct}%${t.level ? ` (level ${labelLevelLatihan(t.level, mapel)})` : ""}`}`).join("; ");
 
   return (
     <svg className="grafik" viewBox={`0 0 ${W} 166`} role="img" aria-label={`${mapel}, rata-rata benar per 7 hari. ${ringkasan}. Garis putus-putus 80% menandai materi dikuasai.`}>
@@ -289,7 +295,7 @@ function GrafikTren({ titik, mapel }: { titik: TitikTren[]; mapel: string }) {
       </text>
       {labelLevel.map((l) => (
         <text key={`l${l.i}`} x={Math.max(kiri, x(l.i) - lebarPita / 2 + 4)} y={bawah - 6} className="grafik-teks level">
-          Level {l.level}
+          Level {labelLevelLatihan(l.level, mapel)}
         </text>
       ))}
       {ruas.map((r, i) =>
@@ -584,7 +590,7 @@ function BarisRiwayat({ x, anak, sesi, onSesiHabis }: { x: Riwayat; anak: Progre
         <span className="hist-main">
           <b>{x.topik}</b>
           <span className="muted small">
-            {x.mapel} · {labelLevel(x.level)} · {tanggalPendek(x.waktu)}
+            {x.mapel} · {labelLevel(x.level, x.mapel)} · {tanggalPendek(x.waktu)}
           </span>
         </span>
         <span className="hist-score num" aria-label={`${skor} dari ${x.n} benar`}>

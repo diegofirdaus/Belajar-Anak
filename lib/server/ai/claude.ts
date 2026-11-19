@@ -20,8 +20,12 @@ export const MODEL_BACA_FOTO = () => process.env.AI_MODEL_BACA_FOTO || "claude-s
 export const MODEL_RAPIKAN = () => process.env.AI_MODEL_RAPIKAN || "claude-haiku-5-5";
 /** Memeriksa jawaban esai anak per poin: cepat dan murah, keputusan akhir tetap dihitung kode. */
 export const MODEL_PERIKSA_ESAI = () => process.env.AI_MODEL_ESAI || "claude-haiku-5-5";
-type Effort = "low" | "medium" | "high" | "xhigh" | "max";
+/** Soal olimpiade/tantangan: butuh penalaran paling kuat dan kunci yang benar-benar diperiksa. */
+export const MODEL_OLIMPIADE = () => process.env.AI_MODEL_OLIMPIADE || "claude-opus-5-5";
+export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
 const EFFORT_SOAL = (): Effort => (process.env.AI_EFFORT_SOAL as Effort) || "medium";
+/** Level sulit dan olimpiade berpikir lebih dalam agar soalnya benar-benar menantang. */
+export const EFFORT_SULIT = (): Effort => (process.env.AI_EFFORT_SULIT as Effort) || "high";
 
 /** Model yang mendukung server-side fallback mode "default" (Haiku 5.5 tidak). */
 const bisaFallback = (model: string) => /^claude-(sonnet-5-5|opus-5|fable-5)/.test(model);
@@ -49,6 +53,8 @@ export async function mintaJson(p: {
   pdf?: string;
   /** Batas waktu khusus (ms), mis. untuk membaca beberapa foto. */
   waktuMaks?: number;
+  /** Batas token keluaran (termasuk berpikir). Bawaan 16000. */
+  maksToken?: number;
 }): Promise<HasilJson> {
   const c = claude();
   let res: Anthropic.Beta.BetaMessage;
@@ -61,7 +67,7 @@ export async function mintaJson(p: {
     res = await c.beta.messages.create(
       {
         model: p.model,
-        max_tokens: 16000,
+        max_tokens: p.maksToken ?? 16000,
         output_config: { effort: p.effort ?? EFFORT_SOAL(), format: { type: "json_schema", schema: p.skema } },
         messages: [{ role: "user", content }],
         // Penolakan kategori cyber/frontier_llm dicoba ulang di model lain oleh server Anthropic.
@@ -70,6 +76,7 @@ export async function mintaJson(p: {
       p.waktuMaks ? { timeout: p.waktuMaks, maxRetries: 0 } : undefined,
     );
   } catch (e) {
+    if (e instanceof Anthropic.APIConnectionTimeoutError) throw new ApiError("terlalu_lama");
     if (e instanceof Anthropic.RateLimitError) throw new ApiError("terlalu_cepat");
     if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {
       console.error("Kunci Claude API ditolak:", e.message);

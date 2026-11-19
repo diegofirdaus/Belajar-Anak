@@ -25,6 +25,9 @@ export type SoalTanpaKunci = { q: string; options: string[]; jenis?: "esai"; gam
 export const JUMLAH_SOAL = [5, 10] as const;
 export const TOPIK_MAKS = 120;
 
+/** Jumlah soal per paket olimpiade/tantangan. */
+export const SOAL_OLIMPIADE = 10;
+
 export const permintaanSoalSchema = z
   .object({
     pemainId: z.string().min(1).max(128),
@@ -32,16 +35,18 @@ export const permintaanSoalSchema = z
     topik: z
       .string()
       .transform((s) => s.replace(/\s+/g, " ").trim())
-      .pipe(
-        z
-          .string()
-          .min(1, 'Tulis dulu materi yang mau dilatih, misalnya "pecahan" atau "gaya dan gerak".')
-          .max(TOPIK_MAKS),
-      ),
+      .pipe(z.string().max(TOPIK_MAKS)),
     level: z.enum(LEVELS as [string, ...string[]]),
     n: z.union([z.literal(5), z.literal(10)]),
   })
-  .strict();
+  .strict()
+  .superRefine((p, ctx) => {
+    // Level olimpiade: materi boleh kosong (campuran) dan selalu 10 soal (5 gaya lomba + 5 gaya penalaran).
+    if (p.level === "olimpiade") {
+      if (p.n !== SOAL_OLIMPIADE) ctx.addIssue({ code: "custom", path: ["n"], message: `Level ini selalu ${SOAL_OLIMPIADE} soal.` });
+    } else if (!p.topik)
+      ctx.addIssue({ code: "custom", path: ["topik"], message: 'Tulis dulu materi yang mau dilatih, misalnya "pecahan" atau "gaya dan gerak".' });
+  });
 export type PermintaanSoal = z.infer<typeof permintaanSoalSchema>;
 
 /** Paket sesi yang dikirim ke browser setelah soal dibuat. */

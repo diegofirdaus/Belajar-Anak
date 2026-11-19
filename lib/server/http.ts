@@ -14,6 +14,7 @@ export type ApiErrorCode =
   // Pembuatan soal oleh AI (brief 10.5)
   | "jatah_habis"
   | "terlalu_cepat"
+  | "terlalu_lama"
   | "ditolak"
   | "json_rusak"
   | "kurang_lengkap"
@@ -32,6 +33,7 @@ const STATUS: Record<ApiErrorCode, number> = {
   server_belum_siap: 503,
   jatah_habis: 429,
   terlalu_cepat: 429,
+  terlalu_lama: 504,
   ditolak: 422,
   json_rusak: 502,
   kurang_lengkap: 502,
