@@ -167,7 +167,7 @@ Sesuai rencana yang disepakati (hanya soal pilihan orang tua; dua tingkat benar/
 - Uji: `api15-test.mjs` (validasi PDF, blok dokumen, prompt PDF, tanpa kotak, log & jatah), `dokumen-ui-test.js` (.docx buatan dengan penomoran otomatis & kotak teks, .doc, Word rusak, PDF + foto sekaligus, PDF terlalu besar/palsu, mode tanpa AI). `foto-ui-test.js` disesuaikan dengan keterangan baru.
 - Dicoba pemilik di preview dengan file asli: "udah bisa baca file nya".
 
-## Level sulit diperketat + level Olimpiade / Soal Tantangan — SELESAI di `pengembangan`, BELUM dicoba pemilik
+## Level sulit diperketat + level Olimpiade / Soal Tantangan — SELESAI, sudah dicoba pemilik di preview (19 Nov 2026: "aman"), dirilis lewat PR ke main
 
 Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade sesuai jenjang. Disepakati: perketat Sulit **dan** tambah level baru di atasnya.
 
