@@ -26,7 +26,7 @@ export const JUMLAH_SOAL = [5, 10] as const;
 export const TOPIK_MAKS = 120;
 
 /** Jumlah soal per paket olimpiade/tantangan. */
-export const SOAL_OLIMPIADE = 5;
+export const SOAL_OLIMPIADE = 10;
 
 export const permintaanSoalSchema = z
   .object({
@@ -41,7 +41,7 @@ export const permintaanSoalSchema = z
   })
   .strict()
   .superRefine((p, ctx) => {
-    // Level olimpiade: materi boleh kosong (campuran) dan selalu 5 soal (soalnya panjang).
+    // Level olimpiade: materi boleh kosong (campuran) dan selalu 10 soal (5 gaya lomba + 5 gaya penalaran).
     if (p.level === "olimpiade") {
       if (p.n !== SOAL_OLIMPIADE) ctx.addIssue({ code: "custom", path: ["n"], message: `Level ini selalu ${SOAL_OLIMPIADE} soal.` });
     } else if (!p.topik)

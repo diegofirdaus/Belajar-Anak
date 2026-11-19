@@ -49,7 +49,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   await p.locator('.qtext').waitFor();
   ok(await p.locator('.tag').first().innerText().then((t) => t.includes('olimpiade') && t.includes('Campuran')), 'mengerjakan: tag "olimpiade · Campuran"');
   await p.screenshot({ path: `${out}/ol-kerja.png` });
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 10; i++) {
     await p.locator('.opts .opt').filter({ hasText: /^[A-D]Benar/ }).click();
     await p.locator('.fb').waitFor();
     if (i === 0) ok(await p.locator('.fb').innerText().then((t) => t.includes('+2 permata')), 'umpan balik: +2 permata');
@@ -58,7 +58,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   await p.locator('.result').waitFor();
   const teks = await p.locator('.result').innerText();
   ok(teks.includes('level olimpiade') && teks.includes('Soal olimpiade pun bisa kamu taklukkan'), 'hasil: label & pesan olimpiade');
-  ok(teks.includes('+10 permata'), 'hasil: total hadiah 10 permata', teks.match(/\+\d+ \w+/g)?.join());
+  ok(teks.includes('+20 permata'), 'hasil: total hadiah 20 permata', teks.match(/\+\d+ \w+/g)?.join());
   ok((await p.getByRole('button', { name: /Coba level/ }).count()) === 0 && (await p.getByRole('button', { name: 'Soal baru, level sama' }).isVisible()), 'hasil: tidak ada level di atas olimpiade');
   await p.screenshot({ path: `${out}/ol-hasil.png`, fullPage: true });
   await p.getByRole('button', { name: 'Kembali ke markas' }).click();

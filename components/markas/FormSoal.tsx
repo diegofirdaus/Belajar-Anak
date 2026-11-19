@@ -90,7 +90,7 @@ export function FormSoal({
       return;
     }
     onGalat(null);
-    onKirim({ ...nilai, mapel, level, jumlah: modePuncak ? (String(SOAL_OLIMPIADE) as "5") : nilai.jumlah });
+    onKirim({ ...nilai, mapel, level, jumlah: modePuncak ? (String(SOAL_OLIMPIADE) as NilaiForm["jumlah"]) : nilai.jumlah });
   }
 
   return (
@@ -132,8 +132,8 @@ export function FormSoal({
         {modePuncak && (
           <p className="note">
             {resmi
-              ? `${SOAL_OLIMPIADE} soal bergaya ${namaKompetisi(mapel, pemain.kelas)} (seleksi sekolah sampai kabupaten). `
-              : `${SOAL_OLIMPIADE} soal penalaran tingkat tinggi, versi paling sulit untuk ${mapel}. `}
+              ? `${SOAL_OLIMPIADE} soal bergaya ${namaKompetisi(mapel, pemain.kelas)} (seleksi sekolah sampai kabupaten): separuh gaya soal lomba, separuh soal penalaran yang lebih sulit. `
+              : `${SOAL_OLIMPIADE} soal versi paling sulit untuk ${mapel}: separuh gaya soal lomba, separuh soal penalaran tingkat tinggi. `}
             Membuatnya butuh sekitar 1–2 menit. Setiap jawaban benar memberi hadiah paling besar.
           </p>
         )}
