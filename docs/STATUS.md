@@ -185,7 +185,7 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
 - Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 5/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
-## Upgrade keamanan Next.js — di `pengembangan`, BELUM dicoba pemilik
+## Upgrade keamanan Next.js — SELESAI, sudah dicoba pemilik di preview (login iPhone aman), dirilis lewat PR ke main
 
 - `next` dan `eslint-config-next` 16.4.3 → **16.4.6** (perbaikan GHSA-mfr8-8qww-v76h & GHSA-vc7v-qv4w-wrv8, kebocoran cache `'use cache'`; app ini tidak memakai `'use cache'`, jadi sebenarnya tidak terdampak). `npm audit fix` (tanpa `--force`) juga menaikkan `fast-xml-parser` 5.11.2 → 5.12.1 dan `firebase` 13.1.0 → 13.4.0 (minor).
 - Semua uji unit, API (api–api16), dan UI dijalankan ulang di emulator: lulus. Build produksi tidak lagi menampilkan peringatan keamanan.
