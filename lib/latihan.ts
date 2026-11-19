@@ -11,7 +11,7 @@ import {
   type LevelHadiah,
   type Material,
 } from "./hadiah";
-import { LEVELS, nextLevel, type Level } from "./kelas";
+import { LEVELS, namaLevel, nextLevel, type Level } from "./kelas";
 import type { Rewards } from "./rewards";
 import type { WorldId } from "./worlds";
 
@@ -19,7 +19,7 @@ export type SumberSoal = "ai" | "set" | "set_similar" | "demo";
 
 /** Hadiah yang didapat dari satu jawaban benar di satu dunia. */
 export type HadiahSatu =
-  | { dunia: "blok"; material: Material }
+  | { dunia: "blok"; material: Material; jumlah?: number }
   | { dunia: "pahlawan"; xp: number }
   | { dunia: "antariksa"; liter: number }
   | { dunia: "dino"; tulang: number; kerangkaBaru: string[] };
@@ -29,8 +29,8 @@ export function terapkanJawabanBenar(r: Rewards, dunia: WorldId, level: LevelHad
   const h = hadiahJawaban(level);
   const baru: Rewards = structuredClone(r);
   if (dunia === "blok") {
-    baru.blok[h.material]++;
-    return { rewards: baru, hadiah: { dunia, material: h.material } };
+    baru.blok[h.material] += h.jumlahMaterial;
+    return { rewards: baru, hadiah: { dunia, material: h.material, jumlah: h.jumlahMaterial } };
   }
   if (dunia === "pahlawan") {
     baru.pahlawan.xp += h.xp;
@@ -87,7 +87,7 @@ export function terapkanAkhirSesi(r: Rewards, dunia: WorldId, benar: number, n: 
 
 /** Teks hadiah di kartu umpan balik, misalnya "+1 kayu". */
 export function teksHadiahSatu(h: HadiahSatu): string {
-  if (h.dunia === "blok") return `+1 ${h.material}`;
+  if (h.dunia === "blok") return `+${h.jumlah ?? 1} ${h.material}`;
   if (h.dunia === "pahlawan") return `+${h.xp} XP · serangan kena!`;
   if (h.dunia === "antariksa") return `+${h.liter} liter bahan bakar`;
   return `+${h.tulang} tulang fosil`;
@@ -158,15 +158,21 @@ export function ringkasHasil(p: {
 const tulangTotal = (r: Rewards) => r.dino.done.length * TULANG_PER_KERANGKA + r.dino.bones;
 
 /** Pesan di halaman hasil (brief 7.7). */
-export function pesanHasil(nama: string, level: string, benar: number, n: number): string {
+export function pesanHasil(nama: string, level: string, benar: number, n: number, mapel?: string): string {
   const pct = persen(benar, n);
   if (level === "pilihan") {
     if (pct >= 80) return `Kerja bagus, ${nama}! Soal pilihan ini sudah kamu kuasai.`;
     if (pct >= 60) return `Sedikit lagi, ${nama}. Coba soal yang mirip supaya makin mantap.`;
     return `Tidak apa-apa, ${nama}. Baca lagi penjelasannya, lalu ulangi soal ini.`;
   }
+  if (level === "olimpiade") {
+    const jenis = namaLevel(level, mapel) === "tantangan" ? "soal tantangan" : "soal olimpiade";
+    if (pct >= 80) return `Luar biasa, ${nama}! ${jenis[0].toUpperCase() + jenis.slice(1)} pun bisa kamu taklukkan. Kamu hebat!`;
+    if (pct >= 40) return `Keren, ${nama}! ${jenis[0].toUpperCase() + jenis.slice(1)} memang sangat menantang. Baca pembahasannya, lalu coba paket baru.`;
+    return `Tidak apa-apa, ${nama}. ${jenis[0].toUpperCase() + jenis.slice(1)} memang dibuat sangat sulit. Pelajari pembahasannya pelan-pelan, itu cara juara berlatih.`;
+  }
   const berikut = LEVELS.includes(level as Level) ? nextLevel(level as Level) : null;
-  if (pct >= 80 && berikut) return `Kerja bagus, ${nama}! Kamu sudah menguasai level ${level}. Siap coba level ${berikut}?`;
+  if (pct >= 80 && berikut) return `Kerja bagus, ${nama}! Kamu sudah menguasai level ${level}. Siap coba level ${namaLevel(berikut, mapel)}?`;
   if (pct >= 80) return `Luar biasa, ${nama}! Level sulit pun sudah kamu kuasai.`;
   if (pct >= 60) return `Sedikit lagi, ${nama}. Ulangi level ${level} dengan soal baru supaya makin mantap.`;
   return `Tidak apa-apa, ${nama}. Baca lagi penjelasan tadi, lalu coba soal baru di level yang sama. Pelan-pelan pasti bisa.`;
@@ -212,9 +218,10 @@ export function hitungSaran(stats: StatTopik[], maks = 6): Saran[] {
     const tertinggi = dikuasai[dikuasai.length - 1];
     const berikut = tertinggi ? nextLevel(tertinggi) : null;
     if (berikut && (t.lv[berikut]?.best ?? 0) < 80) {
-      hasil.push({ jenis: "up", mapel: t.mapel, topik: t.topik, level: berikut, label: `Siap naik: ${t.topik} → ${berikut}` });
+      hasil.push({ jenis: "up", mapel: t.mapel, topik: t.topik, level: berikut, label: `Siap naik: ${t.topik} → ${namaLevel(berikut, t.mapel)}` });
     }
-    for (const l of LEVELS) {
+    // Olimpiade tidak masuk "latih lagi": nilai rendah di level itu wajar.
+    for (const l of LEVELS.filter((x) => x !== "olimpiade")) {
       const s = t.lv[l];
       if (s && s.last < 60 && s.best < 80) {
         hasil.push({ jenis: "weak", mapel: t.mapel, topik: t.topik, level: l, label: `Latih lagi: ${t.topik} (${l})` });
@@ -232,4 +239,4 @@ export function tanggalPendek(iso: string): string {
 }
 
 /** Label level di riwayat dan tag soal. */
-export const labelLevel = (level: string) => (level === "pilihan" ? "soal pilihan" : level);
+export const labelLevel = (level: string, mapel?: string) => (level === "pilihan" ? "soal pilihan" : namaLevel(level, mapel));

@@ -106,7 +106,7 @@ export function Mengerjakan({
     onSelesai(akhir);
   }
 
-  const tag = paket.level === "pilihan" ? `soal pilihan · ${paket.topik}` : `${labelLevel(paket.level)} · ${paket.topik}`;
+  const tag = paket.level === "pilihan" ? `soal pilihan · ${paket.topik}` : `${labelLevel(paket.level, paket.mapel)} · ${paket.topik}`;
 
   return (
     <main className="wrap">

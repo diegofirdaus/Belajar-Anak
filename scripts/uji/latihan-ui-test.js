@@ -161,7 +161,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   for (let i = 0; i < 5; i++) { await klikBenar(); await tungguFb(); if (i === 1) { ok(await p.getByText('+60 liter misi ini').isVisible() && await p.getByText('Menuju Mars').isVisible(), 'HUD Antariksa: +60 liter, menuju Mars'); await p.screenshot({ path: `${out}/t7-antariksa.png`, fullPage: true }); } if (i < 4) await lanjut(); }
   await lanjut(); await p.locator('.banner').waitFor();
   ok(await p.getByText('Roketmu mendarat di Mars!').isVisible() && await p.locator('.result .reward-pop').innerText() === '+150 liter bahan bakar', 'hasil Antariksa: 150 liter, mendarat di Mars');
-  ok(await p.getByText('Luar biasa, Bima! Level sulit pun sudah kamu kuasai.').isVisible() && (await p.locator('.res-actions .btn').allInnerTexts()).join('|') === 'Soal baru, level sama|Kembali ke markas', 'level sulit 100%: pesan & tanpa level berikut');
+  ok(await p.getByText('Kerja bagus, Bima! Kamu sudah menguasai level sulit. Siap coba level olimpiade?').isVisible() && (await p.locator('.res-actions .btn').allInnerTexts()).join('|') === 'Coba level olimpiade|Soal baru, level sama|Kembali ke markas', 'level sulit 100%: ajakan naik ke olimpiade', (await p.locator('.res-actions .btn').allInnerTexts()).join('|'));
   await p.screenshot({ path: `${out}/t7-antariksa-hasil.png`, fullPage: true });
 
   // ---------- Lembah Dino + soal contoh saat AI gagal ----------

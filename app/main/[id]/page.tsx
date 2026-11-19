@@ -19,7 +19,7 @@ import { fase, kelasShort, type Level } from "@/lib/kelas";
 import { hitungSaran, tanpaAkhiranContoh, type Riwayat as BarisRiwayat, type Saran, type StatTopik } from "@/lib/latihan";
 import type { Player } from "@/lib/player";
 import type { Rewards } from "@/lib/rewards";
-import type { PaketSesi } from "@/lib/soal";
+import { SOAL_OLIMPIADE, type PaketSesi } from "@/lib/soal";
 import type { PaketRingkas } from "@/lib/soalPilihan";
 import { WORLDS } from "@/lib/worlds";
 
@@ -29,7 +29,7 @@ export default function Markas() {
 
 type Layar =
   | { jenis: "markas" }
-  | { jenis: "memuat" }
+  | { jenis: "memuat"; lama?: boolean }
   | { jenis: "kerja"; paket: PaketSesi; awal: Rewards; nilai: NilaiForm | null }
   | { jenis: "hasil"; paket: PaketSesi; awal: Rewards; nilai: NilaiForm | null; hasil: AkhirSesi };
 
@@ -99,7 +99,7 @@ function IsiMarkas() {
     const awal = pemain.rewards;
     if (sumber.jenis === "ai") setNilai(sumber.nilai);
     setGalatForm(null);
-    setLayar({ jenis: "memuat" });
+    setLayar({ jenis: "memuat", lama: sumber.jenis === "ai" && sumber.nilai.level === "olimpiade" });
     window.scrollTo(0, 0);
     const c = new AbortController();
     pembatal.current = c;
@@ -116,7 +116,7 @@ function IsiMarkas() {
                     mapel: sumber.nilai.mapel,
                     topik: sumber.nilai.topik,
                     level: sumber.nilai.level as Level,
-                    n: Number(sumber.nilai.jumlah) as 5 | 10,
+                    n: sumber.nilai.level === "olimpiade" ? SOAL_OLIMPIADE : (Number(sumber.nilai.jumlah) as 5 | 10),
                   },
                   c.signal,
                 )
@@ -175,7 +175,7 @@ function IsiMarkas() {
     return (
       <>
         {tema}
-        <LayarMemuat dunia={pemain.theme} onBatal={batal} />
+        <LayarMemuat dunia={pemain.theme} onBatal={batal} lama={layar.lama} />
       </>
     );
 

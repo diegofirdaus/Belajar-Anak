@@ -1,7 +1,27 @@
 export type Jenjang = "SD" | "SMP" | "SMA";
-export type Level = "mudah" | "sedang" | "sulit";
+export type Level = "mudah" | "sedang" | "sulit" | "olimpiade";
 
-export const LEVELS: Level[] = ["mudah", "sedang", "sulit"];
+export const LEVELS: Level[] = ["mudah", "sedang", "sulit", "olimpiade"];
+
+/**
+ * Mapel yang punya kompetisi resmi (KSN SD, OSN SMP, OSN SMA). Untuk mapel ini level "olimpiade"
+ * tampil sebagai "Olimpiade"; untuk mapel lain sebagai "Soal Tantangan" (versi tersulit mapel itu).
+ */
+export const MAPEL_OLIMPIADE: Record<Jenjang, string[]> = {
+  SD: ["Matematika", "IPAS"],
+  SMP: ["Matematika", "IPA", "IPS", "Informatika"],
+  SMA: ["Matematika", "Fisika", "Kimia", "Biologi", "Ekonomi", "Geografi", "Informatika"],
+};
+/** Nama kompetisi resmi per jenjang. */
+export const NAMA_KOMPETISI: Record<Jenjang, string> = { SD: "KSN SD", SMP: "OSN SMP", SMA: "OSN SMA" };
+
+/** Apakah mapel ini punya olimpiade resmi (cukup dari nama mapel; nama mapel unik antarjenjang). */
+export const mapelOlimpiade = (mapel: string, kelas?: number) =>
+  kelas ? MAPEL_OLIMPIADE[jenjangOf(kelas)].includes(mapel) : Object.values(MAPEL_OLIMPIADE).some((d) => d.includes(mapel));
+
+/** Label level untuk anak: "mudah", …, "olimpiade" atau "tantangan" (tergantung mapel). */
+export const namaLevel = (level: string, mapel?: string) =>
+  level === "olimpiade" ? (mapel && !mapelOlimpiade(mapel) ? "tantangan" : "olimpiade") : level;
 
 export const JENJANG_INFO: Record<Jenjang, { full: string; kelas: number[] }> = {
   SD: { full: "Sekolah Dasar", kelas: [1, 2, 3, 4, 5, 6] },

@@ -49,6 +49,9 @@ Opsional (punya nilai bawaan):
 | `AI_LIMIT_PER_PLAYER` / `AI_LIMIT_PER_FAMILY` | 20 / 60 | Jatah paket soal AI per anak / per keluarga per hari (WIB) |
 | `AI_LIMIT_RAPIKAN` | 30 | Jatah "Rapikan soal" + baca foto per keluarga per hari |
 | `AI_LIMIT_ESAI` | 100 | Pemeriksaan jawaban esai per anak per hari |
+| `AI_LIMIT_OLIMPIADE` | 5 | Paket level Olimpiade/Soal Tantangan per anak per hari |
+| `AI_MODEL_OLIMPIADE` | `claude-opus-5-5` | Model pembuat soal Olimpiade/Soal Tantangan |
+| `AI_EFFORT_SULIT` | `high` | Effort untuk level sulit dan olimpiade |
 | `AI_MODEL_SOAL` | `claude-sonnet-5-5` | Model pembuat soal & soal mirip |
 | `AI_MODEL_RAPIKAN` | `claude-haiku-5-5` | Model merapikan teks soal admin |
 | `AI_MODEL_ESAI` | `claude-haiku-5-5` | Model memeriksa jawaban esai per poin |

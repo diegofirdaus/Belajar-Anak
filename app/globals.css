@@ -724,11 +724,11 @@ textarea.esai-contoh { min-height: 88px; }
 span.chip { min-height: 0; padding: 5px 10px; display: inline-block; }
 
 /* ---------- Dashboard progres v2 ---------- */
-:root { --band-sedang: #fdf0d6; --band-sulit: #fbe0d4; --naik: var(--good-text); --turun: var(--bad); --netral-dot: #8a94a6; }
+:root { --band-sedang: #fdf0d6; --band-sulit: #fbe0d4; --band-olimpiade: #ebe3fb; --naik: var(--good-text); --turun: var(--bad); --netral-dot: #8a94a6; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --band-sedang: rgba(242, 181, 58, .16); --band-sulit: rgba(255, 122, 112, .16); --netral-dot: #7d889a; }
+  :root:not([data-theme="light"]) { --band-sedang: rgba(242, 181, 58, .16); --band-sulit: rgba(255, 122, 112, .16); --band-olimpiade: rgba(167, 139, 250, .18); --netral-dot: #7d889a; }
 }
-:root[data-theme="dark"] { --band-sedang: rgba(242, 181, 58, .16); --band-sulit: rgba(255, 122, 112, .16); --netral-dot: #7d889a; }
+:root[data-theme="dark"] { --band-sedang: rgba(242, 181, 58, .16); --band-sulit: rgba(255, 122, 112, .16); --band-olimpiade: rgba(167, 139, 250, .18); --netral-dot: #7d889a; }
 .stack-2 { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .fg { color: var(--fg); }
 .teks-naik { color: var(--naik); }

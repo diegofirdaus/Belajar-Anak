@@ -1,5 +1,6 @@
 // Dashboard progres orang tua: ringkasan murni dari riwayat & statistik topik. Dipakai server dan browser.
 import { bangunan, jumlahBlok, perjalanan, rank } from "./hadiah";
+import { namaLevel } from "./kelas";
 import { hitungSaran, persen, type Riwayat, type Saran, type StatTopik } from "./latihan";
 import type { Rewards } from "./rewards";
 import type { WorldId } from "./worlds";
@@ -193,7 +194,7 @@ export function mapelTerurut(riwayat: Riwayat[]): string[] {
   return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "id")).map(([m]) => m);
 }
 
-const URUT_LEVEL = ["mudah", "sedang", "sulit"] as const;
+const URUT_LEVEL = ["mudah", "sedang", "sulit", "olimpiade"] as const;
 export type TitikTren = { mulai: string; label: string; pct: number | null; soal: number; level: (typeof URUT_LEVEL)[number] | null };
 
 /**
@@ -283,8 +284,8 @@ export function bisaDibantu(nama: string, riwayat: Riwayat[], topik: StatTopik[]
       return {
         jenis: "lemah" as const,
         judul: `${s.mapel}: ${s.topik}`,
-        alasan: `Skor terakhir ${st?.last ?? 0}% di level ${s.level}${st && st.tries > 1 ? ` · ${st.tries} kali dicoba` : ""}`,
-        saran: `Ajak ${nama} membaca ulang materinya, lalu latihan lagi di level ${s.level}.`,
+        alasan: `Skor terakhir ${st?.last ?? 0}% di level ${namaLevel(s.level, s.mapel)}${st && st.tries > 1 ? ` · ${st.tries} kali dicoba` : ""}`,
+        saran: `Ajak ${nama} membaca ulang materinya, lalu latihan lagi di level ${namaLevel(s.level, s.mapel)}.`,
       };
     });
   const naik: Bantuan[] = saran
@@ -296,7 +297,7 @@ export function bisaDibantu(nama: string, riwayat: Riwayat[], topik: StatTopik[]
         jenis: "naik" as const,
         judul: `${s.mapel}: ${s.topik}`,
         alasan: `${st?.best ?? 80}% di level ${sebelum} · siap naik`,
-        saran: `Dorong ${nama} mencoba level ${s.level}.`,
+        saran: `Dorong ${nama} mencoba level ${namaLevel(s.level, s.mapel)}.`,
       };
     });
   const hariIni = kunciHari(kini);

@@ -188,6 +188,7 @@ function KatalogInner() {
               { value: "mudah", label: "Mudah" },
               { value: "sedang", label: "Sedang" },
               { value: "sulit", label: "Sulit" },
+              { value: "olimpiade", label: "🏆 Olimpiade", wide: true },
               { value: "pilihan", label: "★ Soal pilihan", wide: true },
             ]}
           />
@@ -239,7 +240,7 @@ function KatalogInner() {
             <i />
             <i />
           </div>
-          <div className="note">Level mudah memberi kayu, sedang memberi batu, sulit memberi permata.</div>
+          <div className="note">Level mudah memberi kayu, sedang memberi batu, sulit memberi permata, olimpiade 2 permata.</div>
           <div className="card accent-left">
             <h3>Tahun ajaran baru sudah mulai!</h3>
             <p>Raka, kamu sudah naik kelas belum?</p>

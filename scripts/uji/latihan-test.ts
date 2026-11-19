@@ -2,7 +2,7 @@
 // Jalankan: npx tsx scripts/uji/latihan-test.ts
 import { emptyRewards } from "../../lib/rewards";
 import {
-  hitungSaran, kunciTopik, pesanHasil, ringkasHasil, tanpaAkhiranContoh, tanggalPendek,
+  hitungSaran, kunciTopik, labelLevel, pesanHasil, ringkasHasil, tanpaAkhiranContoh, tanggalPendek,
   teksHadiahSatu, terapkanAkhirSesi, terapkanJawabanBenar, type StatTopik,
 } from "../../lib/latihan";
 
@@ -55,7 +55,10 @@ ok(s.banner === "Ekspedisi sukses!" && s.hadiah === "+3 tulang fosil" && s.tamba
 
 // Pesan
 ok(pesanHasil("Raka", "mudah", 4, 5) === "Kerja bagus, Raka! Kamu sudah menguasai level mudah. Siap coba level sedang?", "pesan ≥80 mudah");
-ok(pesanHasil("Raka", "sulit", 5, 5) === "Luar biasa, Raka! Level sulit pun sudah kamu kuasai.", "pesan ≥80 sulit");
+ok(pesanHasil("Raka", "sulit", 5, 5, "Matematika") === "Kerja bagus, Raka! Kamu sudah menguasai level sulit. Siap coba level olimpiade?", "pesan ≥80 sulit → olimpiade");
+ok(pesanHasil("Raka", "sulit", 5, 5, "Bahasa Indonesia").endsWith("Siap coba level tantangan?"), "pesan ≥80 sulit → tantangan (mapel tanpa olimpiade)");
+ok(pesanHasil("Raka", "olimpiade", 4, 5, "Matematika").startsWith("Luar biasa, Raka! Soal olimpiade pun"), "pesan olimpiade ≥80");
+ok(pesanHasil("Raka", "olimpiade", 1, 5, "PPKn").includes("Soal tantangan memang dibuat sangat sulit"), "pesan tantangan rendah tetap menyemangati");
 ok(pesanHasil("Raka", "sedang", 3, 5).startsWith("Sedikit lagi, Raka. Ulangi level sedang"), "pesan 60-79");
 ok(pesanHasil("Raka", "sedang", 2, 5).startsWith("Tidak apa-apa, Raka. Baca lagi penjelasan tadi"), "pesan <60");
 ok(pesanHasil("Raka", "pilihan", 4, 5) === "Kerja bagus, Raka! Soal pilihan ini sudah kamu kuasai.", "pesan soal pilihan");
@@ -69,12 +72,25 @@ const saran = hitungSaran([
   t("sudut", { sulit: { best: 90, last: 90, tries: 1 } }, "2026-10-04"),
   t("bangun", { sedang: { best: 80, last: 40, tries: 2 } }, "2026-09-01"),
 ]);
-ok(saran.map((x) => x.label).join(" | ") === "Latih lagi: desimal (mudah) | Siap naik: pecahan → sedang | Siap naik: lingkaran → sulit | Latih lagi: lingkaran (sulit) | Siap naik: bangun → sulit",
-  "saran: urut terbaru, siap naik & latih lagi, sulit dikuasai tanpa chip, best≥80 tidak 'latih lagi'", saran.map((x) => x.label));
+ok(saran.map((x) => x.label).join(" | ") === "Siap naik: sudut → olimpiade | Latih lagi: desimal (mudah) | Siap naik: pecahan → sedang | Siap naik: lingkaran → sulit | Latih lagi: lingkaran (sulit) | Siap naik: bangun → sulit",
+  "saran: urut terbaru, siap naik & latih lagi, sulit dikuasai → olimpiade, best≥80 tidak 'latih lagi'", saran.map((x) => x.label));
 ok(hitungSaran(Array.from({ length: 10 }, (_, i) => t(`t${i}`, { mudah: { best: 10, last: 10, tries: 1 } }, `2026-10-${10 + i}`))).length === 6, "maksimal 6 chip");
 ok(kunciTopik("Matematika", "  Pecahan   Senilai ") === "matematika|pecahan senilai", "kunci topik", kunciTopik("Matematika", "  Pecahan   Senilai "));
 ok(tanpaAkhiranContoh("Pecahan (soal contoh)") === "Pecahan", "akhiran soal contoh dibuang");
 ok(tanggalPendek("2026-10-24T03:00:00Z") === "24 Okt", "tanggal pendek", tanggalPendek("2026-10-24T03:00:00Z"));
+
+
+// Level olimpiade/tantangan
+ok(hitungSaran([t("Campuran", { olimpiade: { best: 20, last: 20, tries: 3 } }, "2026-10-05")]).length === 0, "olimpiade: nilai rendah tidak jadi 'latih lagi'");
+ok(hitungSaran([t("Campuran", { olimpiade: { best: 100, last: 100, tries: 1 } }, "2026-10-05")]).length === 0, "olimpiade dikuasai: tidak ada level berikutnya");
+ok(labelLevel("olimpiade", "Matematika") === "olimpiade" && labelLevel("olimpiade", "PPKn") === "tantangan" && labelLevel("sulit", "PPKn") === "sulit", "label olimpiade/tantangan per mapel");
+{
+  const o = terapkanJawabanBenar(emptyRewards(), "blok", "olimpiade");
+  ok(o.rewards.blok.permata === 2 && teksHadiahSatu(o.hadiah) === "+2 permata", "blok olimpiade: +2 permata");
+  ok(terapkanJawabanBenar(emptyRewards(), "pahlawan", "olimpiade").rewards.pahlawan.xp === 50, "pahlawan olimpiade: +50 XP");
+  ok(terapkanJawabanBenar(emptyRewards(), "antariksa", "olimpiade").rewards.antariksa.fuel === 50, "antariksa olimpiade: +50 liter");
+  ok(terapkanJawabanBenar(emptyRewards(), "dino", "olimpiade").rewards.dino.bones === 4, "dino olimpiade: +4 tulang");
+}
 
 console.log(gagal ? `\n${gagal} GAGAL` : "\nSemua lulus");
 process.exit(gagal ? 1 : 0);

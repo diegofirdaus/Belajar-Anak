@@ -167,6 +167,21 @@ Sesuai rencana yang disepakati (hanya soal pilihan orang tua; dua tingkat benar/
 - Uji: `api15-test.mjs` (validasi PDF, blok dokumen, prompt PDF, tanpa kotak, log & jatah), `dokumen-ui-test.js` (.docx buatan dengan penomoran otomatis & kotak teks, .doc, Word rusak, PDF + foto sekaligus, PDF terlalu besar/palsu, mode tanpa AI). `foto-ui-test.js` disesuaikan dengan keterangan baru.
 - Dicoba pemilik di preview dengan file asli: "udah bisa baca file nya".
 
+## Level sulit diperketat + level Olimpiade / Soal Tantangan — SELESAI di `pengembangan`, BELUM dicoba pemilik
+
+Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade sesuai jenjang. Disepakati: perketat Sulit **dan** tambah level baru di atasnya.
+
+- **Sulit diperketat** (`promptSoalBaru` → `kriteriaLevel` di `lib/server/ai/prompt.ts`): wajib ≥3 langkah berpikir atau gabungan 2 konsep, bentuk penalaran (memilah informasi, membandingkan, menafsirkan data, "pernyataan yang benar"), pengecoh dari kesalahan umum siswa, tetap materi kelasnya. Effort **high** untuk sulit (`AI_EFFORT_SULIT`, bawaan high); mudah/sedang tetap medium.
+- **Level `olimpiade`** (`LEVELS` di `lib/kelas.ts`): tampil **"🏆 Olimpiade"** untuk mapel yang punya kompetisi resmi (`MAPEL_OLIMPIADE`: SD Matematika & IPAS = KSN SD; SMP Matematika, IPA, IPS, Informatika = OSN SMP; SMA Matematika, Fisika, Kimia, Biologi, Ekonomi, Geografi, Informatika = OSN SMA), selain itu **"⚡ Soal Tantangan"** (soal HOTS versi tersulit mapel itu). Label lewat `namaLevel(level, mapel)` / `labelLevel(level, mapel)`.
+  - Tingkat: seleksi sekolah sampai kabupaten/kota (`promptOlimpiade`). Model **Opus 5.5** (`AI_MODEL_OLIMPIADE`), effort high, `max_tokens` 32.000, batas waktu 110 dtk tanpa coba ulang (timeout → kode `terlalu_lama`, 504, jatah dikembalikan).
+  - Selalu **5 soal**; **materi boleh kosong** → campuran, disimpan sebagai topik "Campuran".
+  - Jatah: **5 paket/anak/hari** (`AI_LIMIT_OLIMPIADE`, penghitung `olimpiade.{pemainId}` di `pemakaian`), tetap ikut dihitung di jatah biasa 20/60.
+  - Hadiah per jawaban benar: **2 permata / 50 XP / 50 liter / 4 tulang**.
+  - Form: pilihan lebar di bawah Mudah/Sedang/Sulit, keterangan KSN/OSN + "butuh 1–2 menit", jumlah soal disembunyikan. Layar memuat menyebut 1–2 menit. Hasil: setelah sulit ≥80% muncul "Coba level olimpiade/tantangan"; pesan khusus olimpiade yang tetap menyemangati kalau nilainya rendah.
+  - Saran: "Siap naik → olimpiade" muncul setelah sulit dikuasai; nilai rendah di olimpiade **tidak** jadi chip "Latih lagi". Dashboard: pita ungu untuk olimpiade di grafik tren.
+- Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 5/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
+- Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
+
 ## Perbaikan login di Safari iPhone (setelah rilis)
 
 - Gejala: di HP pemilik muncul "Unable to process request due to missing initial state" di `markas-latihan.firebaseapp.com`. Pop-up login diblokir → app beralih ke `signInWithRedirect` → Safari memisahkan penyimpanan antar-situs, jadi redirect ke domain lain gagal.
@@ -198,6 +213,7 @@ node scripts/uji/api-test.mjs; node scripts/uji/api5-test.mjs; node scripts/uji/
 node scripts/uji/api7-test.mjs                      # cek jawaban, hadiah, riwayat, statistik, soal contoh
 node scripts/uji/api8-test.mjs                      # PIN admin, sesi admin, soal pilihan, rapikan
 node scripts/uji/api9-test.mjs /tmp/mock.log        # soal pilihan di sisi anak, soal mirip
+node scripts/uji/api16-test.mjs /tmp/mock.log       # level sulit diperketat + olimpiade/tantangan
 node scripts/uji/api10-test.mjs                     # ekspor & hapus data keluarga (mode login-lama: ADMIN_LOGIN_ULANG_DETIK=1)
 node scripts/uji/api11-test.mjs                     # dashboard progres orang tua
 node scripts/uji/api12-test.mjs /tmp/mock.log       # baca foto soal

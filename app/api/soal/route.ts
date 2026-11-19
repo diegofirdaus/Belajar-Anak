@@ -1,6 +1,6 @@
 import { jenjangOf, MAPEL, type Level } from "@/lib/kelas";
 import { permintaanSoalSchema } from "@/lib/soal";
-import { MODEL_SOAL, mintaJson } from "@/lib/server/ai/claude";
+import { EFFORT_SULIT, MODEL_OLIMPIADE, MODEL_SOAL, mintaJson } from "@/lib/server/ai/claude";
 import { SKEMA_PAKET_SOAL, promptSoalBaru } from "@/lib/server/ai/prompt";
 import { saringSoal } from "@/lib/server/ai/validasi";
 import { requireFamily } from "@/lib/server/auth";
@@ -24,13 +24,16 @@ export function POST(req: Request) {
     const pemain = await getPlayer(familyId, p.pemainId);
     if (!MAPEL[jenjangOf(pemain.kelas)].includes(p.mapel)) throw new ApiError("tidak_valid", "Mata pelajaran tidak tersedia untuk kelas ini.");
 
-    const { tanggal } = await ambilJatah(familyId, pemain.id);
-    const model = MODEL_SOAL();
+    const olimpiade = p.level === "olimpiade";
+    const { tanggal } = await ambilJatah(familyId, pemain.id, olimpiade);
     try {
       const hasil = await mintaJson({
-        model,
+        model: olimpiade ? MODEL_OLIMPIADE() : MODEL_SOAL(),
+        effort: p.level === "sulit" || olimpiade ? EFFORT_SULIT() : undefined,
         prompt: promptSoalBaru({ kelas: pemain.kelas, mapel: p.mapel, topik: p.topik, level: p.level as Level, n: p.n }),
         skema: SKEMA_PAKET_SOAL,
+        // Olimpiade: Opus berpikir panjang; satu percobaan dengan batas waktu di bawah maxDuration.
+        ...(olimpiade ? { maksToken: 32_000, waktuMaks: 110_000 } : {}),
       });
       const soal = saringSoal((hasil.data as { soal?: unknown } | null)?.soal, p.n);
       await catatAi(familyId, {
@@ -41,10 +44,10 @@ export function POST(req: Request) {
         pemakaian: hasil.pemakaian,
       });
       if (!soal) throw new ApiError("kurang_lengkap");
-      const sesi = await simpanSesi(familyId, pemain.id, { sumber: "ai", mapel: p.mapel, topik: p.topik, level: p.level, soal, dunia: pemain.theme });
+      const sesi = await simpanSesi(familyId, pemain.id, { sumber: "ai", mapel: p.mapel, topik: p.topik || "Campuran", level: p.level, soal, dunia: pemain.theme });
       return json(sesi, { status: 201 });
     } catch (e) {
-      await kembalikanJatah(familyId, pemain.id, tanggal);
+      await kembalikanJatah(familyId, pemain.id, tanggal, olimpiade);
       if (e instanceof ApiError && e.ai) {
         await catatAi(familyId, { jenis: "soal_baru", pemainId: pemain.id, model: e.ai.model, hasil: e.code, pemakaian: e.ai.pemakaian });
       }

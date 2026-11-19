@@ -24,7 +24,9 @@ function tingkat<T extends Ambang>(daftar: T[], nilai: number) {
 export const MATERIAL = ["kayu", "batu", "permata"] as const;
 export type Material = (typeof MATERIAL)[number];
 export const MATERIAL_WARNA: Record<Material, string> = { kayu: "#9a6a3f", batu: "#8d949b", permata: "#3fc3c9" };
-export const MATERIAL_LEVEL: Record<Level, Material> = { mudah: "kayu", sedang: "batu", sulit: "permata" };
+export const MATERIAL_LEVEL: Record<Level, Material> = { mudah: "kayu", sedang: "batu", sulit: "permata", olimpiade: "permata" };
+/** Jumlah blok per jawaban benar: olimpiade/tantangan memberi 2 permata. */
+export const JUMLAH_MATERIAL: Record<Level, number> = { mudah: 1, sedang: 1, sulit: 1, olimpiade: 2 };
 export const TINGKAT_BANGUNAN: Ambang[] = [
   { at: 0, nama: "Tenda" },
   { at: 15, nama: "Pondok Kayu" },
@@ -36,7 +38,7 @@ export const jumlahBlok = (r: Rewards["blok"]) => r.kayu + r.batu + r.permata;
 export const bangunan = (r: Rewards["blok"]) => tingkat(TINGKAT_BANGUNAN, jumlahBlok(r));
 
 /* ---------- Arena Pahlawan ---------- */
-export const XP_LEVEL: Record<Level, number> = { mudah: 10, sedang: 20, sulit: 30 };
+export const XP_LEVEL: Record<Level, number> = { mudah: 10, sedang: 20, sulit: 30, olimpiade: 50 };
 export const BONUS_BOSS = 15;
 export const RANK: Ambang[] = [
   { at: 0, nama: "Rekrut" },
@@ -50,7 +52,7 @@ export const rank = (xp: number) => tingkat(RANK, xp);
 export const syaratBoss = (n: number) => Math.ceil(0.7 * n);
 
 /* ---------- Misi Antariksa ---------- */
-export const BBM_LEVEL: Record<Level, number> = { mudah: 10, sedang: 20, sulit: 30 };
+export const BBM_LEVEL: Record<Level, number> = { mudah: 10, sedang: 20, sulit: 30, olimpiade: 50 };
 export type Tujuan = Ambang & { warna: string; r: number; cincin?: boolean; fakta: string };
 export const TUJUAN: Tujuan[] = [
   { at: 0, nama: "Bumi", warna: "#3d7be0", r: 8, fakta: "Rumah kita, titik awal peluncuran." },
@@ -64,7 +66,7 @@ export const TUJUAN: Tujuan[] = [
 export const perjalanan = (liter: number) => tingkat(TUJUAN, liter);
 
 /* ---------- Lembah Dino ---------- */
-export const TULANG_LEVEL: Record<Level, number> = { mudah: 1, sedang: 2, sulit: 3 };
+export const TULANG_LEVEL: Record<Level, number> = { mudah: 1, sedang: 2, sulit: 3, olimpiade: 4 };
 export const TULANG_PER_KERANGKA = 8;
 export const DINO: { nama: string; fakta: string }[] = [
   { nama: "T-Rex", fakta: "Pemakan daging raksasa yang hidup sekitar 68 juta tahun lalu." },
@@ -90,5 +92,5 @@ export function museum(r: Rewards["dino"]): { nama: string; jumlah: number }[] {
 /* ---------- Hadiah satu jawaban benar ---------- */
 export function hadiahJawaban(level: LevelHadiah) {
   const l = setara(level);
-  return { material: MATERIAL_LEVEL[l], xp: XP_LEVEL[l], liter: BBM_LEVEL[l], tulang: TULANG_LEVEL[l] };
+  return { material: MATERIAL_LEVEL[l], jumlahMaterial: JUMLAH_MATERIAL[l], xp: XP_LEVEL[l], liter: BBM_LEVEL[l], tulang: TULANG_LEVEL[l] };
 }
