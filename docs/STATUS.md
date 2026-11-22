@@ -185,7 +185,7 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
 - Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 5/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
-## Soal dari bacaan + Pendidikan Agama Islam / Islamic Studies (huruf Arab) — SELESAI di `pengembangan`, BELUM dicoba pemilik
+## Soal dari bacaan + Pendidikan Agama Islam / Islamic Studies (huruf Arab) — SELESAI, sudah dicoba pemilik di preview ("aman"), dirilis lewat PR ke main
 
 Permintaan pemilik (22 Nov 2026). Keputusan: (1) bacaan **ditampilkan** ke anak saat mengerjakan; (2) dua mapel baru **Pendidikan Agama Islam** dan **Islamic Studies**; (3) ayat/hadits berhuruf Arab yang panjang hanya dari bahan orang tua.
 
