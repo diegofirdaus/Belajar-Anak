@@ -62,7 +62,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   }
   const body = await res.json().catch(() => ({}));
   if (init?.signal?.aborted) throw new ApiFailure("batal");
-  if (!res.ok) throw new ApiFailure(body.error ?? "gangguan", body.message);
+  // Balasan bukan JSON (mis. batas waktu/ukuran platform): sertakan status HTTP untuk dilacak.
+  if (!res.ok) throw new ApiFailure(body.error ?? "gangguan", body.message ?? (body.error ? undefined : `HTTP ${res.status}`));
   return body as T;
 }
 

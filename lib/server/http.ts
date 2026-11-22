@@ -70,6 +70,6 @@ export function handle(fn: () => Promise<Response>): Promise<Response> {
       return json({ error: "server_belum_siap" }, { status: 503 });
     }
     console.error(e);
-    return json({ error: "gangguan" }, { status: 500 });
+    return json({ error: "gangguan", message: `server ${e instanceof Error ? e.name : "galat"}` }, { status: 500 });
   });
 }

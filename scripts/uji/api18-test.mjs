@@ -35,5 +35,9 @@ r = await post('/api/admin/baca-foto', A.token, { kelas: 7, mapel: 'Pendidikan P
 ok(r.status === 502 && r.body.error === 'terlalu_panjang', 'balasan terpotong (halaman terlalu padat): terlalu_panjang', r.body);
 ok((await rapikanHariIni(A.uid)) === sebelum, 'jatah dikembalikan saat gagal');
 
+r = await post('/api/admin/baca-foto', A.token, { kelas: 7, mapel: 'Pendidikan Pancasila', gambar: [{ media_type: 'image/jpeg', data: 'A'.repeat(1600) }] }, sesi);
+ok(r.status === 500 && r.body.error === 'gangguan' && r.body.message === 'AI 400 invalid_request_error', 'galat lain dari AI: kode penyebab ikut dikirim', r.body);
+ok((await rapikanHariIni(A.uid)) === sebelum, 'jatah dikembalikan (galat AI lain)');
+
 console.log(fail ? `\n${fail} GAGAL` : '\nSemua lulus');
 process.exit(fail ? 1 : 0);

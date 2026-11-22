@@ -76,6 +76,8 @@ http.createServer((req, res) => {
         ],
       }));
     }
+    // Gambar ditolak API (400): foto berukuran tepat 1600 karakter base64.
+    if (prompt.includes('difoto orang tua') && foto.some((f) => f.source.data.length === 1600)) return kirim(400, { type: 'error', error: { type: 'invalid_request_error', message: 'Could not process image' } });
     // Halaman padat: balasan terpotong karena jatah token habis (foto berukuran tepat 1500 byte base64 → 1124 byte).
     if (prompt.includes('difoto orang tua') && foto.some((f) => f.source.data.length === 1500)) return pesan('{"soal":[{"q":"terpotong', 'max_tokens');
     if (prompt.includes('difoto orang tua')) {

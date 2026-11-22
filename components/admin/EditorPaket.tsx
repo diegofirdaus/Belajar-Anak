@@ -247,7 +247,7 @@ export function EditorPaket({
       } else if (code === "ditolak") setGalat("Bacaan itu tidak bisa diproses. Coba periksa isinya.");
       else if (code === "kurang_lengkap") setGalat('Soalnya belum lengkap. Tekan "Buat soal dari bacaan" sekali lagi.');
       else if (["terlalu_cepat", "terlalu_lama", "jatah_habis", "tidak_valid"].includes(code)) setGalat(apiMessage(e));
-      else setGalat('Soal belum berhasil dibuat. Tekan "Buat soal dari bacaan" sekali lagi.');
+      else setGalat(`Soal belum berhasil dibuat (kode: ${e instanceof ApiFailure && e.message !== e.code ? e.message : e instanceof ApiFailure ? e.code : "jaringan"}). Tekan "Buat soal dari bacaan" sekali lagi.`);
     } finally {
       setMerapikan(false);
     }
@@ -290,7 +290,10 @@ export function EditorPaket({
     else if (code === "jaringan") setGalat("Koneksi terputus saat mengirim. Pastikan internet stabil, lalu coba lagi.");
     else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid") setGalat(apiMessage(e));
     else if (!(e instanceof ApiFailure)) setGalat(e instanceof Error ? e.message : "File tidak bisa dibuka.");
-    else setGalat(`${sumber === "foto" ? "Foto" : "PDF"} belum berhasil dibaca. Coba sekali lagi.`);
+    else {
+      const kode = e.message && e.message !== code ? e.message : code;
+      setGalat(`${sumber === "foto" ? "Foto" : "PDF"} belum berhasil dibaca (kode: ${kode}). Coba sekali lagi; kalau tetap gagal, kirimkan kode ini.`);
+    }
   }
 
   /** Foto: dibaca AI; foto disimpan di memori untuk memotong gambar soal, tidak disimpan di server. */
@@ -383,7 +386,7 @@ export function EditorPaket({
         bacaTanpaAi('AI belum bisa dipakai, jadi soal dibaca dari format nomor, pilihan, dan "Kunci: ...". ', teksDipakai);
       } else if (code === "ditolak") setGalat("Teks itu tidak bisa diproses. Coba periksa isinya.");
       else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid") setGalat(apiMessage(e));
-      else setGalat('Soal belum berhasil dirapikan. Tekan "Rapikan soal" sekali lagi.');
+      else setGalat(`Soal belum berhasil dirapikan (kode: ${e instanceof ApiFailure && e.message !== e.code ? e.message : e instanceof ApiFailure ? e.code : "jaringan"}). Tekan "Rapikan soal" sekali lagi.`);
     } finally {
       setMerapikan(false);
     }
