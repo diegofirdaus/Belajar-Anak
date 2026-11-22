@@ -185,7 +185,7 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
 - Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 5/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
-## Perbaikan baca foto halaman padat — di `pengembangan`, BELUM dicoba pemilik
+## Perbaikan baca foto halaman padat + batas pemakaian API — SELESAI, sudah dicoba pemilik di preview (foto LKS berhasil setelah limit Claude Console dinaikkan ## Perbaikan baca foto halaman padat — di `pengembangan`, BELUM dicoba pemilik top up), dirilis lewat PR ke main
 
 - Gejala (22 Nov 2026): foto satu halaman LKS Pendidikan Pancasila (8 soal, 3 bergambar, jawaban disilang tangan) selalu gagal dengan "Foto belum berhasil dibaca. Coba sekali lagi." (pesan umum). Log Vercel tidak bisa dibaca dari sesi Claude, jadi penyebab pasti tidak terlihat; dugaan kuat: waktu habis (batas 100 dtk) atau balasan terpotong karena jatah token (16.000), keduanya jatuh ke pesan umum.
 - Perbaikan:
