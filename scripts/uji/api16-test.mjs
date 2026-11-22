@@ -78,12 +78,12 @@ ok(r.status === 400 && r.body.error === 'tidak_valid', 'olimpiade 5 soal ditolak
 r = await post('/api/soal', A.token, { pemainId: raka.id, mapel: 'Matematika', topik: '', level: 'sulit', n: 5 });
 ok(r.status === 400 && /Tulis dulu materi/.test(r.body.message), 'level biasa tetap wajib materi', r.body);
 
-// Jatah olimpiade: 5 per anak per hari (Raka sudah 2). Gagal tidak memakan jatah.
+// Jatah olimpiade: 3 per anak per hari (Raka sudah 2). Gagal tidak memakan jatah.
 r = await post('/api/soal', A.token, { pemainId: raka.id, mapel: 'Matematika', topik: 'rusak', level: 'olimpiade', n: 10 });
 ok(r.status === 502, 'olimpiade gagal (json rusak)');
 const kode = [];
 for (let i = 0; i < 4; i++) kode.push((await post('/api/soal', A.token, { pemainId: raka.id, mapel: 'IPAS', topik: 'energi', level: 'olimpiade', n: 10 })).status);
-ok(kode.join() === '201,201,201,429', 'jatah olimpiade 5/hari: ke-6 ditolak (yang gagal dikembalikan)', kode);
+ok(kode.join() === '201,429,429,429', 'jatah olimpiade 3/hari: ke-4 ditolak (yang gagal dikembalikan)', kode);
 r = await post('/api/soal', A.token, { pemainId: raka.id, mapel: 'IPAS', topik: 'energi', level: 'olimpiade', n: 10 });
 ok(r.body.error === 'jatah_habis' && /level tertinggi/.test(r.body.message), 'pesan jatah olimpiade jelas', r.body.message);
 r = await post('/api/soal', A.token, { pemainId: raka.id, mapel: 'IPAS', topik: 'energi', level: 'sulit', n: 5 });
@@ -91,7 +91,7 @@ ok(r.status === 201, 'level sulit masih bisa setelah jatah olimpiade habis');
 r = await post('/api/soal', A.token, { pemainId: nadia.id, mapel: 'Fisika', topik: 'gaya', level: 'olimpiade', n: 10 });
 ok(r.status === 201, 'jatah olimpiade per anak (Nadia tidak terpengaruh)');
 const d = await (await fetch(`${FS}/families/${A.uid}/pemakaian/${hari}`, { headers: { authorization: 'Bearer owner' } })).json();
-ok(Number(d.fields.olimpiade.mapValue.fields[raka.id].integerValue) === 5, 'penghitung olimpiade tersimpan', d.fields.olimpiade);
+ok(Number(d.fields.olimpiade.mapValue.fields[raka.id].integerValue) === 3, 'penghitung olimpiade tersimpan', d.fields.olimpiade);
 
 console.log(fail ? `\n${fail} GAGAL` : '\nSemua lulus');
 process.exit(fail ? 1 : 0);
