@@ -42,6 +42,19 @@ http.createServer((req, res) => {
       const keliru = kecil.includes('keliru');
       return pesan(JSON.stringify({ poin, faktaKeliru: keliru, keliru: keliru ? 'Matahari tidak mengelilingi bumi.' : '' }));
     }
+    // Soal dari bacaan: salin bacaan dari foto/PDF, lalu buat soal (format rapikan) dari bacaan.
+    if (prompt.includes('salin seluruh tulisan bacaan')) {
+      if (prompt.includes('Islamic Studies')) return pesan(JSON.stringify({ teks: 'Before eating we say: بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\n\nWudu is washing before prayer.' }));
+      if (foto.length && foto[0].source.data.length < 1000) return pesan(JSON.stringify({ teks: '' }));
+      return pesan(JSON.stringify({ teks: `Fotosintesis\n\nTumbuhan hijau membuat makanannya sendiri melalui fotosintesis. Proses ini memerlukan cahaya matahari, air, dan karbon dioksida.\n\nHasil fotosintesis adalah gula dan oksigen. Oksigen dilepaskan ke udara. (${prompt.includes('Dokumen PDF') ? 'pdf' : foto.length + ' foto'})` }));
+    }
+    if (prompt.includes('berdasarkan bacaan') && prompt.includes('"keyGuessed"')) {
+      if (prompt.split('<<<')[1]?.includes('rusak')) return pesan('ini bukan JSON {');
+      const nEsai = Number(/dan (\d+) soal esai/.exec(prompt)?.[1] ?? 0);
+      return pesan(JSON.stringify({ soal: Array.from({ length: n }, (_, i) => i < n - nEsai
+        ? { jenis: 'pilihan', q: `Menurut bacaan, soal ${i + 1}?`, options: [`Benar ${i + 1}`, `Salah A${i}`, `Salah B${i}`, `Salah C${i}`], answer: 0, explain: 'Lihat paragraf kedua.', keyGuessed: true, optionsAdded: true, contohJawaban: '', poinWajib: [], poinPelengkap: [] }
+        : { jenis: 'esai', q: `Jelaskan isi bacaan ${i + 1}!`, options: [], answer: 0, explain: 'Ringkas isinya.', keyGuessed: true, optionsAdded: false, contohJawaban: 'Tumbuhan membuat makanan sendiri.', poinWajib: ['Tumbuhan membuat makanan sendiri'], poinPelengkap: [] }) }));
+    }
     if (prompt.includes('lambat')) return setTimeout(() => pesan(JSON.stringify({ soal: Array.from({ length: n }, (_, i) => soal(i)) })), 4000);
     if (prompt.includes('sibuk')) return kirim(429, { type: 'error', error: { type: 'rate_limit_error', message: 'tiruan' } });
     if (prompt.includes('kuncisalah')) return kirim(401, { type: 'error', error: { type: 'authentication_error', message: 'tiruan' } });

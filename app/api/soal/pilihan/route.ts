@@ -40,6 +40,7 @@ export function POST(req: Request) {
       setId: paket.id,
       soal,
       dunia: pemain.theme,
+      ...(paket.dariBacaan ? { bacaan: paket.sourceText } : {}),
     });
     return json(sesi, { status: 201 });
   });

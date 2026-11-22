@@ -33,14 +33,18 @@ export const JENJANG_INFO: Record<Jenjang, { full: string; kelas: number[] }> = 
 };
 
 export const MAPEL: Record<Jenjang, string[]> = {
-  SD: ["Matematika", "IPAS", "Bahasa Indonesia", "Bahasa Inggris", "Pendidikan Pancasila", "Lainnya"],
+  SD: [
+    "Matematika", "IPAS", "Bahasa Indonesia", "Bahasa Inggris", "Pendidikan Pancasila",
+    "Pendidikan Agama Islam", "Islamic Studies", "Lainnya",
+  ],
   SMP: [
     "Matematika", "IPA", "IPS", "Bahasa Indonesia", "Bahasa Inggris",
-    "Pendidikan Pancasila", "Informatika", "Lainnya",
+    "Pendidikan Pancasila", "Informatika", "Pendidikan Agama Islam", "Islamic Studies", "Lainnya",
   ],
   SMA: [
     "Matematika", "Fisika", "Kimia", "Biologi", "Ekonomi", "Sejarah", "Geografi",
-    "Sosiologi", "Bahasa Indonesia", "Bahasa Inggris", "Informatika", "Lainnya",
+    "Sosiologi", "Bahasa Indonesia", "Bahasa Inggris", "Informatika",
+    "Pendidikan Agama Islam", "Islamic Studies", "Lainnya",
   ],
 };
 
@@ -97,3 +101,7 @@ export function nextLevel(level: Level): Level | null {
   const i = LEVELS.indexOf(level);
   return i < LEVELS.length - 1 ? LEVELS[i + 1] : null;
 }
+
+/** Mapel keislaman: soal boleh memuat huruf Arab, dengan aturan ketat untuk ayat dan hadits. */
+export const MAPEL_ISLAM = ["Pendidikan Agama Islam", "Islamic Studies"];
+export const mapelIslam = (mapel: string) => MAPEL_ISLAM.includes(mapel);

@@ -185,6 +185,23 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
 - Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 5/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
+## Soal dari bacaan + Pendidikan Agama Islam / Islamic Studies (huruf Arab) — SELESAI, sudah dicoba pemilik di preview ("aman"), dirilis lewat PR ke main
+
+Permintaan pemilik (22 Nov 2026). Keputusan: (1) bacaan **ditampilkan** ke anak saat mengerjakan; (2) dua mapel baru **Pendidikan Agama Islam** dan **Islamic Studies**; (3) ayat/hadits berhuruf Arab yang panjang hanya dari bahan orang tua.
+
+**1. Buat soal dari bacaan** (Mode admin → Soal pilihan → "Cara membuat soal: Buat dari bacaan")
+- Langkah 1: bacaan diketik/ditempel, atau foto (maks 5) / PDF disalin AI lewat `POST /api/admin/salin-bacaan` (`promptSalinBacaan`, model baca foto, log `salin_bacaan`), atau Word dibaca di HP. Teks masuk ke kolom "Bacaan atau materi" dan bisa diperbaiki. Foto/file tidak disimpan.
+- Langkah 2: "Buat soal dari bacaan" → `POST /api/admin/soal-bacaan {kelas, mapel, teks, n: 5|10|15, level, esai: 0-3}` (`promptSoalBacaan({untuk: "orang tua"})`, model soal, effort high untuk sulit, format rapikan termasuk esai, log `soal_bacaan`). Jawaban wajib didukung isi bacaan. Hasil masuk "Cek dulu" (catatan umum "Soal dibuat AI dari bacaan"), lalu disimpan sebagai paket biasa dengan `dariBacaan: true` dan bacaan di `sourceText`. Kedua langkah memakai jatah "rapikan" keluarga.
+- Anak: `POST /api/soal/pilihan` mengirim `bacaan`; layar mengerjakan menampilkan kartu "Bacaan" (bisa ditutup, tinggi maks 45vh dengan gulir). "Buat soal mirip" untuk paket bacaan membuat soal baru dari bacaan yang sama (`untuk: "anak"`, pilihan ganda, bacaan ikut tampil). Bacaan tidak disalin ke dokumen sesi.
+
+**2. Pendidikan Agama Islam & Islamic Studies + huruf Arab**
+- Dua mapel baru di SD/SMP/SMA (`MAPEL_ISLAM`). PAI: soal Bahasa Indonesia. **Islamic Studies: soal bahasa Inggris sederhana** (asumsi: pelajaran berbahasa Inggris di sekolah), pembahasan Bahasa Indonesia. Level tertinggi = Soal Tantangan.
+- `aturanIslam()` di semua prompt pembuat soal: AI tidak menulis teks Arab ayat/hadits dari ingatan (kecuali basmalah, ta'awudz, Al-Fatihah); kutipan Arab boleh disalin persis dari bacaan/contoh soal orang tua; tidak mengarang hadits; hindari soal khilafiyah.
+- `ATURAN_ARAB` di baca foto, rapikan, salin bacaan, soal bacaan: huruf Arab + harakat disalin persis, tanpa transliterasi/terjemahan.
+- Tampilan: font **Noto Naskh Arabic** (`--font-arab`, juga cadangan di `--font-body`). `components/TeksCampur.tsx` + `lib/arab.ts` memecah potongan Arab menjadi `<span lang="ar" class="ar">` (isolasi bidi, rtl, 1,3× lebih besar). Dipakai di soal, pilihan, kunci, penjelasan, bacaan, kartu "Cek dulu", dan detail dashboard. Elemen soal/pilihan memakai `dir="auto"` (pilihan yang seluruhnya Arab rata kanan).
+- Uji: `api17-test.mjs` (salin bacaan, soal bacaan, paket & sesi bacaan, soal mirip bacaan, aturan PAI/Islamic Studies), `bacaan-ui-test.js` (editor mode bacaan, anak dengan bacaan, huruf Arab rtl/font/ukuran). Pemeriksa target sentuh di `esai-ui-test.js` & `gambar-ui-test.js` kini melewati radio tersembunyi milik segmen (opacity 0; yang disentuh adalah labelnya).
+- Perlu dicoba dengan Claude asli: mutu salinan huruf Arab dari foto buku, dan mutu soal dari bacaan.
+
 ## Upgrade keamanan Next.js — SELESAI, sudah dicoba pemilik di preview (login iPhone aman), dirilis lewat PR ke main
 
 - `next` dan `eslint-config-next` 16.4.3 → **16.4.6** (perbaikan GHSA-mfr8-8qww-v76h & GHSA-vc7v-qv4w-wrv8, kebocoran cache `'use cache'`; app ini tidak memakai `'use cache'`, jadi sebenarnya tidak terdampak). `npm audit fix` (tanpa `--force`) juga menaikkan `fast-xml-parser` 5.11.2 → 5.12.1 dan `firebase` 13.1.0 → 13.4.0 (minor).
@@ -224,6 +241,7 @@ node scripts/uji/api7-test.mjs                      # cek jawaban, hadiah, riway
 node scripts/uji/api8-test.mjs                      # PIN admin, sesi admin, soal pilihan, rapikan
 node scripts/uji/api9-test.mjs /tmp/mock.log        # soal pilihan di sisi anak, soal mirip
 node scripts/uji/api16-test.mjs /tmp/mock.log       # level sulit diperketat + olimpiade/tantangan
+node scripts/uji/api17-test.mjs /tmp/mock.log       # soal dari bacaan + PAI/Islamic Studies
 node scripts/uji/api10-test.mjs                     # ekspor & hapus data keluarga (mode login-lama: ADMIN_LOGIN_ULANG_DETIK=1)
 node scripts/uji/api11-test.mjs                     # dashboard progres orang tua
 node scripts/uji/api12-test.mjs /tmp/mock.log       # baca foto soal

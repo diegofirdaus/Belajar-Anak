@@ -34,9 +34,10 @@ const pemainRef = (familyId: string, pemainId: string) =>
 export async function simpanSesi(
   familyId: string,
   pemainId: string,
-  s: { sumber: SumberSoal; mapel: string; topik: string; level: string; soal: Soal[]; setId?: string; dunia: WorldId },
+  { bacaan, ...s }: { sumber: SumberSoal; mapel: string; topik: string; level: string; soal: Soal[]; setId?: string; dunia: WorldId; bacaan?: string },
 ): Promise<PaketSesi> {
   const ref = pemainRef(familyId, pemainId).collection("sesi").doc();
+  // Bacaan tidak disalin ke dokumen sesi (sudah ada di paket); hanya dikirim ke browser.
   await ref.set({
     ...s,
     setId: s.setId ?? null,
@@ -59,6 +60,7 @@ export async function simpanSesi(
       ...(jenis === "esai" ? { jenis } : {}),
       ...(gambarId ? { gambarId } : {}),
     })),
+    ...(bacaan ? { bacaan } : {}),
   };
 }
 
