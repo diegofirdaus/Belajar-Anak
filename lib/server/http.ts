@@ -15,6 +15,7 @@ export type ApiErrorCode =
   | "jatah_habis"
   | "terlalu_cepat"
   | "terlalu_lama"
+  | "terlalu_panjang"
   | "ditolak"
   | "json_rusak"
   | "kurang_lengkap"
@@ -34,6 +35,7 @@ const STATUS: Record<ApiErrorCode, number> = {
   jatah_habis: 429,
   terlalu_cepat: 429,
   terlalu_lama: 504,
+  terlalu_panjang: 502,
   ditolak: 422,
   json_rusak: 502,
   kurang_lengkap: 502,

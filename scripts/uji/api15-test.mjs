@@ -40,7 +40,7 @@ ok(r.body.soal[1].perluGambar === true && r.body.kotak.every((k) => k === null),
 const pr = permintaanTerakhir().body;
 const isi = pr.messages[0].content;
 ok(isi.length === 2 && isi[0].type === 'document' && isi[0].media_type === 'application/pdf' && isi[0].panjang === pdf().length && isi[1].type === 'text', 'dikirim sebagai dokumen PDF, sebelum teks perintah', isi.map((x) => x.type));
-ok(isi[1].text.startsWith('Dokumen PDF di atas berisi soal untuk anak kelas 5 SD, mata pelajaran IPAS') && isi[1].text.includes('Untuk dokumen PDF, semua angka "gambar" 0') && !isi[1].text.includes('difoto') && isi[1].text.includes('Baca semua soal di dokumen'), 'prompt khusus PDF');
+ok(isi[1].text.startsWith('Dokumen PDF di atas berisi soal untuk anak kelas 5 SD, mata pelajaran IPAS') && isi[1].text.includes('Untuk dokumen PDF, semua angka "gambar" 0') && !isi[1].text.includes('difoto') && isi[1].text.includes('baca semua soal di dokumen'), 'prompt khusus PDF');
 ok(pr.model === 'claude-sonnet-5-5' && pr.fallbacks === 'default' && pr.output_config.format.type === 'json_schema', 'model baca foto + structured outputs');
 const log = (await (await fetch(`${FS}/families/${A.uid}/logAi`, { headers: { authorization: 'Bearer owner' } })).json()).documents ?? [];
 ok(log.some((d) => d.fields.jenis.stringValue === 'baca_pdf' && d.fields.hasil.stringValue === 'ok') && !JSON.stringify(log).includes(pdf()), 'dicatat sebagai baca_pdf, isi PDF tidak disimpan');

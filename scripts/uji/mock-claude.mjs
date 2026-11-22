@@ -76,6 +76,8 @@ http.createServer((req, res) => {
         ],
       }));
     }
+    // Halaman padat: balasan terpotong karena jatah token habis (foto berukuran tepat 1500 byte base64 → 1124 byte).
+    if (prompt.includes('difoto orang tua') && foto.some((f) => f.source.data.length === 1500)) return pesan('{"soal":[{"q":"terpotong', 'max_tokens');
     if (prompt.includes('difoto orang tua')) {
       if (prompt.includes('mata pelajaran') === false) return pesan(JSON.stringify({ teks: '', soal: [] }));
       return pesan(JSON.stringify({

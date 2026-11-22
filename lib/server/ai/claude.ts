@@ -76,7 +76,10 @@ export async function mintaJson(p: {
       p.waktuMaks ? { timeout: p.waktuMaks, maxRetries: 0 } : undefined,
     );
   } catch (e) {
-    if (e instanceof Anthropic.APIConnectionTimeoutError) throw new ApiError("terlalu_lama");
+    if (e instanceof Anthropic.APIConnectionTimeoutError) {
+      console.error(`Claude melewati batas waktu (${p.model}, ${p.waktuMaks ?? 55_000} ms).`);
+      throw new ApiError("terlalu_lama");
+    }
     if (e instanceof Anthropic.RateLimitError) throw new ApiError("terlalu_cepat");
     if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {
       console.error("Kunci Claude API ditolak:", e.message);
@@ -93,12 +96,18 @@ export async function mintaJson(p: {
     cacheBaca: res.usage.cache_read_input_tokens ?? 0,
   };
   if (res.stop_reason === "refusal") throw new ApiError("ditolak", undefined, { model: res.model, pemakaian });
+  // Balasan terpotong karena jatah token habis: JSON pasti tidak utuh.
+  if (res.stop_reason === "max_tokens") {
+    console.error(`Balasan Claude terpotong (max_tokens) ${res.model}: keluar ${pemakaian.keluar} token.`);
+    throw new ApiError("terlalu_panjang", undefined, { model: res.model, pemakaian });
+  }
 
   const teks = res.content.map((b) => (b.type === "text" ? b.text : "")).join("");
   let data: unknown;
   try {
     data = JSON.parse(teks);
   } catch {
+    console.error(`Balasan Claude bukan JSON utuh (${res.model}, stop: ${res.stop_reason}, ${teks.length} huruf).`);
     throw new ApiError("json_rusak", undefined, { model: res.model, pemakaian });
   }
   return { data, model: res.model, pemakaian };

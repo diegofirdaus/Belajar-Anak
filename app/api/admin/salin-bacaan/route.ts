@@ -8,7 +8,7 @@ import { ApiError, handle, json } from "@/lib/server/http";
 import { ambilJatahRapikan, catatAi, kembalikanJatahRapikan } from "@/lib/server/pemakaian";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 /**
  * Langkah 1 "Buat soal dari bacaan": menyalin bacaan/materi dari foto (maks 5) atau satu PDF menjadi teks.
@@ -32,7 +32,9 @@ export function POST(req: Request) {
         skema: SKEMA_SALIN_BACAAN,
         gambar: p.gambar,
         pdf: p.pdf?.data,
-        waktuMaks: 100_000,
+        effort: "low",
+        maksToken: 32_000,
+        waktuMaks: 240_000,
       });
       const mentah = (hasil.data as { teks?: unknown } | null)?.teks;
       const teks = typeof mentah === "string" ? mentah.trim().slice(0, TEKS_ADMIN_MAKS) : "";

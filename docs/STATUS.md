@@ -185,6 +185,16 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
 - Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 5/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
+## Perbaikan baca foto halaman padat — di `pengembangan`, BELUM dicoba pemilik
+
+- Gejala (22 Nov 2026): foto satu halaman LKS Pendidikan Pancasila (8 soal, 3 bergambar, jawaban disilang tangan) selalu gagal dengan "Foto belum berhasil dibaca. Coba sekali lagi." (pesan umum). Log Vercel tidak bisa dibaca dari sesi Claude, jadi penyebab pasti tidak terlihat; dugaan kuat: waktu habis (batas 100 dtk) atau balasan terpotong karena jatah token (16.000), keduanya jatuh ke pesan umum.
+- Perbaikan:
+  - AI tidak lagi menulis salinan teks kedua: skema baca foto hanya `soal`; teks kolom "Soal" disusun kode (`tulisTeksSoal`), kunci tebakan AI tidak ditulis. Keluaran ±separuhnya.
+  - Baca foto & salin bacaan: effort `low` (tugas menyalin), `max_tokens` 32.000, batas waktu 240 dtk, `maxDuration` 300.
+  - `mintaJson`: `stop_reason: "max_tokens"` → kode baru `terlalu_panjang` (502); waktu habis/JSON rusak dicatat dengan `console.error` (terlihat di log Vercel).
+  - Editor: pesan spesifik untuk `terlalu_lama`/`terlalu_panjang` (sarankan foto setengah halaman/kolom), `json_rusak`, `jaringan`. Jatah dikembalikan saat gagal (sudah begitu).
+- Uji: `api18-test.mjs` (effort/token, tanpa salinan teks, teks disusun kode, terpotong → `terlalu_panjang`, jatah kembali); `api15-test.mjs` disesuaikan dengan kalimat prompt baru.
+
 ## Soal dari bacaan + Pendidikan Agama Islam / Islamic Studies (huruf Arab) — SELESAI, sudah dicoba pemilik di preview ("aman"), dirilis lewat PR ke main
 
 Permintaan pemilik (22 Nov 2026). Keputusan: (1) bacaan **ditampilkan** ke anak saat mengerjakan; (2) dua mapel baru **Pendidikan Agama Islam** dan **Islamic Studies**; (3) ayat/hadits berhuruf Arab yang panjang hanya dari bahan orang tua.

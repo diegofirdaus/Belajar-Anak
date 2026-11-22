@@ -86,6 +86,26 @@ export const soalPilihanSchema = z
     else if (s.answer >= s.options.length) ctx.addIssue({ code: "custom", message: "Kunci jawaban di luar pilihan." });
   });
 
+/**
+ * Teks soal untuk kolom "Soal" di editor, disusun dari soal terstruktur hasil baca foto/PDF
+ * (AI tidak perlu menulis salinan kedua, jadi lebih cepat). Kunci/jawaban hanya ditulis
+ * kalau berasal dari lembar soal (bukan tebakan AI), supaya "Rapikan soal" tetap menandainya.
+ */
+export function tulisTeksSoal(soal: SoalPilihan[]): string {
+  return soal
+    .map((s, i) => {
+      const baris = [`${i + 1}. ${s.q}`];
+      if (s.jenis === "esai") {
+        if (s.esai?.contoh && !s.keyGuessed) baris.push(`Jawaban: ${s.esai.contoh}`);
+      } else {
+        s.options.forEach((o, k) => baris.push(`${"ABCD"[k]}. ${o}`));
+        if (!s.keyGuessed) baris.push(`Kunci: ${"ABCD"[s.answer]}`);
+      }
+      return baris.join("\n");
+    })
+    .join("\n\n");
+}
+
 export const adalahEsai = (q: { jenis?: string }) => q.jenis === "esai";
 
 export const paketSchema = z

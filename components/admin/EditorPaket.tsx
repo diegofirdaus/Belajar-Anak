@@ -277,6 +277,14 @@ export function EditorPaket({
     } else if (code === "kurang_lengkap")
       setGalat(sumber === "foto" ? "Tidak ada soal yang terbaca dari foto. Coba foto lebih dekat dan terang, satu halaman per foto." : "Tidak ada soal yang terbaca dari PDF itu.");
     else if (code === "ditolak") setGalat(`${sumber === "foto" ? "Foto" : "PDF"} itu tidak bisa diproses. Coba halaman soal yang lain.`);
+    else if (code === "terlalu_lama" || code === "terlalu_panjang")
+      setGalat(
+        sumber === "foto"
+          ? "Halaman ini terlalu padat untuk dibaca sekaligus. Coba foto setengah halaman saja (misalnya kolom kiri dulu, lalu kolom kanan), atau kirim fotonya satu per satu. Jatah tidak berkurang."
+          : "PDF ini terlalu panjang untuk dibaca sekaligus. Simpan ulang beberapa halaman saja, lalu unggah lagi. Jatah tidak berkurang.",
+      );
+    else if (code === "json_rusak") setGalat(`Hasil bacaan ${sumber} belum tersusun rapi. Coba sekali lagi; kalau tetap gagal, foto lebih dekat atau setengah halaman saja.`);
+    else if (code === "jaringan") setGalat("Koneksi terputus saat mengirim. Pastikan internet stabil, lalu coba lagi.");
     else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid") setGalat(apiMessage(e));
     else if (!(e instanceof ApiFailure)) setGalat(e instanceof Error ? e.message : "File tidak bisa dibuka.");
     else setGalat(`${sumber === "foto" ? "Foto" : "PDF"} belum berhasil dibaca. Coba sekali lagi.`);

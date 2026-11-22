@@ -1,5 +1,5 @@
 import { MAPEL, jenjangOf } from "@/lib/kelas";
-import { TEKS_ADMIN_MAKS, bacaFotoSchema } from "@/lib/soalPilihan";
+import { TEKS_ADMIN_MAKS, bacaFotoSchema, tulisTeksSoal } from "@/lib/soalPilihan";
 import { requireAdmin } from "@/lib/server/admin";
 import { MODEL_BACA_FOTO, aiTersedia, mintaJson } from "@/lib/server/ai/claude";
 import { SKEMA_BACA_FOTO, promptBacaFoto } from "@/lib/server/ai/prompt";
@@ -9,7 +9,8 @@ import { ApiError, handle, json } from "@/lib/server/http";
 import { ambilJatahRapikan, catatAi, kembalikanJatahRapikan } from "@/lib/server/pemakaian";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+// Halaman padat (banyak soal + gambar) bisa butuh lebih dari 2 menit.
+export const maxDuration = 300;
 
 /**
  * Membaca foto soal (maks 5) atau satu PDF menjadi teks soal + soal terstruktur untuk editor soal pilihan.
@@ -33,13 +34,17 @@ export function POST(req: Request) {
         skema: SKEMA_BACA_FOTO,
         gambar: p.gambar,
         pdf: p.pdf?.data,
-        waktuMaks: 100_000,
+        // Tugas menyalin: tidak perlu berpikir panjang; jatah tulis besar untuk halaman padat.
+        effort: "low",
+        maksToken: 32_000,
+        waktuMaks: 240_000,
       });
-      const data = (hasil.data ?? {}) as { teks?: unknown; soal?: unknown };
+      const data = (hasil.data ?? {}) as { soal?: unknown };
       // PDF: tidak ada foto di HP untuk dipotong, jadi tanpa usulan kotak.
       const hasilSoal = saringDenganKotak(data.soal, p.gambar?.length ?? 0);
       const soal = hasilSoal.map((x) => x.soal);
-      const teks = typeof data.teks === "string" ? data.teks.trim().slice(0, TEKS_ADMIN_MAKS) : "";
+      // Salinan teks untuk kolom "Soal" disusun dari soal terstruktur (AI tidak menulis dua kali).
+      const teks = tulisTeksSoal(soal).slice(0, TEKS_ADMIN_MAKS);
       await catatAi(familyId, { jenis: p.pdf ? "baca_pdf" : "baca_foto", model: hasil.model, hasil: soal.length ? "ok" : "kurang_lengkap", pemakaian: hasil.pemakaian });
       if (!soal.length) throw new ApiError("kurang_lengkap", `Tidak ada soal yang terbaca dari ${p.pdf ? "PDF" : "foto"}.`);
       // Usulan kotak gambar per soal (sejajar dengan `soal`) untuk dipotong di browser dari foto yang masih ada di HP.
