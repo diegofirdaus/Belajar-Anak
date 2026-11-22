@@ -76,6 +76,8 @@ http.createServer((req, res) => {
         ],
       }));
     }
+    // Pengaturan tambahan ditolak (400) hanya kalau permintaan memakai fallback beta: foto tepat 1700 karakter base64.
+    if (prompt.includes('difoto orang tua') && foto.some((f) => f.source.data.length === 1700) && (b.fallbacks || b.output_config?.effort)) return kirim(400, { type: 'error', error: { type: 'invalid_request_error', message: 'fallbacks: not supported' } });
     // Gambar ditolak API (400): foto berukuran tepat 1600 karakter base64.
     if (prompt.includes('difoto orang tua') && foto.some((f) => f.source.data.length === 1600)) return kirim(400, { type: 'error', error: { type: 'invalid_request_error', message: 'Could not process image' } });
     // Halaman padat: balasan terpotong karena jatah token habis (foto berukuran tepat 1500 byte base64 → 1124 byte).

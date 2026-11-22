@@ -63,18 +63,32 @@ export async function mintaJson(p: {
     ...(p.pdf ? [{ type: "document" as const, source: { type: "base64" as const, media_type: "application/pdf" as const, data: p.pdf } }] : []),
   ];
   const content: Anthropic.Beta.BetaContentBlockParam[] | string = lampiran.length ? [...lampiran, { type: "text" as const, text: p.prompt }] : p.prompt;
-  try {
-    res = await c.beta.messages.create(
+  /**
+   * `dasar`: permintaan paling sederhana (tanpa fallback beta dan tanpa effort), dipakai sekali
+   * kalau permintaan lengkap ditolak 400 — supaya pengaturan tambahan tidak memblokir pekerjaan anak/orang tua.
+   */
+  const kirim = (dasar: boolean) =>
+    c.beta.messages.create(
       {
         model: p.model,
         max_tokens: p.maksToken ?? 16000,
-        output_config: { effort: p.effort ?? EFFORT_SOAL(), format: { type: "json_schema", schema: p.skema } },
+        output_config: dasar
+          ? { format: { type: "json_schema", schema: p.skema } }
+          : { effort: p.effort ?? EFFORT_SOAL(), format: { type: "json_schema", schema: p.skema } },
         messages: [{ role: "user", content }],
         // Penolakan kategori cyber/frontier_llm dicoba ulang di model lain oleh server Anthropic.
-        ...(bisaFallback(p.model) ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
+        ...(!dasar && bisaFallback(p.model) ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
       },
       p.waktuMaks ? { timeout: p.waktuMaks, maxRetries: 0 } : undefined,
     );
+  try {
+    try {
+      res = await kirim(false);
+    } catch (e) {
+      if (!(e instanceof Anthropic.BadRequestError)) throw e;
+      console.error("Claude menolak permintaan (400), dicoba ulang tanpa pengaturan tambahan:", e.message);
+      res = await kirim(true);
+    }
   } catch (e) {
     if (e instanceof Anthropic.APIConnectionTimeoutError) {
       console.error(`Claude melewati batas waktu (${p.model}, ${p.waktuMaks ?? 55_000} ms).`);

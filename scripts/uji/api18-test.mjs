@@ -39,5 +39,14 @@ r = await post('/api/admin/baca-foto', A.token, { kelas: 7, mapel: 'Pendidikan P
 ok(r.status === 500 && r.body.error === 'gangguan' && r.body.message === 'AI 400 invalid_request_error: Could not process image', 'galat lain dari AI: kode penyebab ikut dikirim', r.body);
 ok((await rapikanHariIni(A.uid)) === sebelum, 'jatah dikembalikan (galat AI lain)');
 
+const nLog = () => fs.readFileSync(LOG, 'utf8').trim().split('\n').length;
+let n0 = nLog();
+r = await post('/api/admin/baca-foto', A.token, { kelas: 7, mapel: 'Pendidikan Pancasila', gambar: [{ media_type: 'image/jpeg', data: 'A'.repeat(1700) }] }, sesi);
+const dua = fs.readFileSync(LOG, 'utf8').trim().split('\n').slice(n0).map((x) => JSON.parse(x));
+ok(r.status === 200 && dua.length === 2 && dua[0].body.fallbacks === 'default' && !('fallbacks' in dua[1].body) && !('effort' in dua[1].body.output_config) && dua[1].headers.beta === null, 'ditolak 400 karena pengaturan: dicoba ulang otomatis dengan permintaan dasar, berhasil', [r.status, dua.length]);
+n0 = nLog();
+r = await post('/api/admin/baca-foto', A.token, { kelas: 7, mapel: 'Pendidikan Pancasila', gambar: [{ media_type: 'image/jpeg', data: 'A'.repeat(1600) }] }, sesi);
+ok(r.status === 500 && nLog() - n0 === 2, 'tetap ditolak: hanya satu kali coba ulang, lalu kode penyebab');
+
 console.log(fail ? `\n${fail} GAGAL` : '\nSemua lulus');
 process.exit(fail ? 1 : 0);
