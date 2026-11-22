@@ -35,20 +35,26 @@ export function POST(req: Request) {
         gambar: p.gambar,
         pdf: p.pdf?.data,
         // Tugas menyalin: tidak perlu berpikir panjang; jatah tulis besar untuk halaman padat.
-        effort: "low",
+        // AI juga mengerjakan tiap soal untuk menentukan kunci (tanda di foto bisa jawaban anak yang salah).
+        effort: "medium",
         maksToken: 32_000,
         waktuMaks: 240_000,
       });
       const data = (hasil.data ?? {}) as { soal?: unknown };
       // PDF: tidak ada foto di HP untuk dipotong, jadi tanpa usulan kotak.
-      const hasilSoal = saringDenganKotak(data.soal, p.gambar?.length ?? 0);
+      // Kunci = jawaban AI. Tanda di lembar (silang/lingkaran/kunci tertulis) hanya pembanding:
+      // sama dengan jawaban AI → tidak perlu dicek; beda atau tidak ada tanda → "Mohon dicek".
+      const hasilSoal = saringDenganKotak(data.soal, p.gambar?.length ?? 0).map((x) => ({
+        ...x,
+        soal: { ...x.soal, keyGuessed: x.soal.jenis === "esai" ? true : x.tanda !== x.soal.answer },
+      }));
       const soal = hasilSoal.map((x) => x.soal);
       // Salinan teks untuk kolom "Soal" disusun dari soal terstruktur (AI tidak menulis dua kali).
       const teks = tulisTeksSoal(soal).slice(0, TEKS_ADMIN_MAKS);
       await catatAi(familyId, { jenis: p.pdf ? "baca_pdf" : "baca_foto", model: hasil.model, hasil: soal.length ? "ok" : "kurang_lengkap", pemakaian: hasil.pemakaian });
       if (!soal.length) throw new ApiError("kurang_lengkap", `Tidak ada soal yang terbaca dari ${p.pdf ? "PDF" : "foto"}.`);
       // Usulan kotak gambar per soal (sejajar dengan `soal`) untuk dipotong di browser dari foto yang masih ada di HP.
-      return json({ teks, soal, kotak: hasilSoal.map((x) => x.kotak) });
+      return json({ teks, soal, kotak: hasilSoal.map((x) => x.kotak), tanda: hasilSoal.map((x) => x.tanda) });
     } catch (e) {
       await kembalikanJatahRapikan(familyId, tanggal);
       if (e instanceof ApiError && e.ai) {

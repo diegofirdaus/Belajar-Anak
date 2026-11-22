@@ -193,6 +193,7 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
   - Baca foto & salin bacaan: effort `low` (tugas menyalin), `max_tokens` 32.000, batas waktu 240 dtk, `maxDuration` 300.
   - `mintaJson`: `stop_reason: "max_tokens"` → kode baru `terlalu_panjang` (502); waktu habis/JSON rusak dicatat dengan `console.error` (terlihat di log Vercel).
   - Editor: pesan spesifik untuk `terlalu_lama`/`terlalu_panjang` (sarankan foto setengah halaman/kolom), `json_rusak`, `jaringan`. Jatah dikembalikan saat gagal (sudah begitu).
+  - **Kunci ditentukan AI, bukan dari tanda di lembar** (masukan pemilik: foto bisa lembar yang sudah dikerjakan anak, jadi tanda silang belum tentu benar). AI mengerjakan tiap soal (effort `medium` untuk baca foto/PDF) dan mengisi `tandaFoto` (pilihan yang ditandai/ditulis di lembar, -1 kalau tidak ada). Server: tanda = jawaban AI → `keyGuessed: false`; beda/tidak ada → `keyGuessed: true`; esai selalu dicek. Editor menampilkan "Di foto ditandai C, tapi menurut AI jawaban yang benar A. Mohon dicek." atau "Tidak ada tanda jawaban di foto…". `tandaFoto` tidak ikut disimpan.
 - Uji: `api18-test.mjs` (effort/token, tanpa salinan teks, teks disusun kode, terpotong → `terlalu_panjang`, jatah kembali); `api15-test.mjs` disesuaikan dengan kalimat prompt baru.
 
 ## Soal dari bacaan + Pendidikan Agama Islam / Islamic Studies (huruf Arab) — SELESAI, sudah dicoba pemilik di preview ("aman"), dirilis lewat PR ke main

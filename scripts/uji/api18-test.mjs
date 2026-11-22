@@ -23,10 +23,12 @@ let r = await post('/api/admin/baca-foto', A.token, { kelas: 7, mapel: 'Pendidik
 const b = terakhir();
 const isi = b.messages[0].content.find((x) => x.type === 'text').text;
 ok(r.status === 200 && r.body.soal.length === 3, 'baca foto berhasil', r.status);
-ok(b.output_config.effort === 'low' && b.max_tokens === 32000, 'baca foto: effort low, 32000 token', [b.output_config.effort, b.max_tokens]);
-ok(!('teks' in b.output_config.format.schema.properties) && !isi.includes('Tulis ulang di "teks"') && isi.includes('disilang, dilingkari'), 'AI tidak diminta menulis salinan teks kedua; tanda silang dikenali sebagai kunci');
+ok(b.output_config.effort === 'medium' && b.max_tokens === 32000, 'baca foto: effort medium (AI mengerjakan soal), 32000 token', [b.output_config.effort, b.max_tokens]);
+ok(!('teks' in b.output_config.format.schema.properties) && !isi.includes('Tulis ulang di "teks"') && isi.includes('JANGAN langsung dipakai sebagai kunci') && isi.includes('"tandaFoto"') && 'tandaFoto' in b.output_config.format.schema.properties.soal.items.properties, 'AI tidak menulis salinan kedua; menentukan kunci sendiri dan mencatat tanda di foto');
+ok(JSON.stringify(r.body.tanda) === '[0,2,null]', 'tanda di foto dikirim ke editor (sejajar soal)', r.body.tanda);
+ok(r.body.soal[0].keyGuessed === false && r.body.soal[1].keyGuessed === true && r.body.soal[2].keyGuessed === true, 'tanda = jawaban AI → tidak perlu dicek; beda/tidak ada tanda → mohon dicek', r.body.soal.map((q) => q.keyGuessed));
 ok(r.body.teks.startsWith('1. Hasil dari 1/2 + 1/4 adalah...\nA. 3/4\nB. 2/6\nC. 1/6\nD. 2/4\nKunci: A\n\n2. Perhatikan gambar.'), 'teks kolom Soal disusun dari soal terstruktur', r.body.teks.slice(0, 120));
-ok(!r.body.teks.split('\n\n')[1].includes('Kunci:'), 'kunci tebakan AI tidak ditulis di teks (tetap ditandai saat dirapikan)');
+ok(!r.body.teks.split('\n\n')[1].includes('Kunci:') && !r.body.teks.split('\n\n')[2].includes('Kunci:'), 'kunci yang perlu dicek tidak ditulis di teks (tetap ditandai saat dirapikan)');
 
 const sebelum = await rapikanHariIni(A.uid);
 r = await post('/api/admin/baca-foto', A.token, { kelas: 7, mapel: 'Pendidikan Pancasila', gambar: [{ media_type: 'image/jpeg', data: 'A'.repeat(1500) }] }, sesi);

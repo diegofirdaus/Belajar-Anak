@@ -50,9 +50,12 @@ type SoalEditor = SoalPilihan & {
   /** Potongan yang sudah dipilih tapi belum diunggah (base64 JPEG). */
   gambarBaru?: string;
   potongTerbuka?: boolean;
+  /** Pilihan yang ditandai di lembar foto/PDF (jawaban anak/kunci tertulis), -1 = tidak ada tanda. Pembanding kunci AI. */
+  tandaFoto?: number;
 };
 
-const keSoal = ({ kotakUsulan: _k, gambarBaru: _g, potongTerbuka: _p, ...q }: SoalEditor): SoalPilihan => q;
+const keSoal = ({ kotakUsulan: _k, gambarBaru: _g, potongTerbuka: _p, tandaFoto: _t, ...q }: SoalEditor): SoalPilihan => q;
+const denganTanda = (q: SoalPilihan, t: number | null | undefined): SoalEditor => (q.jenis === "esai" ? q : { ...q, tandaFoto: t ?? -1 });
 const adaGambar = (q: SoalEditor) => Boolean(q.gambarBaru || q.gambarId);
 const kurangiGerak = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -300,7 +303,8 @@ export function EditorPaket({
       const hasil = await api.bacaFoto(sesi, { kelas, mapel: mapelAktif, gambar });
       const awalFoto = foto.length;
       setFoto((f) => [...f, ...gambar.map((g) => `data:image/jpeg;base64,${g.data}`)]);
-      const soalFoto: SoalEditor[] = hasil.soal.map((q, i) => {
+      const soalFoto: SoalEditor[] = hasil.soal.map((q0, i) => {
+        const q = denganTanda(q0, hasil.tanda?.[i]);
         const k = hasil.kotak?.[i];
         return k ? { ...q, kotakUsulan: { ...k, foto: k.foto + awalFoto }, potongTerbuka: true } : q;
       });
@@ -327,7 +331,7 @@ export function EditorPaket({
       const catatan = catatanAwal ? [catatanAwal] : [];
       if (hasil.soal.some((q) => q.perluGambar))
         catatan.push('Ada soal yang butuh gambar: tambahkan gambarnya lewat "+ Tambah gambar dari foto" (bisa dari tangkapan layar PDF).');
-      terapkanBacaan(hasil, hasil.soal, "PDF", catatan);
+      terapkanBacaan(hasil, hasil.soal.map((q, i) => denganTanda(q, hasil.tanda?.[i])), "PDF", catatan);
     } catch (e) {
       galatBaca(e, "PDF");
     } finally {
@@ -654,7 +658,17 @@ export function EditorPaket({
                   {i + 1}. <TeksCampur teks={q.q} />
                 </p>
                 {q.esai && <span className="tag-esai">Esai · anak mengetik jawaban</span>}
-                {q.keyGuessed && <span className="pv-note warn">{q.esai ? "Jawaban dibuat AI. Mohon dicek." : "Kunci dipilih AI. Mohon dicek."}</span>}
+                {q.keyGuessed && (
+                  <span className="pv-note warn">
+                    {q.esai
+                      ? "Jawaban dibuat AI. Mohon dicek."
+                      : q.tandaFoto !== undefined && q.tandaFoto >= 0 && q.tandaFoto !== q.answer
+                        ? `Di foto ditandai ${HURUF[q.tandaFoto]}, tapi menurut AI jawaban yang benar ${HURUF[q.answer]}. Mohon dicek.`
+                        : q.tandaFoto === -1
+                          ? "Tidak ada tanda jawaban di foto, jadi kunci dipilih AI. Mohon dicek."
+                          : "Kunci dipilih AI. Mohon dicek."}
+                  </span>
+                )}
                 {q.perluGambar && !adaGambar(q) && !q.potongTerbuka && (
                   <span className="pv-note warn">Soal ini butuh gambar. Potong gambarnya dari foto, atau hapus/ubah soalnya supaya tanpa gambar.</span>
                 )}

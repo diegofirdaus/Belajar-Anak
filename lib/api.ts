@@ -110,7 +110,7 @@ export const api = {
   hapusPaket: (sesi: string, id: string) =>
     call<{ ok: true }>(`/api/admin/soal-pilihan/${encodeURIComponent(id)}`, { method: "DELETE", headers: adminHeader(sesi) }),
   bacaFoto: (sesi: string, b: { kelas: number; mapel: string; gambar?: { media_type: "image/jpeg"; data: string }[]; pdf?: { data: string } }) =>
-    call<{ teks: string; soal: SoalPilihan[]; kotak: (Kotak | null)[] }>("/api/admin/baca-foto", { method: "POST", body: JSON.stringify(b), headers: adminHeader(sesi) }),
+    call<{ teks: string; soal: SoalPilihan[]; kotak: (Kotak | null)[]; tanda?: (number | null)[] }>("/api/admin/baca-foto", { method: "POST", body: JSON.stringify(b), headers: adminHeader(sesi) }),
   salinBacaan: (sesi: string, b: { kelas: number; mapel: string; gambar?: { media_type: "image/jpeg"; data: string }[]; pdf?: { data: string } }) =>
     call<{ teks: string }>("/api/admin/salin-bacaan", { method: "POST", body: JSON.stringify(b), headers: adminHeader(sesi) }).then((r) => r.teks),
   soalBacaan: (sesi: string, b: { kelas: number; mapel: string; teks: string; n: 5 | 10 | 15; level: "mudah" | "sedang" | "sulit"; esai: number }) =>

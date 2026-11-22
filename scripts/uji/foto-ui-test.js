@@ -53,6 +53,9 @@ const terakhir = () => { const b = fs.readFileSync(LOG, 'utf8').trim().split('\n
   await p.locator('.toast', { hasText: '3 soal terbaca dari 2 foto.' }).waitFor({ timeout: 20000 });
   ok(true, 'toast: 3 soal terbaca dari 2 foto');
   ok((await p.getByLabel('Soal', { exact: true }).inputValue()).startsWith('1. Hasil dari 1/2 + 1/4 adalah...'), 'teks hasil bacaan masuk ke kolom soal (bisa diedit)');
+  ok(await p.getByText('Di foto ditandai C, tapi menurut AI jawaban yang benar B. Mohon dicek.').isVisible(), 'tanda di foto beda dengan jawaban AI: diminta dicek');
+  ok(await p.getByText('Tidak ada tanda jawaban di foto, jadi kunci dipilih AI. Mohon dicek.').isVisible(), 'tanpa tanda di foto: kunci AI diminta dicek');
+  ok((await p.locator('.pv-q').first().getAttribute('class')) === 'pv-q', 'tanda di foto = jawaban AI: tanpa peringatan');
   ok((await p.locator('.pv-q').count()) === 3 && (await p.locator('.pv-q', { hasText: 'Perhatikan gambar' }).locator('.potong').count()) === 1, 'kartu cek: 3 soal, soal bergambar langsung menampilkan usulan potongan gambar');
   const kirim = terakhir().messages[0].content;
   ok(kirim.length === 3 && kirim.every((x, k) => (k < 2 ? x.type === 'image' && x.media_type === 'image/jpeg' : x.type === 'text')), 'foto PNG dikirim sebagai JPEG, sebelum teks');
