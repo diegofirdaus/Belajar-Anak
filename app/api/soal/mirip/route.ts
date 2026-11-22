@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { jumlahSoalMirip } from "@/lib/soalPilihan";
 import { MODEL_SOAL, mintaJson } from "@/lib/server/ai/claude";
-import { SKEMA_PAKET_SOAL, promptSoalMirip } from "@/lib/server/ai/prompt";
+import { SKEMA_PAKET_SOAL, promptSoalBacaan, promptSoalMirip } from "@/lib/server/ai/prompt";
 import { saringSoal } from "@/lib/server/ai/validasi";
 import { requireFamily } from "@/lib/server/auth";
 import { ApiError, handle, json } from "@/lib/server/http";
@@ -29,14 +29,17 @@ export function POST(req: Request) {
     try {
       const hasil = await mintaJson({
         model: MODEL_SOAL(),
-        // Soal mirip selalu pilihan ganda; contoh pilihan ganda didahulukan, soal esai sesudahnya.
-        prompt: promptSoalMirip({
-          kelas: pemain.kelas,
-          mapel: paket.subject,
-          judul: paket.title,
-          n,
-          contoh: [...paket.questions.filter((q) => q.options.length), ...paket.questions.filter((q) => !q.options.length)],
-        }),
+        // Paket dari bacaan: soal baru dari bacaan yang sama (bacaan ikut tampil).
+        // Selain itu: soal mirip selalu pilihan ganda; contoh pilihan ganda didahulukan, soal esai sesudahnya.
+        prompt: paket.dariBacaan
+          ? promptSoalBacaan({ kelas: pemain.kelas, mapel: paket.subject, teks: paket.sourceText, n, level: "sedang", esai: 0, untuk: "anak" })
+          : promptSoalMirip({
+              kelas: pemain.kelas,
+              mapel: paket.subject,
+              judul: paket.title,
+              n,
+              contoh: [...paket.questions.filter((q) => q.options.length), ...paket.questions.filter((q) => !q.options.length)],
+            }),
         skema: SKEMA_PAKET_SOAL,
       });
       const soal = saringSoal((hasil.data as { soal?: unknown } | null)?.soal, n);
@@ -56,6 +59,7 @@ export function POST(req: Request) {
         setId: paket.id,
         soal,
         dunia: pemain.theme,
+        ...(paket.dariBacaan ? { bacaan: paket.sourceText } : {}),
       });
       return json(sesi, { status: 201 });
     } catch (e) {

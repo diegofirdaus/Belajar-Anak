@@ -1,6 +1,8 @@
 "use client";
 
+import { TeksCampur } from "@/components/TeksCampur";
 import { useId, useRef, useState } from "react";
+import { Segment } from "@/components/Segment";
 import { useToast } from "@/components/Toast";
 import { api, apiMessage, ApiFailure } from "@/lib/api";
 import { GambarSoal } from "@/components/GambarSoal";
@@ -11,6 +13,8 @@ import { kotakTengah, type Kotak } from "@/lib/gambarSoal";
 import { PotongGambar } from "./PotongGambar";
 import { JENJANG_INFO, MAPEL, jenjangOf, kelasInJenjang, kelasShort, type Jenjang } from "@/lib/kelas";
 import {
+  BACAAN_MIN,
+  ESAI_BACAAN_MAKS,
   FOTO_MAKS,
   JUDUL_MAKS,
   PDF_BASE64_MAKS,
@@ -63,6 +67,12 @@ Kunci: B
 
 2. Ibu punya 12 kue, lalu dibagi rata ke 4 anak. Tiap anak dapat berapa kue?`;
 
+const CONTOH_BACAAN = `Ketik, tempel, atau foto/upload bacaan di sini: cerita, artikel, atau ringkasan materi dari buku.
+
+AI akan membuat soal yang jawabannya ada di bacaan ini. Anak bisa membaca bacaannya saat mengerjakan.`;
+
+type LevelBacaan = "mudah" | "sedang" | "sulit";
+
 /** Editor soal pilihan (brief 7.8): ketik bebas → rapikan (AI atau pembaca manual) → cek → simpan. */
 export function EditorPaket({
   sesi,
@@ -91,6 +101,11 @@ export function EditorPaket({
   /** Foto yang dibaca di editor ini (data URL), hanya di memori HP untuk memotong gambar soal. */
   const [foto, setFoto] = useState<string[]>([]);
   const [acakPilihan, setAcakPilihan] = useState(paket?.acakPilihan ?? true);
+  /** Mode "Buat soal dari bacaan": teks = bacaan, AI membuat soal; bacaan tampil ke anak. */
+  const [dariBacaan, setDariBacaan] = useState(paket?.dariBacaan ?? false);
+  const [jumlahBacaan, setJumlahBacaan] = useState<"5" | "10" | "15">("10");
+  const [levelBacaan, setLevelBacaan] = useState<LevelBacaan>("sedang");
+  const [esaiBacaan, setEsaiBacaan] = useState<"0" | "1" | "2" | "3">("0");
   const [teksBerubah, setTeksBerubah] = useState(false);
   const [galat, setGalat] = useState<string | null>(null);
   const [merapikan, setMerapikan] = useState(false);
@@ -126,6 +141,7 @@ export function EditorPaket({
   async function unggah(daftar: FileList | null) {
     if (!daftar?.length) return;
     const semua = [...daftar];
+    if (dariBacaan) return unggahBacaan(semua);
     const dokumen = semua.find((f) => ["pdf", "docx", "doc"].includes(jenisFile(f)));
     if (dokumen) {
       const lain = semua.length - 1;
@@ -138,6 +154,100 @@ export function EditorPaket({
     const fotoSaja = semua.filter((f) => jenisFile(f) === "foto");
     if (!fotoSaja.length) return setGalat("File itu bukan foto, PDF, atau Word. Pilih file soal, ya.");
     return bacaFoto(fotoSaja);
+  }
+
+  /** Tambahkan teks bacaan ke kolom Bacaan (dipotong di batas maksimal). */
+  function tambahBacaan(isi: string, catatanAwal: string[], sumber: string) {
+    const gabung = teks.trim() ? `${teks.trimEnd()}\n\n${isi}` : isi;
+    setTeks(gabung.slice(0, TEKS_ADMIN_MAKS));
+    setTeksBerubah(true);
+    const catatan = [...catatanAwal, gabung.length > TEKS_ADMIN_MAKS ? "Bacaan terlalu panjang; hanya 20.000 karakter pertama yang dipakai." : ""];
+    setGalat(catatan.filter(Boolean).join(" ") || null);
+    toast(`Bacaan dari ${sumber} sudah masuk. Cek teksnya, lalu tekan "Buat soal dari bacaan".`);
+  }
+
+  /** Mode bacaan: foto/PDF disalin AI menjadi teks, Word diambil di HP. Belum membuat soal. */
+  async function unggahBacaan(semua: File[]) {
+    const dokumen = semua.find((f) => ["pdf", "docx", "doc"].includes(jenisFile(f)));
+    const catatan = dokumen && semua.length > 1 ? [`Satu file dibaca sekali unggah; ${semua.length - 1} file lainnya tidak dibaca.`] : [];
+    if (dokumen) {
+      const jenis = jenisFile(dokumen);
+      if (jenis === "doc") return setGalat("File Word lama (.doc) belum bisa dibaca. Simpan ulang sebagai .docx atau PDF di Word, lalu unggah lagi.");
+      if (jenis === "docx") {
+        setGalat(null);
+        setMembaca("Membaca file Word…");
+        try {
+          const isi = await bacaDocx(dokumen);
+          if (!isi.trim()) return setGalat("File Word itu tidak berisi teks. Kalau bacaannya berupa gambar, simpan sebagai PDF atau foto halamannya.");
+          tambahBacaan(isi, catatan, "file Word");
+        } catch (e) {
+          setGalat(e instanceof Error ? e.message : "File Word tidak bisa dibuka.");
+        } finally {
+          setMembaca(null);
+        }
+        return;
+      }
+    }
+    if (!pakaiAi) return setGalat("Membaca foto atau PDF butuh AI, dan AI sedang tidak tersedia. Ketik atau tempel bacaannya.");
+    const fotoSaja = semua.filter((f) => jenisFile(f) === "foto").slice(0, FOTO_MAKS);
+    if (!dokumen && !fotoSaja.length) return setGalat("File itu bukan foto, PDF, atau Word. Pilih file bacaan, ya.");
+    if (!dokumen && semua.length > FOTO_MAKS) catatan.push(`Maksimal ${FOTO_MAKS} foto sekali unggah; ${semua.length - FOTO_MAKS} foto lainnya tidak dibaca.`);
+    const sumber = dokumen ? "PDF" : `${fotoSaja.length} foto`;
+    setGalat(null);
+    setMembaca(dokumen ? "Membaca PDF…" : `Membaca ${fotoSaja.length} foto…`);
+    try {
+      let isi: string;
+      if (dokumen) {
+        const data = await keBase64(dokumen);
+        if (data.length > PDF_BASE64_MAKS) return setGalat("PDF terlalu besar (maksimal ±3 MB). Simpan ulang hanya halaman bacaannya, atau foto halamannya.");
+        if (!data.startsWith("JVBERi")) return setGalat("File itu bukan PDF yang bisa dibaca.");
+        isi = await api.salinBacaan(sesi, { kelas, mapel: mapelAktif, pdf: { data } });
+      } else {
+        isi = await api.salinBacaan(sesi, { kelas, mapel: mapelAktif, gambar: await siapkanFoto(fotoSaja) });
+      }
+      tambahBacaan(isi, catatan, sumber);
+    } catch (e) {
+      const code = e instanceof ApiFailure ? e.code : "";
+      if (code === "kurang_lengkap") setGalat(`Tidak ada bacaan yang terbaca dari ${sumber}. ${dokumen ? "" : "Coba foto lebih dekat dan terang, satu halaman per foto."}`.trim());
+      else galatBaca(e, dokumen ? "PDF" : "foto");
+    } finally {
+      setMembaca(null);
+    }
+  }
+
+  /** Mode bacaan: AI membuat soal dari bacaan; hasilnya menggantikan soal di kartu "Cek dulu". */
+  async function buatDariBacaan() {
+    const bacaan = teks.trim();
+    if (bacaan.length < BACAAN_MIN) return setGalat("Bacaannya terlalu pendek untuk dibuatkan soal. Tambahkan minimal beberapa kalimat, atau foto/upload bacaannya.");
+    if (!pakaiAi) return setGalat("Membuat soal dari bacaan butuh AI, dan AI sedang tidak tersedia.");
+    setGalat(null);
+    setMerapikan(true);
+    try {
+      const hasil = await api.soalBacaan(sesi, {
+        kelas,
+        mapel: mapelAktif,
+        teks: bacaan,
+        n: Number(jumlahBacaan) as 5 | 10 | 15,
+        level: levelBacaan,
+        esai: Math.min(Number(esaiBacaan), Number(jumlahBacaan) - 1),
+      });
+      setSoal(hasil);
+      setTeksBerubah(false);
+      toast(`${hasil.length} soal dibuat dari bacaan. Cek dulu sebelum disimpan.`);
+      tampilkanCek();
+    } catch (e) {
+      const code = e instanceof ApiFailure ? e.code : "";
+      if (code === "admin_perlu") return onSesiHabis();
+      if (code === "ai_belum_siap") {
+        setPakaiAi(false);
+        setGalat("Membuat soal dari bacaan butuh AI, dan AI sedang tidak tersedia.");
+      } else if (code === "ditolak") setGalat("Bacaan itu tidak bisa diproses. Coba periksa isinya.");
+      else if (code === "kurang_lengkap") setGalat('Soalnya belum lengkap. Tekan "Buat soal dari bacaan" sekali lagi.');
+      else if (["terlalu_cepat", "terlalu_lama", "jatah_habis", "tidak_valid"].includes(code)) setGalat(apiMessage(e));
+      else setGalat('Soal belum berhasil dibuat. Tekan "Buat soal dari bacaan" sekali lagi.');
+    } finally {
+      setMerapikan(false);
+    }
   }
 
   /** Hasil baca foto/PDF: teks masuk ke kolom Soal, soal ke kartu "Cek dulu". */
@@ -297,7 +407,8 @@ export function EditorPaket({
 
   async function simpan() {
     if (!soal.length) return setGalat('Tekan "Rapikan soal" dulu supaya soalnya bisa dicek sebelum disimpan.');
-    if (teksBerubah) return setGalat('Teks soal berubah setelah dirapikan. Tekan "Rapikan soal" lagi supaya hasilnya ikut diperbarui.');
+    if (teksBerubah && !dariBacaan) return setGalat('Teks soal berubah setelah dirapikan. Tekan "Rapikan soal" lagi supaya hasilnya ikut diperbarui.');
+    if (dariBacaan && !teks.trim()) return setGalat("Bacaannya masih kosong. Bacaan ini yang akan dibaca anak saat mengerjakan.");
     const terbuka = soal.findIndex((q) => q.potongTerbuka);
     if (terbuka >= 0) return setGalat(`Gambar soal nomor ${terbuka + 1} belum selesai dipotong. Tekan "Pakai gambar ini" atau "Batal".`);
     setGalat(null);
@@ -333,7 +444,7 @@ export function EditorPaket({
     try {
       await api.simpanPaket(
         sesi,
-        { title: judul.trim() || judulBawaan(mapelAktif, kelas), kelas, subject: mapelAktif, sourceText: teks, questions: bersih, acakPilihan },
+        { title: judul.trim() || judulBawaan(mapelAktif, kelas), kelas, subject: mapelAktif, sourceText: teks, questions: bersih, acakPilihan, dariBacaan },
         paket?.id,
       );
       toast(`Tersimpan. Muncul untuk ${kelasShort(kelas)} di pelajaran ${mapelAktif}.`);
@@ -349,6 +460,21 @@ export function EditorPaket({
   return (
     <>
       <div className="card">
+        {(pakaiAi || dariBacaan) && (
+          <Segment
+            label="Cara membuat soal"
+            columns={2}
+            options={[
+              { value: "jadi", label: "Soal sudah ada" },
+              { value: "bacaan", label: "Buat dari bacaan" },
+            ]}
+            value={dariBacaan ? "bacaan" : "jadi"}
+            onChange={(v) => {
+              setDariBacaan(v === "bacaan");
+              setGalat(null);
+            }}
+          />
+        )}
         <div className="field">
           <label htmlFor={`${id}-judul`}>Judul paket</label>
           <input
@@ -390,11 +516,13 @@ export function EditorPaket({
           </select>
         </div>
         <div className="field">
-          <label htmlFor={`${id}-teks`}>Soal</label>
+          <label htmlFor={`${id}-teks`}>{dariBacaan ? "Bacaan atau materi" : "Soal"}</label>
           <textarea
             id={`${id}-teks`}
             maxLength={TEKS_ADMIN_MAKS}
-            placeholder={CONTOH}
+            placeholder={dariBacaan ? CONTOH_BACAAN : CONTOH}
+            className={dariBacaan ? "teks-bacaan" : undefined}
+            dir="auto"
             value={teks}
             onChange={(e) => {
               setTeks(e.target.value);
@@ -402,7 +530,9 @@ export function EditorPaket({
             }}
           />
           <span className="pv-note">
-            {pakaiAi
+            {dariBacaan
+              ? "Bacaan ini disimpan dan tampil di atas soal saat anak mengerjakan. Perbaiki kalau ada kata yang salah terbaca."
+              : pakaiAi
               ? "AI akan memecah teks jadi soal, pilihan, dan kunci jawaban. Kalau pilihan atau kunci belum ada, AI melengkapinya dan memberi tanda supaya bisa Anda cek."
               : 'Tulis setiap soal dengan nomor, pilihan A sampai D, dan baris "Kunci: ..." supaya bisa dibaca.'}
           </span>
@@ -427,22 +557,64 @@ export function EditorPaket({
               <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
               <circle cx="12" cy="13" r="3.5" />
             </svg>
-            {membaca ?? (pakaiAi ? "Foto / upload soal" : "Upload file Word (.docx)")}
+            {membaca ?? (dariBacaan ? "Foto / upload bacaan" : pakaiAi ? "Foto / upload soal" : "Upload file Word (.docx)")}
           </label>
           <span className="pv-note">
-            {pakaiAi
+            {dariBacaan
+              ? `Bisa foto (maksimal ${FOTO_MAKS} sekali unggah), satu PDF (maksimal ±3 MB), atau satu file Word (.docx). Hanya teks bacaannya yang disimpan; foto dan file dibuang. Hindari memotret nama, nama sekolah, atau wajah anak.`
+              : pakaiAi
               ? `Bisa foto (maksimal ${FOTO_MAKS} sekali unggah), satu PDF (maksimal ±3 MB), atau satu file Word (.docx). File hanya dibaca untuk mengambil soal, lalu dibuang (tidak disimpan). Hindari memotret nama, nama sekolah, atau wajah anak.`
               : "Teks soal di file Word (.docx) diambil di HP ini, lalu dibaca dari format nomor, pilihan, dan \"Kunci: ...\"."}
           </span>
         </div>
+        {dariBacaan && (
+          <>
+            <Segment
+              label="Jumlah soal"
+              options={[
+                { value: "5", label: "5 soal" },
+                { value: "10", label: "10 soal" },
+                { value: "15", label: "15 soal" },
+              ]}
+              value={jumlahBacaan}
+              onChange={setJumlahBacaan}
+            />
+            <Segment
+              label="Tingkat soal"
+              options={[
+                { value: "mudah", label: "Mudah" },
+                { value: "sedang", label: "Sedang" },
+                { value: "sulit", label: "Sulit" },
+              ]}
+              value={levelBacaan}
+              onChange={setLevelBacaan}
+            />
+            <div className="field">
+              <label htmlFor={`${id}-esai`}>Soal esai di antaranya</label>
+              <select id={`${id}-esai`} value={esaiBacaan} onChange={(e) => setEsaiBacaan(e.target.value as typeof esaiBacaan)}>
+                {Array.from({ length: ESAI_BACAAN_MAKS + 1 }, (_, k) => (
+                  <option key={k} value={String(k)}>
+                    {k === 0 ? "Tidak ada (semua pilihan ganda)" : `${k} soal esai (anak mengetik jawaban)`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
         {galat && (
           <p className="form-msg" role="alert">
             {galat}
           </p>
         )}
-        <button className="btn" type="button" onClick={() => rapikan()} disabled={merapikan || membaca !== null}>
-          {merapikan ? "Merapikan soal…" : "Rapikan soal"}
-        </button>
+        {dariBacaan ? (
+          <button className="btn" type="button" onClick={buatDariBacaan} disabled={merapikan || membaca !== null}>
+            {merapikan ? "Membuat soal dari bacaan…" : soal.length ? "Buat ulang soal dari bacaan" : "Buat soal dari bacaan"}
+          </button>
+        ) : (
+          <button className="btn" type="button" onClick={() => rapikan()} disabled={merapikan || membaca !== null}>
+            {merapikan ? "Merapikan soal…" : "Rapikan soal"}
+          </button>
+        )}
       </div>
 
       {soal.length > 0 && (
@@ -452,6 +624,7 @@ export function EditorPaket({
             <span className="muted num">{soal.length} soal</span>
           </div>
           <p className="pv-note">
+            {dariBacaan && "Soal dibuat AI dari bacaan. Periksa apakah kunci jawabannya sesuai bacaan. "}
             Ketuk pilihan untuk menjadikannya kunci jawaban.
             {soal.some((q) => q.esai) && " Soal esai dinilai benar kalau semua poin wajib ada di jawaban anak (kata boleh beda) dan tidak ada fakta yang keliru."}
           </p>
@@ -470,7 +643,7 @@ export function EditorPaket({
             {soal.map((q, i) => (
               <li key={`${i}-${q.q}`} className={q.keyGuessed || (q.perluGambar && !adaGambar(q)) ? "pv-q warn" : "pv-q"}>
                 <p>
-                  {i + 1}. {q.q}
+                  {i + 1}. <TeksCampur teks={q.q} />
                 </p>
                 {q.esai && <span className="tag-esai">Esai · anak mengetik jawaban</span>}
                 {q.keyGuessed && <span className="pv-note warn">{q.esai ? "Jawaban dibuat AI. Mohon dicek." : "Kunci dipilih AI. Mohon dicek."}</span>}
@@ -538,11 +711,17 @@ export function EditorPaket({
                     onClick={() => pilihKunci(i, k)}
                   >
                     <span className="k">{HURUF[k]}.</span>
-                    <span>{o}</span>
+                    <span>
+                      <TeksCampur teks={o} />
+                    </span>
                   </button>
                 ))}
                 {q.esai && <EditorEsai nomor={i + 1} esai={q.esai} onUbah={(e) => ubahEsai(i, e)} />}
-                {q.explain && <p className="pv-note">Penjelasan: {q.explain}</p>}
+                {q.explain && (
+                  <p className="pv-note">
+                    Penjelasan: <TeksCampur teks={q.explain} />
+                  </p>
+                )}
                 <button type="button" className="linkbtn danger" onClick={() => hapusSoal(i)}>
                   Hapus soal ini
                 </button>

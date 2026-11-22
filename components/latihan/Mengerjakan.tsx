@@ -1,5 +1,6 @@
 "use client";
 
+import { TeksCampur } from "@/components/TeksCampur";
 import { useEffect, useId, useRef, useState } from "react";
 import { GambarSoal } from "@/components/GambarSoal";
 import { Pipo } from "@/components/Pipo";
@@ -45,6 +46,8 @@ export function Mengerjakan({
 }) {
   const n = paket.soal.length;
   const [i, setI] = useState(0);
+  /** Kartu bacaan (paket dari bacaan) terbuka di awal; pilihan anak bertahan antarsoal. */
+  const [bacaanTerbuka, setBacaanTerbuka] = useState(true);
   const [hasil, setHasil] = useState<(HasilJawab | null)[]>(() => Array(n).fill(null));
   const [judul, setJudul] = useState("");
   const [memeriksa, setMemeriksa] = useState<number | null>(null);
@@ -124,10 +127,23 @@ export function Mengerjakan({
 
       <HudDunia dunia={dunia} awal={awal} kini={kini} benar={benar} salah={salah} n={n} kena={kena} />
 
+      {paket.bacaan && (
+        <details className="card bacaan" open={bacaanTerbuka} onToggle={(e) => setBacaanTerbuka(e.currentTarget.open)}>
+          <summary>{bacaanTerbuka ? "Bacaan (ketuk untuk menutup)" : "Buka bacaan"}</summary>
+          <div className="bacaan-teks" dir="auto" tabIndex={0} aria-label="Isi bacaan">
+            {paket.bacaan.split(/\n\s*\n/).map((par, k) => (
+              <p key={k} dir="auto">
+                <TeksCampur teks={par.trim()} />
+              </p>
+            ))}
+          </div>
+        </details>
+      )}
+
       <section className="card" aria-label={`Soal ${i + 1}`}>
         {soal.gambarId && <GambarSoal key={soal.gambarId} id={soal.gambarId} alt={`Gambar untuk soal ${i + 1}`} />}
-        <p className="qtext" ref={teksSoal} tabIndex={-1}>
-          {soal.q}
+        <p className="qtext" ref={teksSoal} tabIndex={-1} dir="auto">
+          <TeksCampur teks={soal.q} />
         </p>
         {soal.jenis === "esai" ? (
           <div className="esai-jawab">
@@ -164,7 +180,9 @@ export function Mengerjakan({
                   onClick={() => jawab(k)}
                 >
                   <span className="k">{HURUF[k]}</span>
-                  <span>{o}</span>
+                  <span dir="auto">
+                    <TeksCampur teks={o} />
+                  </span>
                 </button>
               );
             })}
@@ -208,16 +226,22 @@ export function Mengerjakan({
               {bisaDitambah(h.esai).length > 0 && <p className="muted">Bisa ditambah: {bisaDitambah(h.esai).join("; ")}.</p>}
               {h.esai.contoh && (
                 <p className="key">
-                  Contoh jawaban: <span className="esai-contoh-teks">{h.esai.contoh}</span>
+                  Contoh jawaban: <span className="esai-contoh-teks">
+                    <TeksCampur teks={h.esai.contoh} />
+                  </span>
                 </p>
               )}
             </>
           ) : (
             <p className="key">
-              Jawaban yang benar: {HURUF[h.answer]}. {soal.options[h.answer]}
+              Jawaban yang benar: {HURUF[h.answer]}. <TeksCampur teks={soal.options[h.answer]} />
             </p>
           )}
-          {h.explain && <p>{h.explain}</p>}
+          {h.explain && (
+            <p>
+              <TeksCampur teks={h.explain} />
+            </p>
+          )}
           <button type="button" className="btn" onClick={lanjut}>
             {terakhir ? "Lihat hasil" : "Soal berikutnya"}
           </button>

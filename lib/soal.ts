@@ -59,6 +59,8 @@ export type PaketSesi = {
   /** Paket soal pilihan asal (untuk sumber `set` dan `set_similar`). */
   setId: string | null;
   soal: SoalTanpaKunci[];
+  /** Bacaan yang ditampilkan di atas soal (paket soal pilihan yang dibuat dari bacaan). */
+  bacaan?: string;
 };
 
 export const jawabSchema = z

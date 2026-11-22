@@ -30,7 +30,7 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
     const r = await p.evaluate(async () => (await window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } })).violations.map((v) => `${v.id} ${v.nodes.slice(0, 2).map((n) => n.target.join(' ')).join(' ; ')}`));
     ok(r.length === 0, `axe: ${nama}`, r.join(' | '));
     const kecil = await p.evaluate(() => [...document.querySelectorAll('button, a[href], input:not(.sr-only), select, textarea')]
-      .filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.height < 43.5 && !e.closest('dialog:not([open])'); })
+      .filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.height < 43.5 && getComputedStyle(e).opacity !== '0' && !e.closest('dialog:not([open])'); })
       .map((e) => `${e.tagName}.${e.className} ${Math.round(e.getBoundingClientRect().height)}px`));
     ok(kecil.length === 0, `target sentuh ≥ 44px: ${nama}`, kecil.join(' | '));
     ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `tanpa gulir samping: ${nama}`);

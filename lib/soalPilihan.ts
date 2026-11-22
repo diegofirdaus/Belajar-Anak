@@ -55,6 +55,8 @@ export type PaketPilihan = {
   questions: SoalPilihan[];
   /** Acak urutan pilihan setiap kali dikerjakan (bawaan menyala; paket lama tanpa field = menyala). */
   acakPilihan: boolean;
+  /** Soal dibuat AI dari bacaan/materi di `sourceText`; bacaan ditampilkan ke anak saat mengerjakan. */
+  dariBacaan: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -94,8 +96,10 @@ export const paketSchema = z
     sourceText: z.string().max(TEKS_ADMIN_MAKS),
     questions: z.array(soalPilihanSchema).min(1, "Belum ada soal yang bisa disimpan.").max(SOAL_PER_PAKET_MAKS),
     acakPilihan: z.boolean().default(true),
+    dariBacaan: z.boolean().default(false),
   })
   .strict()
+  .refine((p) => !p.dariBacaan || p.sourceText.trim().length > 0, "Bacaannya masih kosong.")
   .refine((p) => MAPEL[jenjangOf(p.kelas)].includes(p.subject), "Mata pelajaran tidak tersedia untuk kelas ini.");
 export type PaketBaru = z.infer<typeof paketSchema>;
 
@@ -109,6 +113,31 @@ export const rapikanSchema = z
       .pipe(z.string().min(1, "Ketik atau tempel soalnya dulu, ya.").max(TEKS_ADMIN_MAKS, "Teks soal terlalu panjang (maksimal 20.000 karakter).")),
   })
   .strict();
+
+/** Soal dari bacaan (fitur "Buat soal dari bacaan"): jumlah soal dan soal esai yang bisa dipilih orang tua. */
+export const JUMLAH_SOAL_BACAAN = [5, 10, 15] as const;
+export const ESAI_BACAAN_MAKS = 3;
+export const BACAAN_MIN = 80;
+
+export const soalBacaanSchema = z
+  .object({
+    kelas: z.number().int().min(1).max(12),
+    mapel: z.string().min(1).max(40),
+    teks: z
+      .string()
+      .transform((s) => s.trim())
+      .pipe(
+        z
+          .string()
+          .min(BACAAN_MIN, "Bacaannya terlalu pendek untuk dibuatkan soal. Tambahkan minimal beberapa kalimat.")
+          .max(TEKS_ADMIN_MAKS, "Bacaan terlalu panjang (maksimal 20.000 karakter)."),
+      ),
+    n: z.union([z.literal(5), z.literal(10), z.literal(15)]),
+    level: z.enum(["mudah", "sedang", "sulit"]),
+    esai: z.number().int().min(0).max(ESAI_BACAAN_MAKS),
+  })
+  .strict()
+  .refine((p) => p.esai < p.n, "Jumlah soal esai harus lebih sedikit dari jumlah soal.");
 
 export const pinSchema = z.object({ pin: z.string().regex(/^\d{4}$/, "PIN harus 4 angka.") }).strict();
 

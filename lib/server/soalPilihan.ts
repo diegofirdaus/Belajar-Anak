@@ -20,6 +20,7 @@ function toPaket(d: DocumentSnapshot): PaketPilihan {
     sourceText: x.sourceText ?? "",
     questions: (x.questions ?? []) as SoalPilihan[],
     acakPilihan: x.acakPilihan !== false,
+    dariBacaan: x.dariBacaan === true,
     createdAt: iso(x.createdAt),
     updatedAt: iso(x.updatedAt),
   };
@@ -40,6 +41,7 @@ const isi = (p: PaketBaru) => ({
   sourceText: p.sourceText,
   questions: p.questions,
   acakPilihan: p.acakPilihan,
+  dariBacaan: p.dariBacaan,
   updatedAt: FieldValue.serverTimestamp(),
 });
 

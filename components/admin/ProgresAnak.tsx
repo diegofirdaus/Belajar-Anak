@@ -1,5 +1,6 @@
 "use client";
 
+import { TeksCampur } from "@/components/TeksCampur";
 import { useEffect, useId, useMemo, useState } from "react";
 import { api, apiMessage, ApiFailure } from "@/lib/api";
 import type { DetailSoal } from "@/lib/esai";
@@ -623,20 +624,20 @@ function BarisRiwayat({ x, anak, sesi, onSesiHabis }: { x: Riwayat; anak: Progre
                 return (
                   <li key={i} className={benar ? "pv-q" : "pv-q salah"}>
                     <p>
-                      {i + 1}. {d.q}
+                      {i + 1}. <TeksCampur teks={d.q} />
                     </p>
                     <p className="small">
                       {d.pilihan === null ? (
                         <span className="muted">Tidak dijawab.</span>
                       ) : (
                         <>
-                          Jawaban {anak.name}: <b>{benar ? "✓ Benar" : "✗ Salah"}</b> · {HURUF[d.pilihan]}. {d.options[d.pilihan]}
+                          Jawaban {anak.name}: <b>{benar ? "✓ Benar" : "✗ Salah"}</b> · {HURUF[d.pilihan]}. <TeksCampur teks={d.options[d.pilihan]} />
                         </>
                       )}
                     </p>
                     {!benar && (
                       <p className="small">
-                        Kunci: <b>{HURUF[d.answer]}. {d.options[d.answer]}</b>
+                        Kunci: <b>{HURUF[d.answer]}. <TeksCampur teks={d.options[d.answer]} /></b>
                       </p>
                     )}
                   </li>
@@ -669,7 +670,7 @@ function SoalEsaiRiwayat({
   return (
     <li className={benar ? "pv-q" : "pv-q salah"}>
       <p>
-        {nomor + 1}. {d.q} <span className="tag-esai">Esai</span>
+        {nomor + 1}. <TeksCampur teks={d.q} /> <span className="tag-esai">Esai</span>
       </p>
       {!e ? (
         <p className="small muted">Tidak dijawab.</p>

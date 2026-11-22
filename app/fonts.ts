@@ -1,4 +1,4 @@
-import { Chakra_Petch, Lilita_One, Nunito, Orbitron, Pixelify_Sans } from "next/font/google";
+import { Chakra_Petch, Lilita_One, Noto_Naskh_Arabic, Nunito, Orbitron, Pixelify_Sans } from "next/font/google";
 
 export const nunito = Nunito({
   subsets: ["latin"],
@@ -31,4 +31,13 @@ export const lilita = Lilita_One({
   display: "swap",
 });
 
-export const fontVariables = [nunito, pixelify, chakra, orbitron, lilita].map((f) => f.variable).join(" ");
+/** Huruf Arab (soal Pendidikan Agama Islam / Islamic Studies): Naskh jelas untuk harakat. */
+export const naskh = Noto_Naskh_Arabic({
+  subsets: ["arabic"],
+  weight: ["400", "700"],
+  variable: "--font-arab",
+  display: "swap",
+  preload: false,
+});
+
+export const fontVariables = [nunito, pixelify, chakra, orbitron, lilita, naskh].map((f) => f.variable).join(" ");
