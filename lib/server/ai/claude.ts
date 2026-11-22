@@ -27,6 +27,9 @@ const EFFORT_SOAL = (): Effort => (process.env.AI_EFFORT_SOAL as Effort) || "med
 /** Level sulit dan olimpiade berpikir lebih dalam agar soalnya benar-benar menantang. */
 export const EFFORT_SULIT = (): Effort => (process.env.AI_EFFORT_SULIT as Effort) || "high";
 
+/** Batas pengeluaran bulanan di Claude Console tercapai (bukan galat permintaan). */
+const batasPemakaian = (e: InstanceType<typeof Anthropic.APIError>) => /usage limits?/i.test(e.message);
+
 /** Model yang mendukung server-side fallback mode "default" (Haiku 5.5 tidak). */
 const bisaFallback = (model: string) => /^claude-(sonnet-5-5|opus-5|fable-5)/.test(model);
 
@@ -63,20 +66,42 @@ export async function mintaJson(p: {
     ...(p.pdf ? [{ type: "document" as const, source: { type: "base64" as const, media_type: "application/pdf" as const, data: p.pdf } }] : []),
   ];
   const content: Anthropic.Beta.BetaContentBlockParam[] | string = lampiran.length ? [...lampiran, { type: "text" as const, text: p.prompt }] : p.prompt;
-  try {
-    res = await c.beta.messages.create(
+  /**
+   * `dasar`: permintaan paling sederhana (tanpa fallback beta dan tanpa effort), dipakai sekali
+   * kalau permintaan lengkap ditolak 400 — supaya pengaturan tambahan tidak memblokir pekerjaan anak/orang tua.
+   */
+  const kirim = (dasar: boolean) =>
+    c.beta.messages.create(
       {
         model: p.model,
         max_tokens: p.maksToken ?? 16000,
-        output_config: { effort: p.effort ?? EFFORT_SOAL(), format: { type: "json_schema", schema: p.skema } },
+        output_config: dasar
+          ? { format: { type: "json_schema", schema: p.skema } }
+          : { effort: p.effort ?? EFFORT_SOAL(), format: { type: "json_schema", schema: p.skema } },
         messages: [{ role: "user", content }],
         // Penolakan kategori cyber/frontier_llm dicoba ulang di model lain oleh server Anthropic.
-        ...(bisaFallback(p.model) ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
+        ...(!dasar && bisaFallback(p.model) ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}),
       },
       p.waktuMaks ? { timeout: p.waktuMaks, maxRetries: 0 } : undefined,
     );
+  try {
+    try {
+      res = await kirim(false);
+    } catch (e) {
+      if (!(e instanceof Anthropic.BadRequestError) || batasPemakaian(e)) throw e;
+      console.error("Claude menolak permintaan (400), dicoba ulang tanpa pengaturan tambahan:", e.message);
+      res = await kirim(true);
+    }
   } catch (e) {
-    if (e instanceof Anthropic.APIConnectionTimeoutError) throw new ApiError("terlalu_lama");
+    if (e instanceof Anthropic.APIConnectionTimeoutError) {
+      console.error(`Claude melewati batas waktu (${p.model}, ${p.waktuMaks ?? 55_000} ms).`);
+      throw new ApiError("terlalu_lama");
+    }
+    if (e instanceof Anthropic.APIError && batasPemakaian(e)) {
+      const tanggal = /(\d{4}-\d{2}-\d{2})/.exec(e.message)?.[1];
+      console.error("Batas pemakaian Claude API tercapai:", e.message);
+      throw new ApiError("batas_api", tanggal ?? undefined);
+    }
     if (e instanceof Anthropic.RateLimitError) throw new ApiError("terlalu_cepat");
     if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {
       console.error("Kunci Claude API ditolak:", e.message);
@@ -84,7 +109,12 @@ export async function mintaJson(p: {
     }
     if (e instanceof Anthropic.APIError && e.status === 529) throw new ApiError("terlalu_cepat");
     console.error("Permintaan ke Claude gagal:", e);
-    throw new ApiError("gangguan");
+    // Kode singkat untuk ditampilkan ke orang tua (tanpa isi permintaan), supaya penyebab bisa dilacak.
+    const isi = e instanceof Anthropic.APIError ? (e.error as { error?: { type?: string; message?: string } } | undefined)?.error : undefined;
+    // Pesan galat Anthropic hanya menyebut bagian permintaan yang tidak sah (bukan isi foto/teks); dipotong pendek.
+    const alasan = (isi?.message ?? "").replace(/\s+/g, " ").slice(0, 160);
+    const detail = e instanceof Anthropic.APIError ? `AI ${e.status ?? "?"} ${isi?.type ?? ""}${alasan ? `: ${alasan}` : ""}`.trim() : `AI ${e instanceof Error ? e.name : "galat"}`;
+    throw new ApiError("gangguan", detail);
   }
 
   const pemakaian = {
@@ -93,12 +123,18 @@ export async function mintaJson(p: {
     cacheBaca: res.usage.cache_read_input_tokens ?? 0,
   };
   if (res.stop_reason === "refusal") throw new ApiError("ditolak", undefined, { model: res.model, pemakaian });
+  // Balasan terpotong karena jatah token habis: JSON pasti tidak utuh.
+  if (res.stop_reason === "max_tokens") {
+    console.error(`Balasan Claude terpotong (max_tokens) ${res.model}: keluar ${pemakaian.keluar} token.`);
+    throw new ApiError("terlalu_panjang", undefined, { model: res.model, pemakaian });
+  }
 
   const teks = res.content.map((b) => (b.type === "text" ? b.text : "")).join("");
   let data: unknown;
   try {
     data = JSON.parse(teks);
   } catch {
+    console.error(`Balasan Claude bukan JSON utuh (${res.model}, stop: ${res.stop_reason}, ${teks.length} huruf).`);
     throw new ApiError("json_rusak", undefined, { model: res.model, pemakaian });
   }
   return { data, model: res.model, pemakaian };

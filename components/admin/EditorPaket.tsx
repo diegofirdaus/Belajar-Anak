@@ -50,9 +50,12 @@ type SoalEditor = SoalPilihan & {
   /** Potongan yang sudah dipilih tapi belum diunggah (base64 JPEG). */
   gambarBaru?: string;
   potongTerbuka?: boolean;
+  /** Pilihan yang ditandai di lembar foto/PDF (jawaban anak/kunci tertulis), -1 = tidak ada tanda. Pembanding kunci AI. */
+  tandaFoto?: number;
 };
 
-const keSoal = ({ kotakUsulan: _k, gambarBaru: _g, potongTerbuka: _p, ...q }: SoalEditor): SoalPilihan => q;
+const keSoal = ({ kotakUsulan: _k, gambarBaru: _g, potongTerbuka: _p, tandaFoto: _t, ...q }: SoalEditor): SoalPilihan => q;
+const denganTanda = (q: SoalPilihan, t: number | null | undefined): SoalEditor => (q.jenis === "esai" ? q : { ...q, tandaFoto: t ?? -1 });
 const adaGambar = (q: SoalEditor) => Boolean(q.gambarBaru || q.gambarId);
 const kurangiGerak = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -243,8 +246,8 @@ export function EditorPaket({
         setGalat("Membuat soal dari bacaan butuh AI, dan AI sedang tidak tersedia.");
       } else if (code === "ditolak") setGalat("Bacaan itu tidak bisa diproses. Coba periksa isinya.");
       else if (code === "kurang_lengkap") setGalat('Soalnya belum lengkap. Tekan "Buat soal dari bacaan" sekali lagi.');
-      else if (["terlalu_cepat", "terlalu_lama", "jatah_habis", "tidak_valid"].includes(code)) setGalat(apiMessage(e));
-      else setGalat('Soal belum berhasil dibuat. Tekan "Buat soal dari bacaan" sekali lagi.');
+      else if (["terlalu_cepat", "terlalu_lama", "jatah_habis", "tidak_valid", "batas_api"].includes(code)) setGalat(apiMessage(e));
+      else setGalat(`Soal belum berhasil dibuat (kode: ${e instanceof ApiFailure && e.message !== e.code ? e.message : e instanceof ApiFailure ? e.code : "jaringan"}). Tekan "Buat soal dari bacaan" sekali lagi.`);
     } finally {
       setMerapikan(false);
     }
@@ -277,9 +280,20 @@ export function EditorPaket({
     } else if (code === "kurang_lengkap")
       setGalat(sumber === "foto" ? "Tidak ada soal yang terbaca dari foto. Coba foto lebih dekat dan terang, satu halaman per foto." : "Tidak ada soal yang terbaca dari PDF itu.");
     else if (code === "ditolak") setGalat(`${sumber === "foto" ? "Foto" : "PDF"} itu tidak bisa diproses. Coba halaman soal yang lain.`);
-    else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid") setGalat(apiMessage(e));
+    else if (code === "terlalu_lama" || code === "terlalu_panjang")
+      setGalat(
+        sumber === "foto"
+          ? "Halaman ini terlalu padat untuk dibaca sekaligus. Coba foto setengah halaman saja (misalnya kolom kiri dulu, lalu kolom kanan), atau kirim fotonya satu per satu. Jatah tidak berkurang."
+          : "PDF ini terlalu panjang untuk dibaca sekaligus. Simpan ulang beberapa halaman saja, lalu unggah lagi. Jatah tidak berkurang.",
+      );
+    else if (code === "json_rusak") setGalat(`Hasil bacaan ${sumber} belum tersusun rapi. Coba sekali lagi; kalau tetap gagal, foto lebih dekat atau setengah halaman saja.`);
+    else if (code === "jaringan") setGalat("Koneksi terputus saat mengirim. Pastikan internet stabil, lalu coba lagi.");
+    else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid" || code === "batas_api") setGalat(apiMessage(e));
     else if (!(e instanceof ApiFailure)) setGalat(e instanceof Error ? e.message : "File tidak bisa dibuka.");
-    else setGalat(`${sumber === "foto" ? "Foto" : "PDF"} belum berhasil dibaca. Coba sekali lagi.`);
+    else {
+      const kode = e.message && e.message !== code ? e.message : code;
+      setGalat(`${sumber === "foto" ? "Foto" : "PDF"} belum berhasil dibaca (kode: ${kode}). Coba sekali lagi; kalau tetap gagal, kirimkan kode ini.`);
+    }
   }
 
   /** Foto: dibaca AI; foto disimpan di memori untuk memotong gambar soal, tidak disimpan di server. */
@@ -292,7 +306,8 @@ export function EditorPaket({
       const hasil = await api.bacaFoto(sesi, { kelas, mapel: mapelAktif, gambar });
       const awalFoto = foto.length;
       setFoto((f) => [...f, ...gambar.map((g) => `data:image/jpeg;base64,${g.data}`)]);
-      const soalFoto: SoalEditor[] = hasil.soal.map((q, i) => {
+      const soalFoto: SoalEditor[] = hasil.soal.map((q0, i) => {
+        const q = denganTanda(q0, hasil.tanda?.[i]);
         const k = hasil.kotak?.[i];
         return k ? { ...q, kotakUsulan: { ...k, foto: k.foto + awalFoto }, potongTerbuka: true } : q;
       });
@@ -319,7 +334,7 @@ export function EditorPaket({
       const catatan = catatanAwal ? [catatanAwal] : [];
       if (hasil.soal.some((q) => q.perluGambar))
         catatan.push('Ada soal yang butuh gambar: tambahkan gambarnya lewat "+ Tambah gambar dari foto" (bisa dari tangkapan layar PDF).');
-      terapkanBacaan(hasil, hasil.soal, "PDF", catatan);
+      terapkanBacaan(hasil, hasil.soal.map((q, i) => denganTanda(q, hasil.tanda?.[i])), "PDF", catatan);
     } catch (e) {
       galatBaca(e, "PDF");
     } finally {
@@ -370,8 +385,8 @@ export function EditorPaket({
         setPakaiAi(false);
         bacaTanpaAi('AI belum bisa dipakai, jadi soal dibaca dari format nomor, pilihan, dan "Kunci: ...". ', teksDipakai);
       } else if (code === "ditolak") setGalat("Teks itu tidak bisa diproses. Coba periksa isinya.");
-      else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid") setGalat(apiMessage(e));
-      else setGalat('Soal belum berhasil dirapikan. Tekan "Rapikan soal" sekali lagi.');
+      else if (["terlalu_cepat", "jatah_habis", "tidak_valid", "batas_api", "terlalu_lama"].includes(code)) setGalat(apiMessage(e));
+      else setGalat(`Soal belum berhasil dirapikan (kode: ${e instanceof ApiFailure && e.message !== e.code ? e.message : e instanceof ApiFailure ? e.code : "jaringan"}). Tekan "Rapikan soal" sekali lagi.`);
     } finally {
       setMerapikan(false);
     }
@@ -646,7 +661,17 @@ export function EditorPaket({
                   {i + 1}. <TeksCampur teks={q.q} />
                 </p>
                 {q.esai && <span className="tag-esai">Esai · anak mengetik jawaban</span>}
-                {q.keyGuessed && <span className="pv-note warn">{q.esai ? "Jawaban dibuat AI. Mohon dicek." : "Kunci dipilih AI. Mohon dicek."}</span>}
+                {q.keyGuessed && (
+                  <span className="pv-note warn">
+                    {q.esai
+                      ? "Jawaban dibuat AI. Mohon dicek."
+                      : q.tandaFoto !== undefined && q.tandaFoto >= 0 && q.tandaFoto !== q.answer
+                        ? `Di foto ditandai ${HURUF[q.tandaFoto]}, tapi menurut AI jawaban yang benar ${HURUF[q.answer]}. Mohon dicek.`
+                        : q.tandaFoto === -1
+                          ? "Tidak ada tanda jawaban di foto, jadi kunci dipilih AI. Mohon dicek."
+                          : "Kunci dipilih AI. Mohon dicek."}
+                  </span>
+                )}
                 {q.perluGambar && !adaGambar(q) && !q.potongTerbuka && (
                   <span className="pv-note warn">Soal ini butuh gambar. Potong gambarnya dari foto, atau hapus/ubah soalnya supaya tanpa gambar.</span>
                 )}

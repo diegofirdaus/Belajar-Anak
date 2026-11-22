@@ -24,6 +24,9 @@ export function apiMessage(e: unknown, konteks?: "soal"): string {
   if (code === "jatah_habis")
     return e instanceof ApiFailure && e.message !== code ? e.message : "Jatah membuat soal hari ini sudah habis. Besok bisa lagi, ya!";
   if (code === "terlalu_cepat") return "Terlalu banyak permintaan barusan. Tunggu sebentar, lalu coba lagi.";
+  if (code === "batas_api") return "Koneksi terputus karena limit habis. Hubungi orang tuamu.";
+  if (code === "terlalu_panjang")
+    return "Isinya terlalu banyak untuk dibuat sekaligus. Coba lebih sedikit soal atau halaman dalam sekali kirim.";
   if (code === "terlalu_lama") return "Pembuat soal butuh waktu terlalu lama kali ini. Jatahmu tidak berkurang. Coba lagi, ya.";
   if (code === "ditolak")
     return 'Materi itu tidak bisa dibuatkan soal. Coba tulis materi pelajaran sekolah, misalnya "pecahan" atau "sistem pernapasan".';
@@ -60,7 +63,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   }
   const body = await res.json().catch(() => ({}));
   if (init?.signal?.aborted) throw new ApiFailure("batal");
-  if (!res.ok) throw new ApiFailure(body.error ?? "gangguan", body.message);
+  // Balasan bukan JSON (mis. batas waktu/ukuran platform): sertakan status HTTP untuk dilacak.
+  if (!res.ok) throw new ApiFailure(body.error ?? "gangguan", body.message ?? (body.error ? undefined : `HTTP ${res.status}`));
   return body as T;
 }
 
@@ -108,7 +112,7 @@ export const api = {
   hapusPaket: (sesi: string, id: string) =>
     call<{ ok: true }>(`/api/admin/soal-pilihan/${encodeURIComponent(id)}`, { method: "DELETE", headers: adminHeader(sesi) }),
   bacaFoto: (sesi: string, b: { kelas: number; mapel: string; gambar?: { media_type: "image/jpeg"; data: string }[]; pdf?: { data: string } }) =>
-    call<{ teks: string; soal: SoalPilihan[]; kotak: (Kotak | null)[] }>("/api/admin/baca-foto", { method: "POST", body: JSON.stringify(b), headers: adminHeader(sesi) }),
+    call<{ teks: string; soal: SoalPilihan[]; kotak: (Kotak | null)[]; tanda?: (number | null)[] }>("/api/admin/baca-foto", { method: "POST", body: JSON.stringify(b), headers: adminHeader(sesi) }),
   salinBacaan: (sesi: string, b: { kelas: number; mapel: string; gambar?: { media_type: "image/jpeg"; data: string }[]; pdf?: { data: string } }) =>
     call<{ teks: string }>("/api/admin/salin-bacaan", { method: "POST", body: JSON.stringify(b), headers: adminHeader(sesi) }).then((r) => r.teks),
   soalBacaan: (sesi: string, b: { kelas: number; mapel: string; teks: string; n: 5 | 10 | 15; level: "mudah" | "sedang" | "sulit"; esai: number }) =>

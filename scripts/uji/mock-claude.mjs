@@ -55,6 +55,7 @@ http.createServer((req, res) => {
         ? { jenis: 'pilihan', q: `Menurut bacaan, soal ${i + 1}?`, options: [`Benar ${i + 1}`, `Salah A${i}`, `Salah B${i}`, `Salah C${i}`], answer: 0, explain: 'Lihat paragraf kedua.', keyGuessed: true, optionsAdded: true, contohJawaban: '', poinWajib: [], poinPelengkap: [] }
         : { jenis: 'esai', q: `Jelaskan isi bacaan ${i + 1}!`, options: [], answer: 0, explain: 'Ringkas isinya.', keyGuessed: true, optionsAdded: false, contohJawaban: 'Tumbuhan membuat makanan sendiri.', poinWajib: ['Tumbuhan membuat makanan sendiri'], poinPelengkap: [] }) }));
     }
+    if (prompt.includes('batasapi')) return kirim(400, { type: 'error', error: { type: 'invalid_request_error', message: 'You have reached your specified API usage limits. You will regain access on 2026-12-01 at 00:00 UTC.' } });
     if (prompt.includes('lambat')) return setTimeout(() => pesan(JSON.stringify({ soal: Array.from({ length: n }, (_, i) => soal(i)) })), 4000);
     if (prompt.includes('sibuk')) return kirim(429, { type: 'error', error: { type: 'rate_limit_error', message: 'tiruan' } });
     if (prompt.includes('kuncisalah')) return kirim(401, { type: 'error', error: { type: 'authentication_error', message: 'tiruan' } });
@@ -76,14 +77,20 @@ http.createServer((req, res) => {
         ],
       }));
     }
+    // Pengaturan tambahan ditolak (400) hanya kalau permintaan memakai fallback beta: foto tepat 1700 karakter base64.
+    if (prompt.includes('difoto orang tua') && foto.some((f) => f.source.data.length === 1700) && (b.fallbacks || b.output_config?.effort)) return kirim(400, { type: 'error', error: { type: 'invalid_request_error', message: 'fallbacks: not supported' } });
+    // Gambar ditolak API (400): foto berukuran tepat 1600 karakter base64.
+    if (prompt.includes('difoto orang tua') && foto.some((f) => f.source.data.length === 1600)) return kirim(400, { type: 'error', error: { type: 'invalid_request_error', message: 'Could not process image' } });
+    // Halaman padat: balasan terpotong karena jatah token habis (foto berukuran tepat 1500 byte base64 → 1124 byte).
+    if (prompt.includes('difoto orang tua') && foto.some((f) => f.source.data.length === 1500)) return pesan('{"soal":[{"q":"terpotong', 'max_tokens');
     if (prompt.includes('difoto orang tua')) {
       if (prompt.includes('mata pelajaran') === false) return pesan(JSON.stringify({ teks: '', soal: [] }));
       return pesan(JSON.stringify({
         teks: `1. Hasil dari 1/2 + 1/4 adalah...\nA. 3/4\nB. 2/6\nC. 1/6\nD. 2/4\nKunci: A\n\n2. Perhatikan gambar. Berapa banyak segitiga?\n\n3. Ada ${foto.length} foto soal.`,
         soal: [
-          { q: 'Hasil dari 1/2 + 1/4 adalah...', options: ['3/4', '2/6', '1/6', '2/4'], answer: 0, explain: '1/2 = 2/4, lalu 2/4 + 1/4 = 3/4.', keyGuessed: false, optionsAdded: false, perluGambar: false },
-          { q: 'Perhatikan gambar. Berapa banyak segitiga?', options: ['3', '4', '5', '6'], answer: 1, explain: 'Hitung semua segitiga.', keyGuessed: true, optionsAdded: true, perluGambar: true, gambar: { foto: foto.length, x1: 100, y1: 200, x2: 600, y2: 700 } },
-          { q: `Ada ${foto.length} foto soal.`, options: ['Benar', 'Salah'], answer: 0, explain: '', keyGuessed: false, optionsAdded: false, perluGambar: false },
+          { q: 'Hasil dari 1/2 + 1/4 adalah...', options: ['3/4', '2/6', '1/6', '2/4'], answer: 0, explain: '1/2 = 2/4, lalu 2/4 + 1/4 = 3/4.', keyGuessed: true, optionsAdded: false, perluGambar: false, tandaFoto: 0 },
+          { q: 'Perhatikan gambar. Berapa banyak segitiga?', options: ['3', '4', '5', '6'], answer: 1, explain: 'Hitung semua segitiga.', keyGuessed: true, optionsAdded: true, perluGambar: true, tandaFoto: 2, gambar: { foto: foto.length, x1: 100, y1: 200, x2: 600, y2: 700 } },
+          { q: `Ada ${foto.length} foto soal.`, options: ['Benar', 'Salah'], answer: 0, explain: '', keyGuessed: true, optionsAdded: false, perluGambar: false, tandaFoto: -1 },
         ],
       }));
     }

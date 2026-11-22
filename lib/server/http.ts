@@ -15,6 +15,8 @@ export type ApiErrorCode =
   | "jatah_habis"
   | "terlalu_cepat"
   | "terlalu_lama"
+  | "terlalu_panjang"
+  | "batas_api"
   | "ditolak"
   | "json_rusak"
   | "kurang_lengkap"
@@ -34,6 +36,8 @@ const STATUS: Record<ApiErrorCode, number> = {
   jatah_habis: 429,
   terlalu_cepat: 429,
   terlalu_lama: 504,
+  terlalu_panjang: 502,
+  batas_api: 503,
   ditolak: 422,
   json_rusak: 502,
   kurang_lengkap: 502,
@@ -68,6 +72,6 @@ export function handle(fn: () => Promise<Response>): Promise<Response> {
       return json({ error: "server_belum_siap" }, { status: 503 });
     }
     console.error(e);
-    return json({ error: "gangguan" }, { status: 500 });
+    return json({ error: "gangguan", message: `server ${e instanceof Error ? e.name : "galat"}` }, { status: 500 });
   });
 }

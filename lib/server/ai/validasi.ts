@@ -82,14 +82,19 @@ export function saringRapikan(mentah: unknown): SoalPilihan[] {
  * Seperti `saringRapikan`, ditambah usulan kotak gambar per soal dari baca foto
  * (hanya untuk soal `perluGambar`; tidak ikut disimpan di paket).
  */
-export function saringDenganKotak(mentah: unknown, jumlahFoto: number): { soal: SoalPilihan; kotak: Kotak | null }[] {
+export function saringDenganKotak(
+  mentah: unknown,
+  jumlahFoto: number,
+): { soal: SoalPilihan; kotak: Kotak | null; tanda: number | null }[] {
   if (!Array.isArray(mentah)) return [];
-  const hasil: { soal: SoalPilihan; kotak: Kotak | null }[] = [];
+  const hasil: { soal: SoalPilihan; kotak: Kotak | null; tanda: number | null }[] = [];
   for (const item of mentah.slice(0, SOAL_PER_PAKET_MAKS)) {
     const h = soalPilihanSchema.safeParse(dariAi(item));
     if (!h.success) continue;
     const kotak = h.data.perluGambar ? kotakDariAi((item as { gambar?: unknown }).gambar, jumlahFoto) : null;
-    hasil.push({ soal: h.data, kotak });
+    const t = (item as { tandaFoto?: unknown }).tandaFoto;
+    const tanda = h.data.jenis !== "esai" && Number.isInteger(t) && (t as number) >= 0 && (t as number) < h.data.options.length ? (t as number) : null;
+    hasil.push({ soal: h.data, kotak, tanda });
   }
   return hasil;
 }
