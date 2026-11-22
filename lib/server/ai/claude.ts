@@ -88,8 +88,10 @@ export async function mintaJson(p: {
     if (e instanceof Anthropic.APIError && e.status === 529) throw new ApiError("terlalu_cepat");
     console.error("Permintaan ke Claude gagal:", e);
     // Kode singkat untuk ditampilkan ke orang tua (tanpa isi permintaan), supaya penyebab bisa dilacak.
-    const jenis = e instanceof Anthropic.APIError ? ((e.error as { error?: { type?: string } } | undefined)?.error?.type ?? "") : "";
-    const detail = e instanceof Anthropic.APIError ? `AI ${e.status ?? "?"} ${jenis}`.trim() : `AI ${e instanceof Error ? e.name : "galat"}`;
+    const isi = e instanceof Anthropic.APIError ? (e.error as { error?: { type?: string; message?: string } } | undefined)?.error : undefined;
+    // Pesan galat Anthropic hanya menyebut bagian permintaan yang tidak sah (bukan isi foto/teks); dipotong pendek.
+    const alasan = (isi?.message ?? "").replace(/\s+/g, " ").slice(0, 160);
+    const detail = e instanceof Anthropic.APIError ? `AI ${e.status ?? "?"} ${isi?.type ?? ""}${alasan ? `: ${alasan}` : ""}`.trim() : `AI ${e instanceof Error ? e.name : "galat"}`;
     throw new ApiError("gangguan", detail);
   }
 
