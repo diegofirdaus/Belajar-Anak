@@ -55,6 +55,7 @@ http.createServer((req, res) => {
         ? { jenis: 'pilihan', q: `Menurut bacaan, soal ${i + 1}?`, options: [`Benar ${i + 1}`, `Salah A${i}`, `Salah B${i}`, `Salah C${i}`], answer: 0, explain: 'Lihat paragraf kedua.', keyGuessed: true, optionsAdded: true, contohJawaban: '', poinWajib: [], poinPelengkap: [] }
         : { jenis: 'esai', q: `Jelaskan isi bacaan ${i + 1}!`, options: [], answer: 0, explain: 'Ringkas isinya.', keyGuessed: true, optionsAdded: false, contohJawaban: 'Tumbuhan membuat makanan sendiri.', poinWajib: ['Tumbuhan membuat makanan sendiri'], poinPelengkap: [] }) }));
     }
+    if (prompt.includes('batasapi')) return kirim(400, { type: 'error', error: { type: 'invalid_request_error', message: 'You have reached your specified API usage limits. You will regain access on 2026-12-01 at 00:00 UTC.' } });
     if (prompt.includes('lambat')) return setTimeout(() => pesan(JSON.stringify({ soal: Array.from({ length: n }, (_, i) => soal(i)) })), 4000);
     if (prompt.includes('sibuk')) return kirim(429, { type: 'error', error: { type: 'rate_limit_error', message: 'tiruan' } });
     if (prompt.includes('kuncisalah')) return kirim(401, { type: 'error', error: { type: 'authentication_error', message: 'tiruan' } });

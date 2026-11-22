@@ -24,6 +24,7 @@ export function apiMessage(e: unknown, konteks?: "soal"): string {
   if (code === "jatah_habis")
     return e instanceof ApiFailure && e.message !== code ? e.message : "Jatah membuat soal hari ini sudah habis. Besok bisa lagi, ya!";
   if (code === "terlalu_cepat") return "Terlalu banyak permintaan barusan. Tunggu sebentar, lalu coba lagi.";
+  if (code === "batas_api") return "Koneksi terputus karena limit habis. Hubungi orang tuamu.";
   if (code === "terlalu_panjang")
     return "Isinya terlalu banyak untuk dibuat sekaligus. Coba lebih sedikit soal atau halaman dalam sekali kirim.";
   if (code === "terlalu_lama") return "Pembuat soal butuh waktu terlalu lama kali ini. Jatahmu tidak berkurang. Coba lagi, ya.";

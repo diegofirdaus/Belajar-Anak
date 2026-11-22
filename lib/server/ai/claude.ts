@@ -27,6 +27,9 @@ const EFFORT_SOAL = (): Effort => (process.env.AI_EFFORT_SOAL as Effort) || "med
 /** Level sulit dan olimpiade berpikir lebih dalam agar soalnya benar-benar menantang. */
 export const EFFORT_SULIT = (): Effort => (process.env.AI_EFFORT_SULIT as Effort) || "high";
 
+/** Batas pengeluaran bulanan di Claude Console tercapai (bukan galat permintaan). */
+const batasPemakaian = (e: InstanceType<typeof Anthropic.APIError>) => /usage limits?/i.test(e.message);
+
 /** Model yang mendukung server-side fallback mode "default" (Haiku 5.5 tidak). */
 const bisaFallback = (model: string) => /^claude-(sonnet-5-5|opus-5|fable-5)/.test(model);
 
@@ -85,7 +88,7 @@ export async function mintaJson(p: {
     try {
       res = await kirim(false);
     } catch (e) {
-      if (!(e instanceof Anthropic.BadRequestError)) throw e;
+      if (!(e instanceof Anthropic.BadRequestError) || batasPemakaian(e)) throw e;
       console.error("Claude menolak permintaan (400), dicoba ulang tanpa pengaturan tambahan:", e.message);
       res = await kirim(true);
     }
@@ -93,6 +96,11 @@ export async function mintaJson(p: {
     if (e instanceof Anthropic.APIConnectionTimeoutError) {
       console.error(`Claude melewati batas waktu (${p.model}, ${p.waktuMaks ?? 55_000} ms).`);
       throw new ApiError("terlalu_lama");
+    }
+    if (e instanceof Anthropic.APIError && batasPemakaian(e)) {
+      const tanggal = /(\d{4}-\d{2}-\d{2})/.exec(e.message)?.[1];
+      console.error("Batas pemakaian Claude API tercapai:", e.message);
+      throw new ApiError("batas_api", tanggal ?? undefined);
     }
     if (e instanceof Anthropic.RateLimitError) throw new ApiError("terlalu_cepat");
     if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {

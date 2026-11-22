@@ -48,5 +48,13 @@ n0 = nLog();
 r = await post('/api/admin/baca-foto', A.token, { kelas: 7, mapel: 'Pendidikan Pancasila', gambar: [{ media_type: 'image/jpeg', data: 'A'.repeat(1600) }] }, sesi);
 ok(r.status === 500 && nLog() - n0 === 2, 'tetap ditolak: hanya satu kali coba ulang, lalu kode penyebab');
 
+// Batas pengeluaran bulanan Claude Console tercapai: kode khusus, tanpa coba ulang, jatah anak dikembalikan.
+const raka = (await post('/api/pemain', A.token, { name: 'Raka', kelas: 5, theme: 'blok' })).body.player;
+n0 = nLog();
+r = await post('/api/soal', A.token, { pemainId: raka.id, mapel: 'Matematika', topik: 'batasapi', level: 'mudah', n: 5 });
+ok(r.status === 503 && r.body.error === 'batas_api' && r.body.message === '2026-12-01' && nLog() - n0 === 1, 'batas pemakaian API: kode batas_api + tanggal buka, tanpa coba ulang', r.body);
+const pk = await (await fetch(`${FS}/families/${A.uid}/pemakaian/${hari}`, { headers: { authorization: 'Bearer owner' } })).json();
+ok(Number(pk.fields?.perPemain?.mapValue?.fields?.[raka.id]?.integerValue ?? 0) === 0, 'jatah anak dikembalikan');
+
 console.log(fail ? `\n${fail} GAGAL` : '\nSemua lulus');
 process.exit(fail ? 1 : 0);

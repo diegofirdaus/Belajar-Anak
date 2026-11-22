@@ -246,7 +246,7 @@ export function EditorPaket({
         setGalat("Membuat soal dari bacaan butuh AI, dan AI sedang tidak tersedia.");
       } else if (code === "ditolak") setGalat("Bacaan itu tidak bisa diproses. Coba periksa isinya.");
       else if (code === "kurang_lengkap") setGalat('Soalnya belum lengkap. Tekan "Buat soal dari bacaan" sekali lagi.');
-      else if (["terlalu_cepat", "terlalu_lama", "jatah_habis", "tidak_valid"].includes(code)) setGalat(apiMessage(e));
+      else if (["terlalu_cepat", "terlalu_lama", "jatah_habis", "tidak_valid", "batas_api"].includes(code)) setGalat(apiMessage(e));
       else setGalat(`Soal belum berhasil dibuat (kode: ${e instanceof ApiFailure && e.message !== e.code ? e.message : e instanceof ApiFailure ? e.code : "jaringan"}). Tekan "Buat soal dari bacaan" sekali lagi.`);
     } finally {
       setMerapikan(false);
@@ -288,7 +288,7 @@ export function EditorPaket({
       );
     else if (code === "json_rusak") setGalat(`Hasil bacaan ${sumber} belum tersusun rapi. Coba sekali lagi; kalau tetap gagal, foto lebih dekat atau setengah halaman saja.`);
     else if (code === "jaringan") setGalat("Koneksi terputus saat mengirim. Pastikan internet stabil, lalu coba lagi.");
-    else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid") setGalat(apiMessage(e));
+    else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid" || code === "batas_api") setGalat(apiMessage(e));
     else if (!(e instanceof ApiFailure)) setGalat(e instanceof Error ? e.message : "File tidak bisa dibuka.");
     else {
       const kode = e.message && e.message !== code ? e.message : code;
@@ -385,7 +385,7 @@ export function EditorPaket({
         setPakaiAi(false);
         bacaTanpaAi('AI belum bisa dipakai, jadi soal dibaca dari format nomor, pilihan, dan "Kunci: ...". ', teksDipakai);
       } else if (code === "ditolak") setGalat("Teks itu tidak bisa diproses. Coba periksa isinya.");
-      else if (code === "terlalu_cepat" || code === "jatah_habis" || code === "tidak_valid") setGalat(apiMessage(e));
+      else if (["terlalu_cepat", "jatah_habis", "tidak_valid", "batas_api", "terlalu_lama"].includes(code)) setGalat(apiMessage(e));
       else setGalat(`Soal belum berhasil dirapikan (kode: ${e instanceof ApiFailure && e.message !== e.code ? e.message : e instanceof ApiFailure ? e.code : "jaringan"}). Tekan "Rapikan soal" sekali lagi.`);
     } finally {
       setMerapikan(false);
