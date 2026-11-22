@@ -178,11 +178,11 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
   - Gaya lomba khusus **IPAS SD** (situasi/tabel/percobaan → "kesimpulan/penyebab/dampak paling tepat", pernyataan bernomor, sesekali hitungan dengan rumus ditulis di soal, pengecoh = miskonsepsi) dan **Bahasa Inggris SD** (past tense termasuk isian 2-4 titik, comparative/superlative, cari kalimat salah, arti kata dari konteks, data/tabel dengan beberapa syarat, cerita pendek 80-150 kata). Mapel lain memakai gaya lomba umum. Pola dirangkum, soal contoh tidak disalin.
   - Campuran IPAS SD dibatasi ke bagian **sains** (`TOPIK_SAINS_SD`), bukan IPS.
   - **Materi boleh kosong** → campuran, disimpan sebagai topik "Campuran".
-  - Jatah: **5 paket/anak/hari** (`AI_LIMIT_OLIMPIADE`, penghitung `olimpiade.{pemainId}` di `pemakaian`), tetap ikut dihitung di jatah biasa 20/60.
+  - Jatah: **3 paket/anak/hari** (diturunkan dari 5 pada 22 Nov 2026 untuk menghemat biaya) (`AI_LIMIT_OLIMPIADE`, penghitung `olimpiade.{pemainId}` di `pemakaian`), tetap ikut dihitung di jatah biasa 20/60.
   - Hadiah per jawaban benar: **2 permata / 50 XP / 50 liter / 4 tulang**.
   - Form: pilihan lebar di bawah Mudah/Sedang/Sulit, keterangan KSN/OSN + "butuh 1–2 menit", jumlah soal disembunyikan. Layar memuat menyebut 1–2 menit. Hasil: setelah sulit ≥80% muncul "Coba level olimpiade/tantangan"; pesan khusus olimpiade yang tetap menyemangati kalau nilainya rendah.
   - Saran: "Siap naik → olimpiade" muncul setelah sulit dikuasai; nilai rendah di olimpiade **tidak** jadi chip "Latih lagi". Dashboard: pita ungu untuk olimpiade di grafik tren.
-- Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 5/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
+- Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 3/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
 ## Perbaikan baca foto halaman padat + batas pemakaian API — SELESAI, sudah dicoba pemilik di preview (foto LKS berhasil setelah limit Claude Console dinaikkan ## Perbaikan baca foto halaman padat — di `pengembangan`, BELUM dicoba pemilik top up), dirilis lewat PR ke main

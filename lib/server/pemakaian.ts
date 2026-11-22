@@ -14,7 +14,7 @@ export const BATAS_RAPIKAN = () => angka(process.env.AI_LIMIT_RAPIKAN, 30);
 /** Pemeriksaan jawaban esai per anak per hari (terpisah dari jatah membuat soal). */
 export const BATAS_ESAI = () => angka(process.env.AI_LIMIT_ESAI, 100);
 /** Paket olimpiade/tantangan (model paling mahal) per anak per hari; ikut dihitung di jatah biasa juga. */
-export const BATAS_OLIMPIADE = () => angka(process.env.AI_LIMIT_OLIMPIADE, 5);
+export const BATAS_OLIMPIADE = () => angka(process.env.AI_LIMIT_OLIMPIADE, 3);
 
 /** Tanggal hari ini di Indonesia (WIB), dipakai sebagai kunci jatah harian. */
 export function hariIni(d = new Date()): string {
