@@ -116,7 +116,17 @@ const ok = (c, n, x = '') => { console.log(`${c ? 'LULUS' : 'GAGAL'}  ${n}${x !=
   });
   ok(isi.merah && isi.h > isi.w && Math.max(isi.w, isi.h) <= 900 && isi.panjang < 250_000, 'potongan berisi area merah, sisi ≤ 900 px, kecil', JSON.stringify(isi));
   // Soal lain: tambah gambar dari foto yang sama
-  await p.locator('.pv-q').nth(0).getByRole('button', { name: '+ Tambah gambar dari foto' }).click();
+  // Bug laporan pemilik: soal lain harus bisa memakai foto BERBEDA (bukan terpaku di foto pertama).
+  const biru = Buffer.from((await p.evaluate(() => { const c = document.createElement('canvas'); c.width = 600; c.height = 800; const g = c.getContext('2d'); g.fillStyle = '#1040ff'; g.fillRect(0, 0, 600, 800); return c.toDataURL('image/png'); })).split(',')[1], 'base64');
+  const k3 = p.locator('.pv-q').nth(2);
+  ok(await k3.getByRole('button', { name: 'Potong dari foto yang sudah ada' }).isVisible() && await k3.getByText('+ Upload foto baru').isVisible(), 'soal tanpa gambar: pilihan potong dari foto yang ada ATAU upload foto baru');
+  await k3.locator('input[type=file]').setInputFiles([{ name: 'biru.png', mimeType: 'image/png', buffer: biru }]);
+  await k3.locator('.potong').waitFor();
+  const warnaPotong = () => k3.locator('.potong img').evaluate((img) => new Promise((ok) => { const go = () => { const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; const g = c.getContext('2d'); g.drawImage(img, 0, 0); const d = g.getImageData(Math.floor(c.width / 2), Math.floor(c.height / 2), 1, 1).data; ok(d[2] > 200 && d[0] < 60); }; if (img.complete) go(); else img.onload = go; }));
+  ok(await warnaPotong(), 'soal 3: alat potong memakai foto baru (biru), bukan foto pertama');
+  ok(await k3.getByText('Pakai foto lain').isVisible(), 'alat potong: ada "Pakai foto lain"');
+  await k3.getByRole('button', { name: 'Batal' }).click();
+  await p.locator('.pv-q').nth(0).getByRole('button', { name: 'Potong dari foto yang sudah ada' }).click();
   await p.locator('.pv-q').nth(0).locator('.potong').waitFor();
   await p.getByRole('button', { name: 'Simpan soal pilihan' }).click();
   ok(await p.locator('.form-msg').innerText() === 'Gambar soal nomor 1 belum selesai dipotong. Tekan "Pakai gambar ini" atau "Batal".', 'simpan saat potongan masih terbuka: diingatkan');

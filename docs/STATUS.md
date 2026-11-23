@@ -185,6 +185,14 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
 - Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 3/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
+## Gambar soal dari PDF + foto berbeda per soal — di `pengembangan`, BELUM dicoba pemilik
+
+Masukan istri pemilik (23 Nov 2026): (1) gambar di soal PDF tidak terbaca; (2) setelah menambah gambar dari foto sendiri di soal 1, soal 2 tidak bisa memakai foto lain (terpaku di foto soal 1).
+- **PDF**: paket baru `pdfjs-dist` 6.5.438 (build legacy, worker ikut dibundel; dimuat hanya saat PDF diunggah, lewat `lib/pdfHalaman.ts`). Prompt baca PDF kini meminta letak gambar per halaman ("foto" = nomor halaman, kotak 0-1000). Halaman yang memuat gambar digambar di HP (sisi 1568 px) lalu usulan potongan dibuka otomatis seperti foto. PDF dan gambar halamannya tidak disimpan; hanya potongan. Kalau halaman gagal digambar, kembali ke catatan "tambahkan lewat Upload foto baru".
+- **Bug foto per soal**: dulu begitu ada satu foto di editor, tombol soal lain hanya membuka alat potong pada foto yang sudah ada. Kini tiap soal punya "Potong dari foto yang sudah ada" dan "+ Upload foto baru"; alat potong punya "Pakai foto lain"; soal bergambar punya "Ganti dengan foto baru". Alat potong dipasang ulang (key) saat foto baru ditambahkan.
+- Catatan kunci: "Di lembar soal ditandai …" (berlaku untuk foto dan PDF).
+- Uji: `dokumen-ui-test.js` (PDF sah buatan dengan kotak merah → halaman digambar 1568 px, potongan merah terpasang), `gambar-ui-test.js` (soal 3 memakai foto biru baru, bukan foto pertama), `api15-test.mjs` (kotak per halaman), `foto-ui-test.js` (pemilih input disempitkan).
+
 ## Perbaikan baca foto halaman padat + batas pemakaian API — SELESAI, sudah dicoba pemilik di preview (foto LKS berhasil setelah limit Claude Console dinaikkan ## Perbaikan baca foto halaman padat — di `pengembangan`, BELUM dicoba pemilik top up), dirilis lewat PR ke main
 
 - Gejala (22 Nov 2026): foto satu halaman LKS Pendidikan Pancasila (8 soal, 3 bergambar, jawaban disilang tangan) selalu gagal dengan "Foto belum berhasil dibaca. Coba sekali lagi." (pesan umum). Log Vercel tidak bisa dibaca dari sesi Claude, jadi penyebab pasti tidak terlihat; dugaan kuat: waktu habis (batas 100 dtk) atau balasan terpotong karena jatah token (16.000), keduanya jatuh ke pesan umum.

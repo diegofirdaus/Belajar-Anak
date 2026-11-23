@@ -1,4 +1,4 @@
-// Uji baca PDF soal (POST /api/admin/baca-foto dengan `pdf`): validasi, isi permintaan ke Claude, tanpa kotak gambar.
+// Uji baca PDF soal (POST /api/admin/baca-foto dengan `pdf`): validasi, isi permintaan ke Claude, usulan kotak gambar per halaman.
 // Butuh Firebase Emulator, server Claude tiruan, dan `next start -p 3100` (lihat docs/STATUS.md).
 import fs from 'node:fs';
 const APP = 'http://localhost:3100';
@@ -36,11 +36,11 @@ ok(jumlahLog() === n, 'permintaan tidak valid tidak memanggil AI');
 /* ---------- Baca PDF ---------- */
 r = await post('/api/admin/baca-foto', A.token, { ...dasar, pdf: { data: pdf() } }, sesi);
 ok(r.status === 200 && r.body.soal.length === 2 && r.body.teks.startsWith('1. Ibu kota Jepang adalah...'), 'PDF terbaca: teks + 2 soal', r.status);
-ok(r.body.soal[1].perluGambar === true && r.body.kotak.every((k) => k === null), 'PDF: tanda butuh gambar ikut, tanpa usulan kotak (tidak ada foto untuk dipotong)', r.body.kotak);
+ok(r.body.soal[1].perluGambar === true && r.body.kotak[0] === null && r.body.kotak[1]?.foto === 0 && r.body.kotak[1].x1 === 0.1, 'PDF: tanda butuh gambar + usulan kotak per halaman (halaman 1 → indeks 0)', r.body.kotak);
 const pr = permintaanTerakhir().body;
 const isi = pr.messages[0].content;
 ok(isi.length === 2 && isi[0].type === 'document' && isi[0].media_type === 'application/pdf' && isi[0].panjang === pdf().length && isi[1].type === 'text', 'dikirim sebagai dokumen PDF, sebelum teks perintah', isi.map((x) => x.type));
-ok(isi[1].text.startsWith('Dokumen PDF di atas berisi soal untuk anak kelas 5 SD, mata pelajaran IPAS') && isi[1].text.includes('Untuk dokumen PDF, semua angka "gambar" 0') && !isi[1].text.includes('difoto') && isi[1].text.includes('baca semua soal di dokumen'), 'prompt khusus PDF');
+ok(isi[1].text.startsWith('Dokumen PDF di atas berisi soal untuk anak kelas 5 SD, mata pelajaran IPAS') && isi[1].text.includes('"foto" = nomor halaman PDF') && !isi[1].text.includes('difoto') && isi[1].text.includes('baca semua soal di dokumen'), 'prompt khusus PDF');
 ok(pr.model === 'claude-sonnet-5-5' && pr.fallbacks === 'default' && pr.output_config.format.type === 'json_schema', 'model baca foto + structured outputs');
 const log = (await (await fetch(`${FS}/families/${A.uid}/logAi`, { headers: { authorization: 'Bearer owner' } })).json()).documents ?? [];
 ok(log.some((d) => d.fields.jenis.stringValue === 'baca_pdf' && d.fields.hasil.stringValue === 'ok') && !JSON.stringify(log).includes(pdf()), 'dicatat sebagai baca_pdf, isi PDF tidak disimpan');

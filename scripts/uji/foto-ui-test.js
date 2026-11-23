@@ -44,17 +44,17 @@ const terakhir = () => { const b = fs.readFileSync(LOG, 'utf8').trim().split('\n
   const tombol = p.locator('label.foto-btn');
   ok(await tombol.isVisible() && (await tombol.innerText()).includes('Foto / upload soal'), 'tombol Foto / upload soal');
   ok(await p.getByText('File hanya dibaca untuk mengambil soal, lalu dibuang (tidak disimpan). Hindari memotret nama', { exact: false }).isVisible(), 'catatan privasi foto/file');
-  ok((await p.locator('input[type=file]').getAttribute('accept')).startsWith('image/*,') && await p.locator('input[type=file]').getAttribute('multiple') !== null, 'input foto: gambar (juga PDF/Word), bisa banyak');
+  ok((await p.locator('.foto-soal input[type=file]').getAttribute('accept')).startsWith('image/*,') && await p.locator('.foto-soal input[type=file]').getAttribute('multiple') !== null, 'input foto: gambar (juga PDF/Word), bisa banyak');
   ok(Math.round((await tombol.boundingBox()).height) >= 44, 'tombol foto ≥ 44px');
   await p.screenshot({ path: `${out}/t14-foto-tombol.png`, fullPage: true });
 
   // Dua foto (satu besar) ke editor kosong
-  await p.locator('input[type=file]').setInputFiles([...berkas(1, pngBesar), ...berkas(1)]);
+  await p.locator('.foto-soal input[type=file]').setInputFiles([...berkas(1, pngBesar), ...berkas(1)]);
   await p.locator('.toast', { hasText: '3 soal terbaca dari 2 foto.' }).waitFor({ timeout: 20000 });
   ok(true, 'toast: 3 soal terbaca dari 2 foto');
   ok((await p.getByLabel('Soal', { exact: true }).inputValue()).startsWith('1. Hasil dari 1/2 + 1/4 adalah...'), 'teks hasil bacaan masuk ke kolom soal (bisa diedit)');
-  ok(await p.getByText('Di foto ditandai C, tapi menurut AI jawaban yang benar B. Mohon dicek.').isVisible(), 'tanda di foto beda dengan jawaban AI: diminta dicek');
-  ok(await p.getByText('Tidak ada tanda jawaban di foto, jadi kunci dipilih AI. Mohon dicek.').isVisible(), 'tanpa tanda di foto: kunci AI diminta dicek');
+  ok(await p.getByText('Di lembar soal ditandai C, tapi menurut AI jawaban yang benar B. Mohon dicek.').isVisible(), 'tanda di foto beda dengan jawaban AI: diminta dicek');
+  ok(await p.getByText('Tidak ada tanda jawaban di lembar soal, jadi kunci dipilih AI. Mohon dicek.').isVisible(), 'tanpa tanda di foto: kunci AI diminta dicek');
   ok((await p.locator('.pv-q').first().getAttribute('class')) === 'pv-q', 'tanda di foto = jawaban AI: tanpa peringatan');
   ok((await p.locator('.pv-q').count()) === 3 && (await p.locator('.pv-q', { hasText: 'Perhatikan gambar' }).locator('.potong').count()) === 1, 'kartu cek: 3 soal, soal bergambar langsung menampilkan usulan potongan gambar');
   const kirim = terakhir().messages[0].content;
@@ -72,7 +72,7 @@ const terakhir = () => { const b = fs.readFileSync(LOG, 'utf8').trim().split('\n
   // Teks diketik dulu (belum dirapikan) + foto: diminta Rapikan
   await p.getByRole('button', { name: '+ Tambah soal pilihan' }).click();
   await p.getByLabel('Soal', { exact: true }).fill('1. Soal ketikan?\nA. ya\nB. tidak\nKunci: A');
-  await p.locator('input[type=file]').setInputFiles(berkas(1));
+  await p.locator('.foto-soal input[type=file]').setInputFiles(berkas(1));
   await p.locator('.form-msg').waitFor({ timeout: 20000 });
   ok((await p.locator('.form-msg').innerText()).includes('Tekan "Rapikan soal" supaya soal yang Anda ketik ikut dirapikan.'), 'teks ketikan + foto: diminta rapikan lagi');
   ok((await p.getByLabel('Soal', { exact: true }).inputValue()).startsWith('1. Soal ketikan?') && (await p.getByLabel('Soal', { exact: true }).inputValue()).includes('1. Hasil dari 1/2'), 'teks foto ditambahkan di belakang teks ketikan');
@@ -80,13 +80,13 @@ const terakhir = () => { const b = fs.readFileSync(LOG, 'utf8').trim().split('\n
   // Lebih dari 5 foto
   await p.getByRole('button', { name: 'Batal' }).click();
   await p.getByRole('button', { name: '+ Tambah soal pilihan' }).click();
-  await p.locator('input[type=file]').setInputFiles(berkas(7));
+  await p.locator('.foto-soal input[type=file]').setInputFiles(berkas(7));
   await p.locator('.toast', { hasText: 'terbaca dari 5 foto' }).waitFor({ timeout: 20000 });
   ok((await p.locator('.form-msg').innerText()).includes('Maksimal 5 foto sekali unggah; 2 foto lainnya tidak dibaca.'), '7 foto: hanya 5 dibaca, ada pemberitahuan');
   ok(terakhir().messages[0].content.filter((x) => x.type === 'image').length === 5, 'yang terkirim 5 foto');
 
   // Bukan foto
-  await p.locator('input[type=file]').setInputFiles([{ name: 'catatan.txt', mimeType: 'text/plain', buffer: Buffer.from('halo') }]);
+  await p.locator('.foto-soal input[type=file]').setInputFiles([{ name: 'catatan.txt', mimeType: 'text/plain', buffer: Buffer.from('halo') }]);
   ok((await p.locator('.form-msg').innerText()) === 'File itu bukan foto, PDF, atau Word. Pilih file soal, ya.', 'file bukan foto/PDF/Word ditolak');
 
   await p.setViewportSize({ width: 360, height: 780 });

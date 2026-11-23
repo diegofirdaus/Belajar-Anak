@@ -47,6 +47,23 @@ const wordSoal = docx([
   `<w:p><w:r><mc:AlternateContent><mc:Choice Requires="wps"><w:t>Nama:</w:t></mc:Choice><mc:Fallback><w:p><w:r><w:t>SALINAN-CADANGAN</w:t></w:r></w:p></mc:Fallback></mc:AlternateContent></w:r></w:p>`,
 ].join(''));
 
+/** PDF satu halaman 600×800 pt yang sah (xref benar) dengan isi gambar `isi` (operator PDF). */
+function buatPdf(isi) {
+  const obj = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Contents 4 0 R /Resources << >> >>',
+    `<< /Length ${Buffer.byteLength(isi)} >>\nstream\n${isi}\nendstream`,
+  ];
+  let out = '%PDF-1.4\n';
+  const posisi = [];
+  obj.forEach((o, i) => { posisi.push(Buffer.byteLength(out)); out += `${i + 1} 0 obj\n${o}\nendobj\n`; });
+  const xref = Buffer.byteLength(out);
+  out += `xref\n0 ${obj.length + 1}\n0000000000 65535 f \n` + posisi.map((x) => `${String(x).padStart(10, '0')} 00000 n \n`).join('');
+  out += `trailer\n<< /Size ${obj.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(out);
+}
+
 (async () => {
   const email = `dokui${Date.now()}@contoh.id`;
   const idp = await (await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=fake', {
@@ -113,6 +130,22 @@ const wordSoal = docx([
   const k2 = p.locator('.pv-q').nth(1);
   ok((await k2.locator('.potong').count()) === 0 && await k2.getByText('Soal ini butuh gambar.', { exact: false }).isVisible() && (await k2.locator('input[type=file]').count()) === 1, 'soal bergambar dari PDF: tanpa usulan potongan, bisa tambah gambar dari foto');
   await p.screenshot({ path: `${out}/dok-pdf.png`, fullPage: true });
+  // ---------- PDF sungguhan dengan gambar: halaman digambar di HP, usulan potongan langsung terbuka ----------
+  await batal();
+  await baru();
+  const pdfAsli = buatPdf('1 0 0 rg 60 400 240 320 re f');
+  await input().setInputFiles([{ name: 'lks-gambar.pdf', mimeType: 'application/pdf', buffer: pdfAsli }]);
+  await p.locator('.toast', { hasText: 'soal terbaca dari PDF' }).waitFor();
+  const kg = p.locator('.pv-q').nth(1);
+  await kg.locator('.potong').waitFor({ timeout: 15000 });
+  ok((await p.locator('.form-msg').count()) === 0 || !(await p.locator('.form-msg').innerText()).includes('butuh gambar'), 'PDF valid: tanpa catatan "tambahkan gambar sendiri"');
+  const isiPotong = await kg.locator('.potong img').evaluate((img) => new Promise((ok) => { const go = () => { const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; const g = c.getContext('2d'); g.drawImage(img, 0, 0); const d = g.getImageData(Math.floor(c.width * 0.3), Math.floor(c.height * 0.3), 1, 1).data; ok({ w: img.naturalWidth, h: img.naturalHeight, merah: d[0] > 180 && d[1] < 80 }); }; if (img.complete) go(); else img.onload = go; }));
+  ok(isiPotong.merah && isiPotong.h > isiPotong.w && Math.max(isiPotong.w, isiPotong.h) === 1568, 'halaman PDF digambar di HP (1568 px), gambar merah di area usulan', JSON.stringify(isiPotong));
+  await kg.getByRole('button', { name: 'Pakai gambar ini' }).click();
+  await kg.locator('.gambar-editor').waitFor();
+  ok(await kg.getByRole('button', { name: 'Potong ulang' }).isVisible(), 'potongan dari PDF terpasang di soal');
+  await p.screenshot({ path: `${out}/dok-pdf-gambar.png`, fullPage: true });
+
   // PDF terlalu besar: ditolak di HP tanpa dikirim
   n = semuaPermintaan().length;
   await input().setInputFiles([{ name: 'besar.pdf', mimeType: 'application/pdf', buffer: Buffer.concat([Buffer.from('%PDF-1.7\n'), Buffer.alloc(3_200_000, 65)]) }]);
