@@ -9,6 +9,7 @@ import { GambarSoal } from "@/components/GambarSoal";
 import { merujukPilihanLain } from "@/lib/acakPilihan";
 import { bacaDocx, keBase64 } from "@/lib/docx";
 import { siapkanFoto } from "@/lib/foto";
+import { gambarHalamanPdf } from "@/lib/pdfHalaman";
 import { kotakTengah, type Kotak } from "@/lib/gambarSoal";
 import { PotongGambar } from "./PotongGambar";
 import { JENJANG_INFO, MAPEL, jenjangOf, kelasInJenjang, kelasShort, type Jenjang } from "@/lib/kelas";
@@ -332,9 +333,31 @@ export function EditorPaket({
       if (!data.startsWith("JVBERi")) return setGalat("File itu bukan PDF yang bisa dibaca.");
       const hasil = await api.bacaFoto(sesi, { kelas, mapel: mapelAktif, pdf: { data } });
       const catatan = catatanAwal ? [catatanAwal] : [];
-      if (hasil.soal.some((q) => q.perluGambar))
-        catatan.push('Ada soal yang butuh gambar: tambahkan gambarnya lewat "+ Tambah gambar dari foto" (bisa dari tangkapan layar PDF).');
-      terapkanBacaan(hasil, hasil.soal.map((q, i) => denganTanda(q, hasil.tanda?.[i])), "PDF", catatan);
+      let soalPdf: SoalEditor[] = hasil.soal.map((q, i) => denganTanda(q, hasil.tanda?.[i]));
+      // Halaman yang memuat gambar soal digambar di HP, lalu usulan potongannya dibuka seperti dari foto.
+      const halaman = [...new Set(hasil.kotak.flatMap((k) => (k ? [k.foto + 1] : [])))];
+      let halamanGagal = false;
+      if (halaman.length) {
+        setMembaca("Menyiapkan gambar dari PDF…");
+        try {
+          const gambar = await gambarHalamanPdf(new Uint8Array(await file.arrayBuffer()), halaman);
+          const urutan = [...gambar.keys()];
+          const awalFoto = foto.length;
+          setFoto((f) => [...f, ...urutan.map((no) => gambar.get(no)!)]);
+          soalPdf = soalPdf.map((q, i) => {
+            const k = hasil.kotak[i];
+            const posisi = k ? urutan.indexOf(k.foto + 1) : -1;
+            return k && posisi >= 0 ? { ...q, kotakUsulan: { ...k, foto: awalFoto + posisi }, potongTerbuka: true } : q;
+          });
+        } catch (e) {
+          console.error("Halaman PDF tidak bisa digambar:", e);
+          halamanGagal = true;
+        }
+      }
+      const tanpaUsulan = soalPdf.some((q) => q.perluGambar && !q.kotakUsulan);
+      if (halamanGagal || tanpaUsulan)
+        catatan.push('Ada soal yang butuh gambar: tambahkan gambarnya lewat "+ Upload foto baru" di soal itu (bisa dari tangkapan layar PDF).');
+      terapkanBacaan(hasil, soalPdf, "PDF", catatan);
     } catch (e) {
       galatBaca(e, "PDF");
     } finally {
@@ -415,6 +438,26 @@ export function EditorPaket({
       setGalat(e instanceof Error ? e.message : "Foto tidak bisa dibuka.");
     }
   }
+
+  /** Tombol unggah foto baru untuk gambar soal nomor i (setiap soal bisa memakai foto yang berbeda). */
+  const unggahFotoBaru = (i: number, label: string) => (
+    <span className="foto-gambar">
+      <input
+        id={`${id}-gbr-${i}`}
+        className="sr-only"
+        type="file"
+        accept="image/*"
+        onChange={(e) => {
+          void fotoUntukGambar(i, e.target.files).finally(() => {
+            e.target.value = "";
+          });
+        }}
+      />
+      <label htmlFor={`${id}-gbr-${i}`} className="linkbtn">
+        {label}
+      </label>
+    </span>
+  );
 
   function hapusSoal(i: number) {
     setSoal((daftar) => daftar.filter((_, j) => j !== i));
@@ -666,9 +709,9 @@ export function EditorPaket({
                     {q.esai
                       ? "Jawaban dibuat AI. Mohon dicek."
                       : q.tandaFoto !== undefined && q.tandaFoto >= 0 && q.tandaFoto !== q.answer
-                        ? `Di foto ditandai ${HURUF[q.tandaFoto]}, tapi menurut AI jawaban yang benar ${HURUF[q.answer]}. Mohon dicek.`
+                        ? `Di lembar soal ditandai ${HURUF[q.tandaFoto]}, tapi menurut AI jawaban yang benar ${HURUF[q.answer]}. Mohon dicek.`
                         : q.tandaFoto === -1
-                          ? "Tidak ada tanda jawaban di foto, jadi kunci dipilih AI. Mohon dicek."
+                          ? "Tidak ada tanda jawaban di lembar soal, jadi kunci dipilih AI. Mohon dicek."
                           : "Kunci dipilih AI. Mohon dicek."}
                   </span>
                 )}
@@ -676,13 +719,17 @@ export function EditorPaket({
                   <span className="pv-note warn">Soal ini butuh gambar. Potong gambarnya dari foto, atau hapus/ubah soalnya supaya tanpa gambar.</span>
                 )}
                 {q.potongTerbuka && foto.length > 0 ? (
-                  <PotongGambar
-                    nomor={i + 1}
-                    foto={foto}
-                    awal={q.kotakUsulan ?? kotakTengah(foto.length - 1)}
-                    onPakai={(data) => ubahSoal(i, (x) => ({ ...x, gambarBaru: data, potongTerbuka: false }))}
-                    onBatal={() => ubahSoal(i, (x) => ({ ...x, potongTerbuka: false }))}
-                  />
+                  <>
+                    <PotongGambar
+                      key={`${q.kotakUsulan?.foto ?? -1}-${foto.length}`}
+                      nomor={i + 1}
+                      foto={foto}
+                      awal={q.kotakUsulan ?? kotakTengah(foto.length - 1)}
+                      onPakai={(data) => ubahSoal(i, (x) => ({ ...x, gambarBaru: data, potongTerbuka: false }))}
+                      onBatal={() => ubahSoal(i, (x) => ({ ...x, potongTerbuka: false }))}
+                    />
+                    <div className="row-btns">{unggahFotoBaru(i, "Pakai foto lain")}</div>
+                  </>
                 ) : adaGambar(q) ? (
                   <div className="gambar-editor">
                     <GambarSoal id={q.gambarId} data={q.gambarBaru} alt={`Gambar soal ${i + 1}`} />
@@ -692,6 +739,7 @@ export function EditorPaket({
                           Potong ulang
                         </button>
                       )}
+                      {unggahFotoBaru(i, "Ganti dengan foto baru")}
                       <button
                         type="button"
                         className="linkbtn danger"
@@ -701,27 +749,15 @@ export function EditorPaket({
                       </button>
                     </div>
                   </div>
-                ) : foto.length > 0 ? (
-                  <button type="button" className="linkbtn" onClick={() => ubahSoal(i, (x) => ({ ...x, potongTerbuka: true }))}>
-                    {q.kotakUsulan ? "Lihat usulan gambar dari foto" : "+ Tambah gambar dari foto"}
-                  </button>
                 ) : (
-                  <span className="foto-gambar">
-                    <input
-                      id={`${id}-gbr-${i}`}
-                      className="sr-only"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        void fotoUntukGambar(i, e.target.files).finally(() => {
-                          e.target.value = "";
-                        });
-                      }}
-                    />
-                    <label htmlFor={`${id}-gbr-${i}`} className="linkbtn">
-                      + Tambah gambar dari foto
-                    </label>
-                  </span>
+                  <div className="row-btns">
+                    {foto.length > 0 && (
+                      <button type="button" className="linkbtn" onClick={() => ubahSoal(i, (x) => ({ ...x, potongTerbuka: true }))}>
+                        {q.kotakUsulan ? "Lihat usulan gambar" : "Potong dari foto yang sudah ada"}
+                      </button>
+                    )}
+                    {unggahFotoBaru(i, foto.length > 0 ? "+ Upload foto baru" : "+ Tambah gambar dari foto")}
+                  </div>
                 )}
                 {q.optionsAdded && <span className="pv-note">Sebagian pilihan jawaban ditambahkan AI.</span>}
                 {acakPilihan && merujukPilihanLain(q.options) && (

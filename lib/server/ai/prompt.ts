@@ -411,7 +411,7 @@ export function promptBacaFoto(p: { kelas: number; mapel: string; jumlah: number
     ? `Dokumen PDF di atas berisi soal untuk anak ${kelasLong(p.kelas)}${mapel}, diunggah orang tua dari buku, LKS, atau lembar soal.`
     : `${p.jumlah > 1 ? `${p.jumlah} foto di atas` : "Foto di atas"} berisi soal untuk anak ${kelasLong(p.kelas)}${mapel}, difoto orang tua dari buku, LKS, atau tulisan tangan.`;
   const letakGambar = p.pdf
-    ? `   - Untuk dokumen PDF, semua angka "gambar" 0.`
+    ? `   - Untuk soal "perluGambar": true, isi "gambar" dengan letak gambar itu di dokumen: "foto" = nomor halaman PDF (1 = halaman pertama), lalu kotak "x1","y1" (kiri atas) dan "x2","y2" (kanan bawah) dalam skala 0-1000 terhadap lebar dan tinggi halaman itu. Kotak mencakup seluruh gambar beserta labelnya, tanpa teks soal dan pilihan. Untuk soal lain, semua angka "gambar" 0.`
     : `   - Untuk soal "perluGambar": true, isi "gambar" dengan letak gambar itu di foto: "foto" = nomor foto (1 = foto pertama), lalu kotak "x1","y1" (kiri atas) dan "x2","y2" (kanan bawah) dalam skala 0-1000 terhadap lebar dan tinggi foto. Kotak mencakup seluruh gambar beserta labelnya, tanpa teks soal dan pilihan. Untuk soal lain, semua angka "gambar" 0.`;
   const kata = p.pdf ? "dokumen" : "foto";
   return [

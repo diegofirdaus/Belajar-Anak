@@ -12,6 +12,9 @@ export const dynamic = "force-dynamic";
 // Halaman padat (banyak soal + gambar) bisa butuh lebih dari 2 menit.
 export const maxDuration = 300;
 
+/** Batas nomor halaman yang diterima sebagai letak gambar PDF. */
+const HALAMAN_PDF_MAKS = 500;
+
 /**
  * Membaca foto soal (maks 5) atau satu PDF menjadi teks soal + soal terstruktur untuk editor soal pilihan.
  * Foto/PDF hanya diteruskan ke Claude lalu dibuang: tidak disimpan dan tidak dicatat.
@@ -41,10 +44,10 @@ export function POST(req: Request) {
         waktuMaks: 240_000,
       });
       const data = (hasil.data ?? {}) as { soal?: unknown };
-      // PDF: tidak ada foto di HP untuk dipotong, jadi tanpa usulan kotak.
+      // PDF: "foto" = nomor halaman; halamannya digambar di HP (pdf.js) untuk dipotong.
       // Kunci = jawaban AI. Tanda di lembar (silang/lingkaran/kunci tertulis) hanya pembanding:
       // sama dengan jawaban AI → tidak perlu dicek; beda atau tidak ada tanda → "Mohon dicek".
-      const hasilSoal = saringDenganKotak(data.soal, p.gambar?.length ?? 0).map((x) => ({
+      const hasilSoal = saringDenganKotak(data.soal, p.pdf ? HALAMAN_PDF_MAKS : (p.gambar?.length ?? 0)).map((x) => ({
         ...x,
         soal: { ...x.soal, keyGuessed: x.soal.jenis === "esai" ? true : x.tanda !== x.soal.answer },
       }));
