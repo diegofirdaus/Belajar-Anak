@@ -12,8 +12,9 @@ const schema = z.object({ konfirmasi: z.literal("HAPUS") }).strict();
 /** Hapus semua data keluarga. Butuh sesi admin, login ulang Google yang baru, dan ketikan "HAPUS". */
 export function POST(req: Request) {
   return handle(async () => {
-    const { familyId, authTime } = await requireFamily(req);
+    const { familyId, authTime, pemilik } = await requireFamily(req);
     await requireAdmin(req, familyId);
+    if (!pemilik) throw new ApiError("tidak_valid", "Hanya pemilik keluarga (akun yang pertama mendaftar) yang bisa menghapus semua data.");
     requireLoginBaru(authTime);
     if (!schema.safeParse(await req.json().catch(() => null)).success) throw new ApiError("tidak_valid", 'Ketik HAPUS untuk melanjutkan.');
     await hapusKeluarga(familyId);

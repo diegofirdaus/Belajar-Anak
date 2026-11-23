@@ -2,6 +2,7 @@ import "server-only";
 
 import { GeoPoint, Timestamp, type DocumentReference } from "firebase-admin/firestore";
 import { adminAuth, db } from "@/lib/firebase/admin";
+import { hapusSemuaAnggota } from "./anggota";
 
 /** Data rahasia yang tidak ikut diekspor: hash PIN dan token sesi admin. */
 const KOLEKSI_DILEWATI = new Set(["adminSesi"]);
@@ -43,6 +44,7 @@ export async function eksporKeluarga(familyId: string, email: string | null) {
 
 /** Menghapus semua data keluarga beserta akun loginnya di Markas Latihan. Akun Google tidak tersentuh. */
 export async function hapusKeluarga(familyId: string): Promise<void> {
+  await hapusSemuaAnggota(familyId);
   await db().recursiveDelete(db().collection("families").doc(familyId));
   await adminAuth()
     .deleteUser(familyId)

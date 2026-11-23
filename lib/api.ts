@@ -9,6 +9,12 @@ import type { DataProgres } from "@/lib/progres";
 import type { HasilJawab, PaketSesi, PermintaanJawab, PermintaanSoal } from "@/lib/soal";
 import type { PaketBaru, PaketPilihan, PaketRingkas, SoalPilihan } from "@/lib/soalPilihan";
 
+export type RingkasanAnggota = {
+  saya: "pemilik" | "anggota";
+  emailPemilik: string | null;
+  anggota: { email: string; status: "menunggu" | "bergabung" }[];
+};
+
 export class ApiFailure extends Error {
   constructor(public code: string, message?: string) {
     super(message ?? code);
@@ -138,5 +144,10 @@ export const api = {
       body: JSON.stringify({ nomor, benar }),
       headers: adminHeader(sesi),
     }),
+  anggota: (sesi: string) => call<RingkasanAnggota>("/api/admin/anggota", { headers: adminHeader(sesi) }),
+  undangAnggota: (sesi: string, email: string) =>
+    call<RingkasanAnggota>("/api/admin/anggota", { method: "POST", body: JSON.stringify({ email }), headers: adminHeader(sesi) }),
+  cabutAnggota: (sesi: string, email: string) =>
+    call<RingkasanAnggota>("/api/admin/anggota", { method: "DELETE", body: JSON.stringify({ email }), headers: adminHeader(sesi) }),
   deletePlayer: (id: string) => call<{ ok: true }>(`/api/pemain/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };
