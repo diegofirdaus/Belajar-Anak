@@ -185,7 +185,7 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
 - Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 3/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
-## Anggota keluarga — di `pengembangan`, BELUM dicoba pemilik
+## Anggota keluarga — SELESAI, pemilik sudah mengundang di preview; dirilis ke main atas permintaan pemilik (dicek langsung di produksi)
 
 Permintaan pemilik (23 Nov 2026): istri ingin memakai akun Google sendiri tetapi melihat data keluarga yang sama; data yang sempat dibuat di akun istri dibuang.
 - Data: `undangan/{email}` (email diundang, huruf kecil) dan `anggota/{uid}` → `familyId`. Data keluarga tetap di `families/{uidPemilik}` (kini menyimpan `emailPemilik`). Logika di `lib/server/anggota.ts`.
