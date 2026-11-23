@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DaftarPaket } from "@/components/admin/DaftarPaket";
 import { DataKeluarga } from "@/components/admin/DataKeluarga";
 import { ProgresAnak } from "@/components/admin/ProgresAnak";
+import { AnggotaKeluarga } from "@/components/admin/AnggotaKeluarga";
 import { EditorPaket } from "@/components/admin/EditorPaket";
 import { GerbangPin } from "@/components/admin/GerbangPin";
 import { Pipo } from "@/components/Pipo";
@@ -54,6 +55,7 @@ function ModeAdmin() {
   const [layar, setLayar] = useState<Layar>({ jenis: "pin" });
   const [paket, setPaket] = useState<PaketPilihan[] | null>(null);
   const [kelasAwal, setKelasAwal] = useState(5);
+  const [peran, setPeran] = useState<"pemilik" | "anggota" | null>(null);
 
   useEffect(() => {
     api
@@ -210,7 +212,8 @@ function ModeAdmin() {
               Ganti PIN admin
             </button>
           </section>
-          <DataKeluarga sesi={sesi} onSesiHabis={sesiHabis} onDihapus={() => router.replace("/")} />
+          <AnggotaKeluarga sesi={sesi} onSesiHabis={sesiHabis} onPeran={setPeran} />
+          <DataKeluarga sesi={sesi} onSesiHabis={sesiHabis} onDihapus={() => router.replace("/")} bolehHapus={peran === "pemilik"} />
         </>
       )}
       {layar.jenis === "editor" && sesi && (

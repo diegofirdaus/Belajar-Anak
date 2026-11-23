@@ -807,3 +807,8 @@ textarea.teks-bacaan { min-height: 220px; }
 /* Huruf Arab di soal, pilihan, bacaan, dan editor (komponen TeksCampur). */
 .ar { unicode-bidi: isolate; direction: rtl; font-family: var(--font-arab), "Noto Naskh Arabic", "Geeza Pro", "Arabic Typesetting", serif; font-size: 1.3em; line-height: 1.9; font-weight: 400; letter-spacing: 0; text-transform: none; }
 .opt .ar, .pv-opt .ar { font-size: 1.25em; }
+
+/* Anggota keluarga (Mode admin → Pengaturan) */
+.anggota-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.anggota-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: var(--radius-s); background: var(--soft); min-height: 44px; }
+.anggota-email { flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }

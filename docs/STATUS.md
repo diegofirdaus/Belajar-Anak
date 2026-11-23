@@ -185,6 +185,16 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
 - Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 3/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
+## Anggota keluarga — di `pengembangan`, BELUM dicoba pemilik
+
+Permintaan pemilik (23 Nov 2026): istri ingin memakai akun Google sendiri tetapi melihat data keluarga yang sama; data yang sempat dibuat di akun istri dibuang.
+- Data: `undangan/{email}` (email diundang, huruf kecil) dan `anggota/{uid}` → `familyId`. Data keluarga tetap di `families/{uidPemilik}` (kini menyimpan `emailPemilik`). Logika di `lib/server/anggota.ts`.
+- `requireFamily` (`lib/server/auth.ts`): akun anggota → keluarga pemilik. Kalau ada undangan untuk email terverifikasi akun ini, akun **langsung bergabung** saat login dan `families/{uidAkun}` miliknya **dihapus** (keputusan pemilik), beserta undangan yang pernah dibuatnya. Pengaman: akun yang sudah punya anggota sendiri tidak ikut bergabung; email belum terverifikasi tidak bisa menerima undangan; undangan untuk email yang sudah anggota/diundang keluarga lain ditolak. Maksimal 5 anggota.
+- Hak: anggota bisa semuanya (anak, soal pilihan, progres, Mode admin dengan PIN yang sama, unduh data). **Hanya pemilik**: mengundang/mencabut anggota dan menghapus semua data keluarga (server menolak; tombolnya hanya muncul setelah peran pemilik terkonfirmasi). Hapus keluarga ikut menghapus semua undangan & keanggotaan.
+- API: `GET/POST/DELETE /api/admin/anggota` (sesi admin). UI: `components/admin/AnggotaKeluarga.tsx` di Mode admin → Pengaturan.
+- Dicabut → akun itu kembali ke keluarganya sendiri yang kosong saat permintaan berikutnya. Aturan Firestore tetap menolak semua akses langsung dari browser.
+- Uji: `api19-test.mjs` (26 skenario), `anggota-ui-test.js`.
+
 ## Gambar soal dari PDF + foto berbeda per soal — SELESAI, sudah dicoba pemilik di preview ("berhasil"), dirilis lewat PR ke main
 
 Masukan istri pemilik (23 Nov 2026): (1) gambar di soal PDF tidak terbaca; (2) setelah menambah gambar dari foto sendiri di soal 1, soal 2 tidak bisa memakai foto lain (terpaku di foto soal 1).

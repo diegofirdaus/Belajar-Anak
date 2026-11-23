@@ -12,7 +12,18 @@ const KATA = "HAPUS";
  * Unduh dan hapus semua data keluarga (brief 11, UU PDP).
  * Selain PIN admin, keduanya wajib login ulang dengan akun Google orang tua.
  */
-export function DataKeluarga({ sesi, onSesiHabis, onDihapus }: { sesi: string; onSesiHabis: () => void; onDihapus: () => void }) {
+export function DataKeluarga({
+  sesi,
+  onSesiHabis,
+  onDihapus,
+  bolehHapus = true,
+}: {
+  sesi: string;
+  onSesiHabis: () => void;
+  onDihapus: () => void;
+  /** Hanya pemilik keluarga yang bisa menghapus semua data. */
+  bolehHapus?: boolean;
+}) {
   const id = useId();
   const toast = useToast();
   const { logout } = useAuth();
@@ -76,16 +87,18 @@ export function DataKeluarga({ sesi, onSesiHabis, onDihapus }: { sesi: string; o
           <button type="button" className="btn ghost small" onClick={unduh} disabled={sibuk !== null}>
             {sibuk === "unduh" ? "Menyiapkan data…" : "Unduh semua data"}
           </button>
-          <button
-            type="button"
-            className="btn ghost small danger"
-            onClick={() => {
-              setMode("hapus");
-              setGalat(null);
-            }}
-          >
-            Hapus semua data keluarga
-          </button>
+          {bolehHapus && (
+            <button
+              type="button"
+              className="btn ghost small danger"
+              onClick={() => {
+                setMode("hapus");
+                setGalat(null);
+              }}
+            >
+              Hapus semua data keluarga
+            </button>
+          )}
         </div>
       ) : (
         <div className="stack-12 danger-box">
