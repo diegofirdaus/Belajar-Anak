@@ -185,7 +185,7 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
 - Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 3/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
-## Soal 5 pilihan (A–E) + laporan soal yang terlewat — di `pengembangan`, BELUM dicoba pemilik
+## Soal 5 pilihan (A–E) + laporan soal yang terlewat — SELESAI, dirilis langsung ke main atas permintaan pemilik (belum dicoba di preview)
 
 Laporan pemilik (28 Nov 2026, saat memasukkan soal PJOK): baca soal tidak lengkap dan tanpa peringatan. Penyebab: `soalPilihanSchema` hanya menerima maks 4 pilihan, jadi soal A–E (umum di buku SMP/SMA) dibuang diam-diam; soal lain yang tidak lolos pemeriksaan juga dibuang tanpa kabar.
 - Soal pilihan orang tua kini **maks 5 pilihan** (`PILIHAN_MAKS`, `HURUF_PILIHAN = "ABCDE"`): skema, jawaban anak (`jawabSchema` 0–4, tetap dicek terhadap jumlah pilihan soal), pembaca manual (A–E), teks kolom Soal, contoh soal mirip, tampilan editor/anak/dashboard. Soal buatan AI tetap tepat 4 pilihan.
