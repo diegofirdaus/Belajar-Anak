@@ -8,6 +8,9 @@ export const TEKS_ADMIN_MAKS = 20_000;
 /** Panjang maksimal teks bersama per soal. */
 export const STIMULUS_MAKS = 5_000;
 export const SOAL_PER_PAKET_MAKS = 50;
+/** Soal pilihan orang tua boleh punya sampai 5 pilihan (A–E), seperti banyak buku/LKS SMP-SMA. */
+export const PILIHAN_MAKS = 5;
+export const HURUF_PILIHAN = "ABCDE";
 export const PAKET_MAKS = 100;
 
 /** Batas soal esai (STATUS "BERIKUTNYA" no. 2). */
@@ -69,8 +72,8 @@ export type PaketPilihan = {
 export const soalPilihanSchema = z
   .object({
     q: teks(2000),
-    options: z.array(teks(500)).max(4),
-    answer: z.number().int().min(0).max(3),
+    options: z.array(teks(500)).max(PILIHAN_MAKS),
+    answer: z.number().int().min(0).max(PILIHAN_MAKS - 1),
     explain: z.string().max(2000).transform((s) => s.trim()),
     keyGuessed: z.boolean(),
     optionsAdded: z.boolean(),
@@ -107,8 +110,8 @@ export function tulisTeksSoal(soal: SoalPilihan[]): string {
       if (s.jenis === "esai") {
         if (s.esai?.contoh && !s.keyGuessed) baris.push(`Jawaban: ${s.esai.contoh}`);
       } else {
-        s.options.forEach((o, k) => baris.push(`${"ABCD"[k]}. ${o}`));
-        if (!s.keyGuessed) baris.push(`Kunci: ${"ABCD"[s.answer]}`);
+        s.options.forEach((o, k) => baris.push(`${HURUF_PILIHAN[k]}. ${o}`));
+        if (!s.keyGuessed) baris.push(`Kunci: ${HURUF_PILIHAN[s.answer]}`);
       }
       return baris.join("\n");
     })
@@ -174,7 +177,7 @@ export const pinSchema = z.object({ pin: z.string().regex(/^\d{4}$/, "PIN harus 
 export const judulBawaan = (mapel: string, kelas: number) => `${mapel} ${kelasShort(kelas)}`;
 
 /**
- * Cadangan tanpa AI (brief 7.8): baris `1.` / `1)` memulai soal, `A.` / `a)` pilihan (maks 4),
+ * Cadangan tanpa AI (brief 7.8): baris `1.` / `1)` memulai soal, `A.` / `a)` pilihan (maks 5, A–E),
  * `Kunci: B` / `Jawaban: B` kunci. Baris lain menyambung ke soal atau pilihan terakhir.
  */
 export function bacaManual(teksAsli: string): { soal: SoalPilihan[]; galat: string[] } {
@@ -184,7 +187,7 @@ export function bacaManual(teksAsli: string): { soal: SoalPilihan[]; galat: stri
 
   const simpan = () => {
     if (!kini) return;
-    const jawaban = kini.kunci ? "ABCD".indexOf(kini.kunci) : -1;
+    const jawaban = kini.kunci ? HURUF_PILIHAN.indexOf(kini.kunci) : -1;
     if (kini.options.length < 2) galat.push(`Soal nomor ${kini.no} belum punya pilihan A, B, dan seterusnya.`);
     else if (jawaban < 0 || jawaban >= kini.options.length) galat.push(`Soal nomor ${kini.no} belum punya baris "Kunci: ...".`);
     else
@@ -201,7 +204,7 @@ export function bacaManual(teksAsli: string): { soal: SoalPilihan[]; galat: stri
 
   for (const baris of teksAsli.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)) {
     let m: RegExpMatchArray | null;
-    if ((m = baris.match(/^(?:kunci|jawaban|jawab)\s*(?:jawaban)?\s*[:=]?\s*([A-Da-d])\b/i))) {
+    if ((m = baris.match(/^(?:kunci|jawaban|jawab)\s*(?:jawaban)?\s*[:=]?\s*([A-Ea-e])\b/i))) {
       if (kini) kini.kunci = m[1].toUpperCase();
       continue;
     }
@@ -210,8 +213,8 @@ export function bacaManual(teksAsli: string): { soal: SoalPilihan[]; galat: stri
       kini = { no: m[1], q: m[2], options: [], kunci: null };
       continue;
     }
-    if (kini && (m = baris.match(/^([A-Da-d])\s*[.)]\s*(.+)$/))) {
-      if (kini.options.length < 4) kini.options.push(m[2]);
+    if (kini && (m = baris.match(/^([A-Ea-e])\s*[.)]\s*(.+)$/))) {
+      if (kini.options.length < PILIHAN_MAKS) kini.options.push(m[2]);
       continue;
     }
     if (kini) {

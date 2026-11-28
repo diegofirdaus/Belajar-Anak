@@ -3,7 +3,7 @@ import { rapikanSchema } from "@/lib/soalPilihan";
 import { requireAdmin } from "@/lib/server/admin";
 import { MODEL_RAPIKAN, aiTersedia, mintaJson } from "@/lib/server/ai/claude";
 import { SKEMA_RAPIKAN, promptRapikan } from "@/lib/server/ai/prompt";
-import { saringRapikan } from "@/lib/server/ai/validasi";
+import { saringRapikanLaporan } from "@/lib/server/ai/validasi";
 import { requireFamily } from "@/lib/server/auth";
 import { ApiError, handle, json } from "@/lib/server/http";
 import { ambilJatahRapikan, catatAi, kembalikanJatahRapikan } from "@/lib/server/pemakaian";
@@ -25,10 +25,10 @@ export function POST(req: Request) {
     const { tanggal } = await ambilJatahRapikan(familyId);
     try {
       const hasil = await mintaJson({ model: MODEL_RAPIKAN(), prompt: promptRapikan(p), skema: SKEMA_RAPIKAN });
-      const soal = saringRapikan((hasil.data as { soal?: unknown } | null)?.soal);
+      const { soal, dilewati } = saringRapikanLaporan((hasil.data as { soal?: unknown } | null)?.soal);
       await catatAi(familyId, { jenis: "rapikan", model: hasil.model, hasil: soal.length ? "ok" : "kurang_lengkap", pemakaian: hasil.pemakaian });
       if (!soal.length) throw new ApiError("kurang_lengkap");
-      return json({ soal });
+      return json({ soal, dilewati });
     } catch (e) {
       await kembalikanJatahRapikan(familyId, tanggal);
       if (e instanceof ApiError && e.ai) {

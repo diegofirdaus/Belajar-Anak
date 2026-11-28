@@ -27,7 +27,7 @@ import {
 } from "@/lib/progres";
 import { WORLDS } from "@/lib/worlds";
 
-const HURUF = "ABCD";
+const HURUF = "ABCDE";
 const AWAL_RIWAYAT = 10;
 
 /**

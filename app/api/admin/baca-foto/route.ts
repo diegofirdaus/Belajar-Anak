@@ -3,7 +3,7 @@ import { TEKS_ADMIN_MAKS, bacaFotoSchema, tulisTeksSoal } from "@/lib/soalPiliha
 import { requireAdmin } from "@/lib/server/admin";
 import { MODEL_BACA_FOTO, aiTersedia, mintaJson } from "@/lib/server/ai/claude";
 import { SKEMA_BACA_FOTO, promptBacaFoto } from "@/lib/server/ai/prompt";
-import { saringDenganKotak } from "@/lib/server/ai/validasi";
+import { saringDenganLaporan } from "@/lib/server/ai/validasi";
 import { requireFamily } from "@/lib/server/auth";
 import { ApiError, handle, json } from "@/lib/server/http";
 import { ambilJatahRapikan, catatAi, kembalikanJatahRapikan } from "@/lib/server/pemakaian";
@@ -47,7 +47,8 @@ export function POST(req: Request) {
       // PDF: "foto" = nomor halaman; halamannya digambar di HP (pdf.js) untuk dipotong.
       // Kunci = jawaban AI. Tanda di lembar (silang/lingkaran/kunci tertulis) hanya pembanding:
       // sama dengan jawaban AI → tidak perlu dicek; beda atau tidak ada tanda → "Mohon dicek".
-      const hasilSoal = saringDenganKotak(data.soal, p.pdf ? HALAMAN_PDF_MAKS : (p.gambar?.length ?? 0)).map((x) => ({
+      const saring = saringDenganLaporan(data.soal, p.pdf ? HALAMAN_PDF_MAKS : (p.gambar?.length ?? 0));
+      const hasilSoal = saring.hasil.map((x) => ({
         ...x,
         soal: { ...x.soal, keyGuessed: x.soal.jenis === "esai" ? true : x.tanda !== x.soal.answer },
       }));
@@ -57,7 +58,7 @@ export function POST(req: Request) {
       await catatAi(familyId, { jenis: p.pdf ? "baca_pdf" : "baca_foto", model: hasil.model, hasil: soal.length ? "ok" : "kurang_lengkap", pemakaian: hasil.pemakaian });
       if (!soal.length) throw new ApiError("kurang_lengkap", `Tidak ada soal yang terbaca dari ${p.pdf ? "PDF" : "foto"}.`);
       // Usulan kotak gambar per soal (sejajar dengan `soal`) untuk dipotong di browser dari foto yang masih ada di HP.
-      return json({ teks, soal, kotak: hasilSoal.map((x) => x.kotak), tanda: hasilSoal.map((x) => x.tanda) });
+      return json({ teks, soal, kotak: hasilSoal.map((x) => x.kotak), tanda: hasilSoal.map((x) => x.tanda), dilewati: saring.dilewati });
     } catch (e) {
       await kembalikanJatahRapikan(familyId, tanggal);
       if (e instanceof ApiError && e.ai) {
