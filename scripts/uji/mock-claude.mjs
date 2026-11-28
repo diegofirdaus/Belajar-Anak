@@ -77,6 +77,14 @@ http.createServer((req, res) => {
         ],
       }));
     }
+    // Soal 5 pilihan (A–E) + satu soal rusak (tanpa pilihan) yang harus dilaporkan, bukan dibuang diam-diam.
+    const soalLima = [
+      { jenis: 'pilihan', q: 'Teknik dasar menendang bola dengan kaki bagian dalam disebut ....', options: ['Passing', 'Dribbling', 'Heading', 'Shooting', 'Juggling'], answer: 0, explain: 'Passing.', keyGuessed: true, optionsAdded: false, perluGambar: false, tandaFoto: 0, gambar: { foto: 0, x1: 0, y1: 0, x2: 0, y2: 0 }, contohJawaban: '', poinWajib: [], poinPelengkap: [], teksBersama: '' },
+      { jenis: 'pilihan', q: 'Jumlah pemain bola voli dalam satu regu adalah ....', options: ['4', '5', '6', '7', '8'], answer: 4, explain: 'Enam pemain.', keyGuessed: true, optionsAdded: false, perluGambar: false, tandaFoto: 2, gambar: { foto: 0, x1: 0, y1: 0, x2: 0, y2: 0 }, contohJawaban: '', poinWajib: [], poinPelengkap: [], teksBersama: '' },
+      { jenis: 'pilihan', q: 'Soal yang pilihannya tidak terbaca', options: [], answer: 0, explain: '', keyGuessed: true, optionsAdded: false, perluGambar: false, tandaFoto: -1, gambar: { foto: 0, x1: 0, y1: 0, x2: 0, y2: 0 }, contohJawaban: '', poinWajib: [], poinPelengkap: [], teksBersama: '' },
+    ];
+    if (prompt.includes('Berikut teks soal yang diketik orang tua') && prompt.split('<<<').pop().includes('limapilihan')) return pesan(JSON.stringify({ soal: soalLima }));
+    if (prompt.includes('difoto orang tua') && foto.some((f) => f.source.data.length === 1900)) return pesan(JSON.stringify({ soal: soalLima }));
     // Teks bersama (kutipan berita) dipakai dua soal; soal ketiga tanpa teks bersama.
     const KUTIPAN = 'Perhatikan kutipan berita berikut!\n\nSejumlah pemuda lintas agama ikut mengamankan shalat Idul Fitri di Timika. Toleransi umat beragama terjalin dengan baik.';
     const soalKutipan = [

@@ -70,7 +70,7 @@ export const jawabSchema = z
     pemainId: z.string().min(1).max(128),
     // Paket terbesar adalah soal pilihan orang tua (maks SOAL_PER_PAKET_MAKS), bukan paket AI (maks 10).
     nomor: z.number().int().min(0).max(SOAL_PER_PAKET_MAKS - 1),
-    pilihan: z.number().int().min(0).max(3).optional(),
+    pilihan: z.number().int().min(0).max(4).optional(),
     /** Jawaban soal esai. */
     teks: z.string().max(ESAI_JAWABAN_MAKS, `Jawaban maksimal ${ESAI_JAWABAN_MAKS} huruf.`).optional(),
   })

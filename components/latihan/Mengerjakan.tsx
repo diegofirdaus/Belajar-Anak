@@ -13,7 +13,7 @@ import { ESAI_JAWABAN_MAKS } from "@/lib/soalPilihan";
 import type { WorldId } from "@/lib/worlds";
 import { HudDunia } from "./HudDunia";
 
-const HURUF = "ABCD";
+const HURUF = "ABCDE";
 const kurangiGerak = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const acak = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 

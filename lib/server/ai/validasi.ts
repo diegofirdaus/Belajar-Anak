@@ -81,6 +81,12 @@ export function saringRapikan(mentah: unknown): SoalPilihan[] {
   return saringDenganKotak(mentah, 0).map((x) => x.soal);
 }
 
+/** Hasil merapikan + daftar soal yang dilewati. */
+export function saringRapikanLaporan(mentah: unknown): { soal: SoalPilihan[]; dilewati: string[] } {
+  const r = saringDenganLaporan(mentah, 0);
+  return { soal: r.hasil.map((x) => x.soal), dilewati: r.dilewati };
+}
+
 /**
  * Seperti `saringRapikan`, ditambah usulan kotak gambar per soal dari baca foto
  * (hanya untuk soal `perluGambar`; tidak ikut disimpan di paket).
@@ -89,15 +95,33 @@ export function saringDenganKotak(
   mentah: unknown,
   jumlahFoto: number,
 ): { soal: SoalPilihan; kotak: Kotak | null; tanda: number | null }[] {
-  if (!Array.isArray(mentah)) return [];
+  return saringDenganLaporan(mentah, jumlahFoto).hasil;
+}
+
+/**
+ * Seperti `saringDenganKotak`, ditambah daftar soal yang dilewati (tidak lolos pemeriksaan atau melebihi
+ * batas paket), supaya orang tua diberi tahu, bukan dibuang diam-diam.
+ */
+export function saringDenganLaporan(
+  mentah: unknown,
+  jumlahFoto: number,
+): { hasil: { soal: SoalPilihan; kotak: Kotak | null; tanda: number | null }[]; dilewati: string[] } {
+  if (!Array.isArray(mentah)) return { hasil: [], dilewati: [] };
   const hasil: { soal: SoalPilihan; kotak: Kotak | null; tanda: number | null }[] = [];
-  for (const item of mentah.slice(0, SOAL_PER_PAKET_MAKS)) {
+  const dilewati: string[] = [];
+  const cuplik = (item: unknown) => {
+    const q = item && typeof item === "object" ? (item as { q?: unknown }).q : null;
+    const t = typeof q === "string" ? q.replace(/\s+/g, " ").trim() : "";
+    return t ? (t.length > 60 ? `${t.slice(0, 60)}…` : t) : "(soal tanpa teks)";
+  };
+  mentah.forEach((item, i) => {
+    if (i >= SOAL_PER_PAKET_MAKS) return dilewati.push(`${cuplik(item)} (lebih dari ${SOAL_PER_PAKET_MAKS} soal)`);
     const h = soalPilihanSchema.safeParse(dariAi(item));
-    if (!h.success) continue;
+    if (!h.success) return dilewati.push(cuplik(item));
     const kotak = h.data.perluGambar ? kotakDariAi((item as { gambar?: unknown }).gambar, jumlahFoto) : null;
     const t = (item as { tandaFoto?: unknown }).tandaFoto;
     const tanda = h.data.jenis !== "esai" && Number.isInteger(t) && (t as number) >= 0 && (t as number) < h.data.options.length ? (t as number) : null;
     hasil.push({ soal: h.data, kotak, tanda });
-  }
-  return hasil;
+  });
+  return { hasil, dilewati };
 }

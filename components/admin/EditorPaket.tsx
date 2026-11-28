@@ -31,7 +31,7 @@ import {
   type SoalPilihan,
 } from "@/lib/soalPilihan";
 
-const HURUF = "ABCD";
+const HURUF = "ABCDE";
 const TERIMA_AI = "image/*,application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.doc";
 const TERIMA_TANPA_AI = ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.doc";
 const jenisFile = (f: File) =>
@@ -59,6 +59,11 @@ type SoalEditor = SoalPilihan & {
 const keSoal = ({ kotakUsulan: _k, gambarBaru: _g, potongTerbuka: _p, tandaFoto: _t, ...q }: SoalEditor): SoalPilihan => q;
 const denganTanda = (q: SoalPilihan, t: number | null | undefined): SoalEditor => (q.jenis === "esai" ? q : { ...q, tandaFoto: t ?? -1 });
 const adaGambar = (q: SoalEditor) => Boolean(q.gambarBaru || q.gambarId);
+/** Peringatan untuk soal yang terbaca AI tetapi tidak bisa dimasukkan (tidak lolos pemeriksaan). */
+const catatanDilewati = (d: string[] | undefined) =>
+  d?.length
+    ? `${d.length} soal belum bisa dimasukkan karena tidak terbaca utuh: ${d.slice(0, 5).map((x) => `"${x}"`).join(", ")}${d.length > 5 ? ", …" : ""}. Lengkapi soal itu di kolom Soal (nomor, pilihan A–E, "Kunci: …"), lalu tekan "Rapikan soal".`
+    : "";
 const kurangiGerak = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const CONTOH = `Ketik atau tempel soal di sini. Tidak harus rapi. Contoh:
@@ -314,6 +319,8 @@ export function EditorPaket({
         return k ? { ...q, kotakUsulan: { ...k, foto: k.foto + awalFoto }, potongTerbuka: true } : q;
       });
       const catatan = semua.length > FOTO_MAKS ? [`Maksimal ${FOTO_MAKS} foto sekali unggah; ${semua.length - FOTO_MAKS} foto lainnya tidak dibaca.`] : [];
+      const lewat = catatanDilewati(hasil.dilewati);
+      if (lewat) catatan.push(lewat);
       terapkanBacaan(hasil, soalFoto, `${files.length} foto`, catatan);
     } catch (e) {
       galatBaca(e, "foto");
@@ -334,6 +341,8 @@ export function EditorPaket({
       if (!data.startsWith("JVBERi")) return setGalat("File itu bukan PDF yang bisa dibaca.");
       const hasil = await api.bacaFoto(sesi, { kelas, mapel: mapelAktif, pdf: { data } });
       const catatan = catatanAwal ? [catatanAwal] : [];
+      const lewat = catatanDilewati(hasil.dilewati);
+      if (lewat) catatan.push(lewat);
       let soalPdf: SoalEditor[] = hasil.soal.map((q, i) => denganTanda(q, hasil.tanda?.[i]));
       // Halaman yang memuat gambar soal digambar di HP, lalu usulan potongannya dibuka seperti dari foto.
       const halaman = [...new Set(hasil.kotak.flatMap((k) => (k ? [k.foto + 1] : [])))];
@@ -392,7 +401,9 @@ export function EditorPaket({
     if (!pakaiAi) return bacaTanpaAi(catatan ? `${catatan} ` : "", teksDipakai);
     setMerapikan(true);
     try {
-      const hasil = await api.rapikan(sesi, { kelas, mapel: mapelAktif, teks: teksDipakai });
+      const { soal: hasil, dilewati } = await api.rapikan(sesi, { kelas, mapel: mapelAktif, teks: teksDipakai });
+      const lewat = catatanDilewati(dilewati);
+      if (lewat) setGalat([catatan, lewat].filter(Boolean).join(" "));
       // Gambar yang sudah dipotong/diusulkan tetap menempel pada soal dengan teks yang sama.
       setSoal((lama) =>
         hasil.map((q): SoalEditor => {
