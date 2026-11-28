@@ -48,6 +48,12 @@ export function Mengerjakan({
   const [i, setI] = useState(0);
   /** Kartu bacaan (paket dari bacaan) terbuka di awal; pilihan anak bertahan antarsoal. */
   const [bacaanTerbuka, setBacaanTerbuka] = useState(true);
+  const [stimulusLalu, setStimulusLalu] = useState<string | undefined>(paket.soal[0]?.stimulus);
+  // Masuk ke kelompok teks bersama yang baru: kartu bacaan dibuka lagi (pola "simpan nilai sebelumnya" React).
+  if (!paket.bacaan && paket.soal[i]?.stimulus !== stimulusLalu) {
+    setStimulusLalu(paket.soal[i]?.stimulus);
+    if (paket.soal[i]?.stimulus) setBacaanTerbuka(true);
+  }
   const [hasil, setHasil] = useState<(HasilJawab | null)[]>(() => Array(n).fill(null));
   const [judul, setJudul] = useState("");
   const [memeriksa, setMemeriksa] = useState<number | null>(null);
@@ -109,6 +115,11 @@ export function Mengerjakan({
     onSelesai(akhir);
   }
 
+  // Bacaan: bacaan paket (soal dari bacaan) atau teks bersama soal ini (kutipan/cerita/tabel untuk beberapa soal).
+  const teksBacaan = paket.bacaan ?? soal.stimulus;
+  let awalKelompok = i;
+  while (!paket.bacaan && awalKelompok > 0 && paket.soal[awalKelompok - 1].stimulus === soal.stimulus) awalKelompok--;
+
   const tag = paket.level === "pilihan" ? `soal pilihan · ${paket.topik}` : `${labelLevel(paket.level, paket.mapel)} · ${paket.topik}`;
 
   return (
@@ -127,11 +138,16 @@ export function Mengerjakan({
 
       <HudDunia dunia={dunia} awal={awal} kini={kini} benar={benar} salah={salah} n={n} kena={kena} />
 
-      {paket.bacaan && (
-        <details className="card bacaan" open={bacaanTerbuka} onToggle={(e) => setBacaanTerbuka(e.currentTarget.open)}>
+      {teksBacaan && (
+        <details
+          key={paket.bacaan ? "paket" : `stimulus-${awalKelompok}`}
+          className="card bacaan"
+          open={bacaanTerbuka}
+          onToggle={(e) => setBacaanTerbuka(e.currentTarget.open)}
+        >
           <summary>{bacaanTerbuka ? "Bacaan (ketuk untuk menutup)" : "Buka bacaan"}</summary>
           <div className="bacaan-teks" dir="auto" tabIndex={0} aria-label="Isi bacaan">
-            {paket.bacaan.split(/\n\s*\n/).map((par, k) => (
+            {teksBacaan.split(/\n\s*\n/).map((par, k) => (
               <p key={k} dir="auto">
                 <TeksCampur teks={par.trim()} />
               </p>

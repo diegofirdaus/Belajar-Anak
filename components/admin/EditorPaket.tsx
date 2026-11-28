@@ -16,6 +16,7 @@ import { JENJANG_INFO, MAPEL, jenjangOf, kelasInJenjang, kelasShort, type Jenjan
 import {
   BACAAN_MIN,
   ESAI_BACAAN_MAKS,
+  STIMULUS_MAKS,
   FOTO_MAKS,
   JUDUL_MAKS,
   PDF_BASE64_MAKS,
@@ -423,6 +424,19 @@ export function EditorPaket({
     setSoal((daftar) => daftar.map((q, j) => (j === i ? { ...q, esai, keyGuessed: false } : q)));
   }
 
+  /** Indeks soal terakhir yang memakai teks bersama yang sama dengan soal i (berurutan). */
+  const akhirKelompok = (i: number) => {
+    let j = i;
+    while (j + 1 < soal.length && soal[j + 1].stimulus !== undefined && soal[j + 1].stimulus === soal[i].stimulus) j++;
+    return j;
+  };
+
+  /** Ubah teks bersama satu kelompok soal sekaligus. Dikosongkan → disimpan tanpa teks bersama. */
+  function ubahStimulus(i: number, nilai: string) {
+    const akhir = akhirKelompok(i);
+    setSoal((daftar) => daftar.map((q, j) => (j >= i && j <= akhir ? { ...q, stimulus: nilai } : q)));
+  }
+
   const ubahSoal = (i: number, f: (q: SoalEditor) => SoalEditor) => setSoal((daftar) => daftar.map((q, j) => (j === i ? f(q) : q)));
 
   /** Foto baru khusus untuk memotong gambar (tanpa AI), mis. saat mengubah paket lama. */
@@ -700,6 +714,25 @@ export function EditorPaket({
           <ol className="pv">
             {soal.map((q, i) => (
               <li key={`${i}-${q.q}`} className={q.keyGuessed || (q.perluGambar && !adaGambar(q)) ? "pv-q warn" : "pv-q"}>
+                {q.stimulus !== undefined && q.stimulus !== soal[i - 1]?.stimulus && (
+                  <div className="field stimulus-edit">
+                    <label htmlFor={`${id}-stim-${i}`}>
+                      Teks bersama untuk soal {i + 1}
+                      {akhirKelompok(i) > i ? `–${akhirKelompok(i) + 1}` : ""} (tampil di atas soal)
+                    </label>
+                    <textarea
+                      id={`${id}-stim-${i}`}
+                      dir="auto"
+                      maxLength={STIMULUS_MAKS}
+                      value={q.stimulus}
+                      onChange={(e) => ubahStimulus(i, e.target.value)}
+                    />
+                    <span className="pv-note">Kosongkan kalau soal ini tidak butuh teks bersama.</span>
+                  </div>
+                )}
+                {q.stimulus !== undefined && q.stimulus === soal[i - 1]?.stimulus && (
+                  <span className="pv-note">Memakai teks bersama di atas.</span>
+                )}
                 <p>
                   {i + 1}. <TeksCampur teks={q.q} />
                 </p>

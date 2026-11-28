@@ -39,7 +39,8 @@ const isi = (p: PaketBaru) => ({
   kelas: p.kelas,
   subject: p.subject,
   sourceText: p.sourceText,
-  questions: p.questions,
+  // Firestore menolak nilai undefined (mis. teks bersama yang dikosongkan orang tua).
+  questions: p.questions.map((q) => Object.fromEntries(Object.entries(q).filter(([, v]) => v !== undefined))),
   acakPilihan: p.acakPilihan,
   dariBacaan: p.dariBacaan,
   updatedAt: FieldValue.serverTimestamp(),

@@ -54,11 +54,12 @@ export async function simpanSesi(
     topik: s.topik,
     level: s.level,
     setId: s.setId ?? null,
-    soal: s.soal.map(({ q, options, jenis, gambarId }) => ({
+    soal: s.soal.map(({ q, options, jenis, gambarId, stimulus }) => ({
       q,
       options: jenis === "esai" ? [] : options,
       ...(jenis === "esai" ? { jenis } : {}),
       ...(gambarId ? { gambarId } : {}),
+      ...(stimulus ? { stimulus } : {}),
     })),
     ...(bacaan ? { bacaan } : {}),
   };

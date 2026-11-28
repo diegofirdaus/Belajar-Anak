@@ -18,9 +18,11 @@ export type Soal = {
   esai?: KunciEsai;
   /** Gambar soal dari foto (hanya soal pilihan orang tua). */
   gambarId?: string;
+  /** Teks bersama (kutipan berita, cerita, tabel) yang dipakai soal ini dan soal lain di sekitarnya. */
+  stimulus?: string;
 };
 /** Soal yang dikirim ke browser: tanpa kunci dan penjelasan sebelum anak menjawab. */
-export type SoalTanpaKunci = { q: string; options: string[]; jenis?: "esai"; gambarId?: string };
+export type SoalTanpaKunci = { q: string; options: string[]; jenis?: "esai"; gambarId?: string; stimulus?: string };
 
 export const JUMLAH_SOAL = [5, 10] as const;
 export const TOPIK_MAKS = 120;

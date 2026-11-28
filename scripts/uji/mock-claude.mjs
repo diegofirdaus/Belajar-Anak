@@ -77,6 +77,15 @@ http.createServer((req, res) => {
         ],
       }));
     }
+    // Teks bersama (kutipan berita) dipakai dua soal; soal ketiga tanpa teks bersama.
+    const KUTIPAN = 'Perhatikan kutipan berita berikut!\n\nSejumlah pemuda lintas agama ikut mengamankan shalat Idul Fitri di Timika. Toleransi umat beragama terjalin dengan baik.';
+    const soalKutipan = [
+      { jenis: 'pilihan', q: 'Toleransi agama termasuk penerapan sila ke ....', options: ['Sila ke-1', 'Sila ke-2', 'Sila ke-3', 'Sila ke-4'], answer: 0, explain: 'Sila pertama.', keyGuessed: true, optionsAdded: false, perluGambar: false, tandaFoto: 0, gambar: { foto: 0, x1: 0, y1: 0, x2: 0, y2: 0 }, contohJawaban: '', poinWajib: [], poinPelengkap: [], teksBersama: KUTIPAN },
+      { jenis: 'pilihan', q: 'Berdasarkan kutipan berita di atas, menghargai keberagaman agama termasuk makna sila ....', options: ['Sila ke-1', 'Sila ke-2', 'Sila ke-3', 'Sila ke-5'], answer: 0, explain: 'Ketuhanan.', keyGuessed: true, optionsAdded: false, perluGambar: false, tandaFoto: -1, gambar: { foto: 0, x1: 0, y1: 0, x2: 0, y2: 0 }, contohJawaban: '', poinWajib: [], poinPelengkap: [], teksBersama: KUTIPAN },
+      { jenis: 'pilihan', q: 'Lambang sila ke-3 adalah ....', options: ['Bintang', 'Rantai', 'Pohon beringin', 'Padi dan kapas'], answer: 2, explain: 'Pohon beringin.', keyGuessed: true, optionsAdded: false, perluGambar: false, tandaFoto: -1, gambar: { foto: 0, x1: 0, y1: 0, x2: 0, y2: 0 }, contohJawaban: '', poinWajib: [], poinPelengkap: [], teksBersama: '' },
+    ];
+    if (prompt.includes('Berikut teks soal yang diketik orang tua') && prompt.split('<<<').pop().includes('kutipan')) return pesan(JSON.stringify({ soal: soalKutipan }));
+    if (prompt.includes('difoto orang tua') && foto.some((f) => f.source.data.length === 1800)) return pesan(JSON.stringify({ soal: soalKutipan }));
     // Pengaturan tambahan ditolak (400) hanya kalau permintaan memakai fallback beta: foto tepat 1700 karakter base64.
     if (prompt.includes('difoto orang tua') && foto.some((f) => f.source.data.length === 1700) && (b.fallbacks || b.output_config?.effort)) return kirim(400, { type: 'error', error: { type: 'invalid_request_error', message: 'fallbacks: not supported' } });
     // Gambar ditolak API (400): foto berukuran tepat 1600 karakter base64.

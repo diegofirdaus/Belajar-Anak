@@ -812,3 +812,6 @@ textarea.teks-bacaan { min-height: 220px; }
 .anggota-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .anggota-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: var(--radius-s); background: var(--soft); min-height: 44px; }
 .anggota-email { flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+
+/* Teks bersama di kartu "Cek dulu" */
+.stimulus-edit textarea { min-height: 140px; background: var(--soft); }

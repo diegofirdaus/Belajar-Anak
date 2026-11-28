@@ -5,6 +5,8 @@ import { MAPEL, jenjangOf, kelasShort } from "./kelas";
 
 export const JUDUL_MAKS = 60;
 export const TEKS_ADMIN_MAKS = 20_000;
+/** Panjang maksimal teks bersama per soal. */
+export const STIMULUS_MAKS = 5_000;
 export const SOAL_PER_PAKET_MAKS = 50;
 export const PAKET_MAKS = 100;
 
@@ -34,6 +36,8 @@ export type SoalPilihan = {
   esai?: KunciEsai;
   /** Potongan gambar dari foto (`families/{uid}/gambarSoal/{id}`), tampil di atas soal. */
   gambarId?: string;
+  /** Teks bersama (mis. "Perhatikan kutipan berita berikut!" + isinya) yang dipakai beberapa soal; tampil di atas soal. */
+  stimulus?: string;
 };
 
 const teks = (maks: number) => z.string().transform((s) => s.trim()).pipe(z.string().min(1).max(maks));
@@ -74,6 +78,11 @@ export const soalPilihanSchema = z
     jenis: z.literal("esai").optional(),
     esai: esaiSchema.optional(),
     gambarId: gambarIdSchema.optional(),
+    stimulus: z
+      .string()
+      .max(STIMULUS_MAKS)
+      .transform((s) => s.trim() || undefined)
+      .optional(),
   })
   .superRefine((s, ctx) => {
     if (s.jenis === "esai") {
@@ -94,7 +103,7 @@ export const soalPilihanSchema = z
 export function tulisTeksSoal(soal: SoalPilihan[]): string {
   return soal
     .map((s, i) => {
-      const baris = [`${i + 1}. ${s.q}`];
+      const baris = s.stimulus && s.stimulus !== soal[i - 1]?.stimulus ? [`Teks untuk soal berikut:\n${s.stimulus}\n`, `${i + 1}. ${s.q}`] : [`${i + 1}. ${s.q}`];
       if (s.jenis === "esai") {
         if (s.esai?.contoh && !s.keyGuessed) baris.push(`Jawaban: ${s.esai.contoh}`);
       } else {
