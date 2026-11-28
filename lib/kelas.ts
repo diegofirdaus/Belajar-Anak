@@ -35,16 +35,16 @@ export const JENJANG_INFO: Record<Jenjang, { full: string; kelas: number[] }> = 
 export const MAPEL: Record<Jenjang, string[]> = {
   SD: [
     "Matematika", "IPAS", "Bahasa Indonesia", "Bahasa Inggris", "Pendidikan Pancasila",
-    "Pendidikan Agama Islam", "Islamic Studies", "Lainnya",
+    "Pendidikan Agama Islam", "Islamic Studies", "Pendidikan Jasmani (PJOK)", "Lainnya",
   ],
   SMP: [
     "Matematika", "IPA", "IPS", "Bahasa Indonesia", "Bahasa Inggris",
-    "Pendidikan Pancasila", "Informatika", "Pendidikan Agama Islam", "Islamic Studies", "Lainnya",
+    "Pendidikan Pancasila", "Informatika", "Pendidikan Agama Islam", "Islamic Studies", "Pendidikan Jasmani (PJOK)", "Lainnya",
   ],
   SMA: [
     "Matematika", "Fisika", "Kimia", "Biologi", "Ekonomi", "Sejarah", "Geografi",
     "Sosiologi", "Bahasa Indonesia", "Bahasa Inggris", "Informatika",
-    "Pendidikan Agama Islam", "Islamic Studies", "Lainnya",
+    "Pendidikan Agama Islam", "Islamic Studies", "Pendidikan Jasmani (PJOK)", "Lainnya",
   ],
 };
 
