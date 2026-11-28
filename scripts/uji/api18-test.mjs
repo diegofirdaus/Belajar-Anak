@@ -48,6 +48,12 @@ n0 = nLog();
 r = await post('/api/admin/baca-foto', A.token, { kelas: 7, mapel: 'Pendidikan Pancasila', gambar: [{ media_type: 'image/jpeg', data: 'A'.repeat(1600) }] }, sesi);
 ok(r.status === 500 && nLog() - n0 === 2, 'tetap ditolak: hanya satu kali coba ulang, lalu kode penyebab');
 
+// Browser HP kadang menghasilkan PNG walau diminta JPEG: label dibetulkan dari isi gambar sebelum dikirim ke Claude.
+const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(400, 7)]).toString('base64');
+r = await post('/api/admin/baca-foto', A.token, { kelas: 7, mapel: 'Pendidikan Pancasila', gambar: [{ media_type: 'image/jpeg', data: png }] }, sesi);
+const blok = terakhir().messages[0].content.find((x) => x.type === 'image');
+ok(r.status === 200 && blok.media_type === 'image/png', 'PNG berlabel JPEG: dikirim ke Claude sebagai image/png', blok.media_type);
+
 // Batas pengeluaran bulanan Claude Console tercapai: kode khusus, tanpa coba ulang, jatah anak dikembalikan.
 const raka = (await post('/api/pemain', A.token, { name: 'Raka', kelas: 5, theme: 'blok' })).body.player;
 n0 = nLog();

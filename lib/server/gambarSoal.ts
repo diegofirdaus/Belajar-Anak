@@ -1,5 +1,6 @@
 import "server-only";
 
+import { jenisGambar } from "@/lib/jenisGambar";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { db } from "@/lib/firebase/admin";
 import { GAMBAR_PER_KELUARGA_MAKS } from "@/lib/gambarSoal";
@@ -20,7 +21,7 @@ export async function simpanGambar(familyId: string, data: string): Promise<stri
   if ((await col.count().get()).data().count >= GAMBAR_PER_KELUARGA_MAKS)
     throw new ApiError("batas", `Maksimal ${GAMBAR_PER_KELUARGA_MAKS} gambar soal. Hapus paket lama yang tidak dipakai dulu.`);
   const ref = col.doc();
-  await ref.set({ data, media_type: "image/jpeg", setId: null, dibuat: FieldValue.serverTimestamp() });
+  await ref.set({ data, media_type: jenisGambar(data) ?? "image/jpeg", setId: null, dibuat: FieldValue.serverTimestamp() });
   return ref.id;
 }
 
