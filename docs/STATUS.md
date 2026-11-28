@@ -185,6 +185,15 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
 - Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 3/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
+## Teks bersama untuk beberapa soal — SELESAI, sudah dicoba pemilik di preview ("berhasil"), dirilis lewat PR ke main
+
+Masukan pemilik (28 Nov 2026): lembar soal sering punya satu kutipan berita/cerita/tabel yang dipakai beberapa soal ("Perhatikan kutipan berita berikut!" lalu soal 3-4). Dulu teks itu hilang atau menempel di satu soal saja.
+- Data: field opsional `stimulus` per soal (`SoalPilihan`, `Soal`, `SoalTanpaKunci`, maks 5.000 huruf), disalin ke setiap soal yang memakainya. Yang dikosongkan tidak disimpan (`isi()` di `lib/server/soalPilihan.ts` membuang nilai undefined).
+- AI: properti `teksBersama` di skema rapikan & baca foto (`aturanTeksBersama()`), disalin utuh termasuk kalimat pengantar; baca foto juga diminta menyambung soal yang terpotong ke halaman/foto berikutnya. `tulisTeksSoal` menulis teks bersama sekali ("Teks untuk soal berikut:") di atas kelompoknya. Soal mirip: teks bersama jadi konteks contoh, soal baru wajib berdiri sendiri (bacaan singkat di dalam soal).
+- Editor: teks bersama tampil sekali per kelompok ("Teks bersama untuk soal 1–2"), bisa diedit untuk semua soal kelompok sekaligus; soal berikutnya bertanda "Memakai teks bersama di atas."
+- Anak: kartu "Bacaan" (komponen yang sama dengan soal dari bacaan) tampil di atas soal yang punya teks bersama, terbuka lagi saat masuk kelompok baru, hilang di soal tanpa teks bersama.
+- Uji: `api20-test.mjs`, `teks-bersama-ui-test.js`.
+
 ## Anggota keluarga — SELESAI, pemilik sudah mengundang di preview; dirilis ke main atas permintaan pemilik (dicek langsung di produksi)
 
 Permintaan pemilik (23 Nov 2026): istri ingin memakai akun Google sendiri tetapi melihat data keluarga yang sama; data yang sempat dibuat di akun istri dibuang.

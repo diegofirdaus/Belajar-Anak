@@ -24,9 +24,10 @@ export function POST(req: Request) {
     if (!parsed.success) throw new ApiError("tidak_valid");
     const pemain = await getPlayer(familyId, parsed.data.pemainId);
     const paket = await ambilPaketUntuk(familyId, parsed.data.setId, pemain.kelas);
-    let soal = paket.questions.map(({ q, options, answer, explain, jenis, esai, gambarId }) => ({
+    let soal = paket.questions.map(({ q, options, answer, explain, jenis, esai, gambarId, stimulus }) => ({
       ...(jenis === "esai" && esai ? { q, options: [], answer: 0, explain, jenis, esai } : { q, options, answer, explain }),
       ...(gambarId ? { gambarId } : {}),
+      ...(stimulus ? { stimulus } : {}),
     }));
     if (paket.acakPilihan) {
       const lama = kunciSebelumnya(soal, await soalSesiTerakhirPaket(familyId, pemain.id, paket.id));

@@ -9,6 +9,7 @@ import {
   POIN_PELENGKAP_MAKS,
   POIN_WAJIB_MAKS,
   SOAL_PER_PAKET_MAKS,
+  STIMULUS_MAKS,
   soalPilihanSchema,
   type SoalPilihan,
 } from "@/lib/soalPilihan";
@@ -56,7 +57,9 @@ export function saringSoal(mentah: unknown, n: number): Soal[] | null {
  */
 function dariAi(item: unknown): unknown {
   if (!item || typeof item !== "object") return item;
-  const { jenis, contohJawaban, poinWajib, poinPelengkap, ...x } = item as Record<string, unknown>;
+  const { jenis, contohJawaban, poinWajib, poinPelengkap, teksBersama, ...dasar } = item as Record<string, unknown>;
+  // Teks bersama dari AI ("" kalau tidak ada) disimpan sebagai `stimulus`.
+  const x = typeof teksBersama === "string" && teksBersama.trim() ? { ...dasar, stimulus: teksBersama.trim().slice(0, STIMULUS_MAKS) } : dasar;
   const daftar = (v: unknown, n: number) =>
     (Array.isArray(v) ? v : []).filter((t): t is string => typeof t === "string" && t.trim() !== "").slice(0, n);
   if (jenis !== "esai") return x;
