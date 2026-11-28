@@ -1,6 +1,7 @@
 import "server-only";
 
 import Anthropic from "@anthropic-ai/sdk";
+import { jenisGambar } from "@/lib/jenisGambar";
 import { ApiError } from "../http";
 
 let klien: Anthropic | null = null;
@@ -62,7 +63,8 @@ export async function mintaJson(p: {
   const c = claude();
   let res: Anthropic.Beta.BetaMessage;
   const lampiran: Anthropic.Beta.BetaContentBlockParam[] = [
-    ...(p.gambar ?? []).map((g) => ({ type: "image" as const, source: { type: "base64" as const, media_type: g.media_type, data: g.data } })),
+    // Jenis gambar dari isinya: browser HP kadang menghasilkan PNG walau diminta JPEG.
+    ...(p.gambar ?? []).map((g) => ({ type: "image" as const, source: { type: "base64" as const, media_type: jenisGambar(g.data) ?? g.media_type, data: g.data } })),
     ...(p.pdf ? [{ type: "document" as const, source: { type: "base64" as const, media_type: "application/pdf" as const, data: p.pdf } }] : []),
   ];
   const content: Anthropic.Beta.BetaContentBlockParam[] | string = lampiran.length ? [...lampiran, { type: "text" as const, text: p.prompt }] : p.prompt;
