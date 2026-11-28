@@ -185,6 +185,10 @@ Masukan istri pemilik: soal sulit terlalu gampang, ingin soal bergaya olimpiade 
 - Uji: `api16-test.mjs` (model/effort per level, prompt KSN/OSN/tantangan, campuran, validasi, jatah 3/hari, hadiah, riwayat & statistik), `olimpiade-ui-test.js` (form, label per mapel, memuat, hasil, riwayat di 390px), `latihan-test.ts` & `latihan-ui-test.js` disesuaikan.
 - Perkiraan biaya: satu paket olimpiade dengan Opus jauh lebih mahal dari paket Sonnet (berpikir panjang); karena itu jatahnya kecil. Pantau `logAi` setelah dicoba.
 
+## Mapel Pendidikan Jasmani (PJOK) — SELESAI, dirilis langsung ke main atas permintaan pemilik (28 Nov 2026)
+
+- "Pendidikan Jasmani (PJOK)" ditambahkan ke `MAPEL` SD/SMP/SMA (nama resmi "Pendidikan Jasmani, Olahraga, dan Kesehatan" melebihi batas 40 huruf). Level tertinggi = Soal Tantangan. Diuji: buat soal biasa & tantangan di kelas 3/8/11, plus uji terkait.
+
 ## Teks bersama untuk beberapa soal — SELESAI, sudah dicoba pemilik di preview ("berhasil"), dirilis lewat PR ke main
 
 Masukan pemilik (28 Nov 2026): lembar soal sering punya satu kutipan berita/cerita/tabel yang dipakai beberapa soal ("Perhatikan kutipan berita berikut!" lalu soal 3-4). Dulu teks itu hilang atau menempel di satu soal saja.
